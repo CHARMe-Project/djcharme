@@ -1,0 +1,17 @@
+<fieldset>
+	<label for="bodytype">Body Type</label>&nbsp;
+	<select name="bodytype" 
+		data-dojo-attach-event='onchange: update'
+		data-dojo-attach-point="bodytype">
+		<option value="URI" selected="selected">URI</option>
+		<option value="Text">Text</option>					
+	</select><br>
+	<span data-dojo-attach-point="bodyuri">
+		<label for="body_uri">URI</label>&nbsp;
+		<input data-dojo-type="dijit/form/TextBox" data-dojo-attach-point="body_uri" value=""/>
+	</span>				
+    <br>
+    <span data-dojo-attach-point="bodytext">
+		<span data-dojo-type="TextualBody" data-dojo-attach-point="body_text" ></span>
+	<span>
+</fieldset>

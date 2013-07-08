@@ -1,0 +1,43 @@
+'''
+Created on 17 May 2013
+
+@author: mnagni
+'''
+
+import logging
+from djcharme import mm_render_to_response
+import httplib2 
+from xml.sax.saxutils import unescape
+from xml.etree.ElementTree import XML, tostring
+import html5lib
+from djcharme.node.actions import load_file, do_update
+
+LOGGING = logging.getLogger(__name__)
+
+HTML_NS = "{http://www.w3.org/1999/xhtml}"
+
+def extract_alternative_links(link):
+    h = httplib2.Http(".cache")
+    resp, content = h.request(link, "GET", headers={'accept':'*/*'} )    
+    parser = html5lib.HTMLParser(tree=html5lib.getTreeBuilder("lxml"))
+    doc = parser.parse(content)    
+    ret = []
+    for el in doc.findall('%shead//%slink' % (HTML_NS, HTML_NS)):
+        if hasattr(el, 'attrib') and el.attrib.has_key('rel') \
+                and el.attrib['rel'] == "alternate":
+            ret.append(el.get('type'))
+    print ret
+
+def compose_annotation(request):
+    context = {}
+    logging.debug(request)
+        
+    if request.REQUEST.get('target_link', None):
+        context['target_link'] = request.REQUEST.get('target_link')
+        return mm_render_to_response(request, context, 'compose_annotation.html')
+    
+    if request.POST:
+            load_file('', request.body)
+    #target_link = request.REQUEST['target_link']
+    #extract_alternative_links(target_link)
+    return mm_render_to_response(request, context, 'compose_annotation.html')

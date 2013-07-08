@@ -1,0 +1,8 @@
+/dist
+/djcharme.egg-info
+/deployIndjcharme.sh
+/deployIndjcharme.sh~
+/sqlite.db
+/.settings
+/.project
+/.pydevproject

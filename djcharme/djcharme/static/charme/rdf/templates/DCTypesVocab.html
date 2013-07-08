@@ -1,0 +1,20 @@
+<fieldset>
+	<label for="dctype">Dublin Core Type</label>&nbsp;
+	<select data-dojo-type="dijit/form/Select" name="dctype" 
+		data-dojo-attach-event='onchange: update'
+		data-dojo-attach-point="dctype">
+		<option value="http://purl.org/dc/dcmitype/InteractiveResource" selected="selected">InteractiveResource</option>
+		<option value="http://purl.org/dc/dcmitype/Dataset">Dataset</option>
+		<option value="http://purl.org/dc/dcmitype/Image">Image</option>
+		<option value="http://purl.org/dc/dcmitype/MovingImage">MovingImage</option>
+		<option value="http://purl.org/dc/dcmitype/Text">Text</option>					
+	</select><br>
+	<span data-dojo-attach-point="dcuri">
+		<label for="type_uri">URI</label>&nbsp;
+		<input data-dojo-type="dijit/form/TextBox" data-dojo-attach-point="type_uri" value=""/>
+	</span>				
+	<span data-dojo-attach-point="dctextarea">
+		<label for="type_textarea">Text</label>&nbsp;
+		<textarea id="type_textarea" data-dojo-attach-point="type_textarea"></textarea>
+	</span>					
+</fieldset>

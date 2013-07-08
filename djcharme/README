@@ -1,0 +1,7 @@
+Accept requests from the user to access ceda resources.
+
+
+
+In order to be imported in cedasite project, cedasite's settings.py has to 
+ - define DJ_JEEVES location 
+ - import userdb_model
