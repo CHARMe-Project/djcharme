@@ -14,6 +14,7 @@ from rdflib.plugins.stores.sparqlstore import SPARQLStore, SPARQLUpdateStore
 from rdflib.store import Store
 from django.conf import settings
 from rdflib.namespace import Namespace
+import uuid
 
 LOGGING = logging.getLogger(__name__)
 
@@ -80,7 +81,14 @@ __graphstore = SPARQLUpdateStore(queryEndpoint = getattr(settings, 'GRAPH_STORE_
                                   update_endpoint = getattr(settings, 'GRAPH_STORE_RW'), postAsEncoded=False)
 __graphstore.bind("charm", "http://charm.eu/ch#")
 
+ANNO_SUBMITTED = 'submitted'
+ANNO_INVALID = 'invalid'
+ANNO_STABLE = 'stable'
+ANNO_RETIRED = 'retired'
 
+NODE_URI = 'nodeURI'
+ANNO_URI = 'annoURI'
+BODY_URI = 'bodyURI'
 
 
 def get_store():
@@ -116,15 +124,45 @@ def insert_rdf(data, mimetype, graph = None, store=None):
     '''
     if not store:
         store = get_store()
-    g = Graph()
+    tmp_g = Graph()
     #Necessary as RDFlib does not contain the json-ld lib
     if mimetype == 'application/ld+json':
-        g.parse(data=data, format='json-ld')
+        tmp_g.parse(data=data, format='json-ld')
     else:        
-        g.parse(data = data, format = mimetype)
-    for res in g:
+        tmp_g.parse(data = data, format = mimetype)
+    _formatSubmittedAnnotation(tmp_g)
+    for res in tmp_g:
         generate_graph(store, graph).add(res)
         
+def _formatNodeURIRef(uriref, anno_uri, body_uri):
+    '''
+        Rewrite a URIRef according to the node configuration
+        * uriref:rdflib.URIRef 
+        * anno_uri:String as hexadecimal 
+        * body_uri:String as hexadecimal
+    ''' 
+    if isinstance(uriref, URIRef) and NODE_URI in uriref:
+        uriref = uriref.replace(uriref[:uriref.index('nodeURI')], getattr(settings, 'NODE_URI', 'http://localhost'))
+        uriref = URIRef(uriref.replace(NODE_URI, '/data'))
+    if isinstance(uriref, URIRef) and ANNO_URI in uriref:
+        uriref = URIRef(uriref.replace(ANNO_URI, anno_uri))
+    if isinstance(uriref, URIRef) and BODY_URI in uriref:
+        uriref = URIRef(uriref.replace(BODY_URI, body_uri))
+    return uriref
+
+def _formatSubmittedAnnotation(graph):
+    '''
+        Formats the graph according to the node configuration
+    '''
+    anno_uri = uuid.uuid4().hex
+    body_uri = uuid.uuid4().hex
+    
+    for s,p,o in graph:
+            graph.remove((s, p, o))
+            s =_formatNodeURIRef(s, anno_uri, body_uri)
+            p = _formatNodeURIRef(p, anno_uri, body_uri)
+            o = _formatNodeURIRef(o, anno_uri, body_uri)
+            graph.add((s, p, o))
 
 #----------------------
 

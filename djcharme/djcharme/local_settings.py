@@ -46,7 +46,9 @@ LOGGING = {
     }
 }
 
-FUSEKI_URL = 'TRIPLESTORE_URL'
+'''
+FUSEKI_URL = 'http://localhost:3333/privateds'
+NODE_URI = 'http://proteus.badc.rl.ac.uk'
 
 SPARQL_UPDATE = FUSEKI_URL + '/update'
 SPARQL_QUERY = FUSEKI_URL + '/sparql'
@@ -54,4 +56,4 @@ SPARQL_DATA = FUSEKI_URL + '/data'
 
 GRAPH_STORE_R = FUSEKI_URL + '/get'
 GRAPH_STORE_RW = FUSEKI_URL + '/data'
-
+'''

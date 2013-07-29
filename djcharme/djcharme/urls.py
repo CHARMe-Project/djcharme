@@ -22,6 +22,14 @@ urlpatterns += patterns('djcharme.views.node_gate',
 )
 
 urlpatterns += patterns('djcharme.views.node_gate',
+    (r'^insert/annotation', 'insert'),
+)
+
+urlpatterns += patterns('djcharme.views.node_gate',
+    (r'^require/annotationTicket', 'annoTickets'),
+)
+
+urlpatterns += patterns('djcharme.views.node_gate',
     (r'^resource/(\w+)', 'process_resource'),
 )
 

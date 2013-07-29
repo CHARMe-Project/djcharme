@@ -5,15 +5,14 @@ Created on 14 May 2013
 '''
 from djcharme.node.actions import do_query, _do_query, DESCRIBE_ANNOTATIONS,\
     DESCRIBE_ANNOTATION, CONSTRUCT_ANNOTATION, get_store, search_annotations,\
-    CHARM, OA, RDF, get_identifier, FORMAT_MAP
+    CHARM, OA, RDF, get_identifier, FORMAT_MAP, ANNO_SUBMITTED, insert_rdf
     
 from django.http.response import HttpResponseRedirectBase, Http404, HttpResponse
 from djcharme import mm_render_to_response
 
 import logging
+import uuid
 from rdflib.graph import Graph
-from rdflib.term import URIRef, BNode
-import rdflib
 from djcharme.exception import SerializeError
 
 LOGGING = logging.getLogger(__name__)
@@ -28,6 +27,18 @@ def __serialize(graph, format = 'application/rdf+xml'):
     if format == 'application/ld+json':
         format = 'json-ld'
     return graph.serialize(format='json-ld')
+
+def _validateFormat(request):
+    '''
+        Returns the mimetype of the required format as mapped by rdflib
+        return: String - an allowed rdflib mimetype 
+    '''
+    req_format = FORMAT_MAP.get(request.GET.get('format', None))
+    
+    if req_format:
+        if req_format not in FORMAT_MAP.values():
+            raise SerializeError("Cannot generate the required format %s " % req_format)
+    return req_format
 
 def index(request, graph):
     '''
@@ -46,16 +57,30 @@ def index(request, graph):
     for res in g.triples((None, OA['hasBody'], None)):
         tmp_g.add(res)
                 
-    req_format = FORMAT_MAP.get(request.GET.get('format', None))
+    req_format = _validateFormat(request)
     
     if req_format:
-        if req_format not in FORMAT_MAP.values():
-            raise SerializeError("Cannot generate the required format %s " % req_format)
         return HttpResponse(__serialize(tmp_g, format = req_format))
             
     LOGGING.debug("Annotations %s" % tmp_g.serialize())      
     context = {'results': tmp_g.serialize()}
-    return mm_render_to_response(request, context, 'viewer.html')   
+    return mm_render_to_response(request, context, 'viewer.html')
+
+
+def insert(request):
+    '''
+        Inserts in the triplestore a new annotation under the "ANNO_SUBMITTED" graph
+    '''
+    req_format = _validateFormat(request)
+    
+    if request.POST:
+        triples = request.body
+        insert_rdf(triples, req_format, graph=ANNO_SUBMITTED)
+        
+        
+
+            
+        
 #------------------------------------------
 
 

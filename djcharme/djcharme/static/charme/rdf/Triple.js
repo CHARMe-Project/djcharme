@@ -23,7 +23,8 @@ define(["dojox/xml/parser", "dojox/grid/DataGrid", "dojo/store/Memory",
 		            		child = nodes[i];
 		            		if (child.localName == "hasBody") {
 		            			storedAnnotation.hasBody 
-				            		= child.getAttribute('rdf:resource')		            			
+		            				= "<a href=\'" + child.getAttribute('rdf:resource') + "\'>" +
+				            		child.getAttribute('rdf:resource') + "</a>" 		            			
 		            		}
 		            		if (child.localName == "hasTarget") {
 		            			storedAnnotation.hasTarget 

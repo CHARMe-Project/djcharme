@@ -4,9 +4,11 @@ Created on 31 May 2013
 @author: mnagni
 '''
 import unittest
-from djcharme.node.actions import insert_rdf
-from rdflib.graph import Graph
+from djcharme.node.actions import insert_rdf,\
+    _formatNodeURIRef, ANNO_SUBMITTED
+from rdflib.graph import Graph, ConjunctiveGraph
 from rdflib.plugins.stores.sparqlstore import SPARQLUpdateStore
+from rdflib.term import URIRef
 
 class Test(unittest.TestCase):
 
@@ -28,7 +30,7 @@ class Test(unittest.TestCase):
                                        update_endpoint = GRAPH_STORE_RW)
         
         
-        self.graph = 'stable'
+        self.graph = 'submitted'
         self.identifier = '%s/%s' % (SPARQL_DATA, self.graph)
         self.g = Graph(store=self.store, identifier=self.identifier)
         self.gs = Graph(store=self.graphstore, identifier=self.identifier)        
@@ -58,17 +60,17 @@ class Test(unittest.TestCase):
         
         self.turtle_data = '''
             @prefix charm: <http://charm.eu/ch#> . 
-            @prefix anno: <http://charm.eu/data/anno/> . 
+            @prefix anno: <nodeURI/> . 
             @prefix oa: <http://www.w3.org/ns/oa#> . 
             @prefix dc: <http://purl.org/dc/elements/1.1/> . 
             @prefix cnt: <http://www.w3.org/2011/content#> . 
             @prefix dctypes: <http://purl.org/dc/dcmitype/> . 
             
-            anno:a_1374142212954 a charm:anno ;
+            anno:annoURI a charm:anno ;
             oa:hasTarget <http://localhost:8001/ca960608.dm3> ;
-            oa:hasBody anno:b_1374142212953 .
+            oa:hasBody anno:bodyURI .
     
-            anno:b_1374142212953
+            anno:bodyURI
             a cnt:ContentAsText, dctypes:Text ;
             cnt:chars "hello there!" ;
             dc:format "text/plain" .
@@ -106,23 +108,32 @@ class Test(unittest.TestCase):
             }        
         '''
     
-    '''    
-    def tearDown(self):      
+    '''
+    def tearDown(self):   
         for res in self.g:
             self.g.remove(res)
     '''
 
-    def test_insert_turtle(self):
-        graph = 'stable'
-        insert_rdf(self.turtle_data, 'text/turtle', graph=graph)
 
+    def test_insert_turtle(self):
+        insert_rdf(self.turtle_data, 'text/turtle', graph=ANNO_SUBMITTED)
+
+    '''
     def test_insert_jsonld(self):
-        graph = 'stable'
-        insert_rdf(self.jsonld_data, 'application/ld+json', graph=graph)
+        insert_rdf(self.jsonld_data, 'application/ld+json', graph=ANNO_SUBMITTED)
         
     def test_insert_rdf(self):
-        graph = 'stable'
-        insert_rdf(self.rdf_data, 'application/rdf+xml', graph=graph)        
+        insert_rdf(self.rdf_data, 'application/rdf+xml', graph=ANNO_SUBMITTED)   
+        
+    def test_formatNode(self):
+        tmpURIRef = URIRef('file:///home/users/mnagni/git/djcharme/djcharme/djcharme/test/nodeURI/annoURI')
+        res = _formatNodeURIRef(tmpURIRef, 'abcdef', '123456')
+        self.assert_('abcdef' in res, "Error")
+        self.assertFalse('nodeURI' in res, "Error")
+        self.assertFalse('annoURI' in res, "Error")
+        self.assertFalse('123456' in res, "Error")
+    '''
+
 
 if __name__ == "__main__":
     #import sys;sys.argv = ['', 'Test.testName']
