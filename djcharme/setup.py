@@ -35,6 +35,7 @@ setup(
                         'httplib2',
                         'rdflib',
                         'sparqlwrapper',
-                        'lxml'],
+                        'lxml', 
+                        'ceda-markup'],
 )
 

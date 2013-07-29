@@ -1,13 +1,18 @@
-{% extends "base_no_sidebar_basic.html" %} 
+{% extends "charme_base.html" %} 
 
 {% block extra_css %}
 <link rel="stylesheet" href="{{ STATIC_URL }}css/djcharme_style.css" media="screen">
 <link rel="stylesheet" href="//ajax.googleapis.com/ajax/libs/dojo/1.9.0/dijit/themes/claro/claro.css" media="screen">
+<script src="{{ STATIC_URL }}/charme/jsonld.js"></script>
 {% endblock %}
 
 
 {% block main %}
 		<script>
+			var processor = JsonLdProcessor();
+			alert(obj);
+		
+		
 			 var dojoConfig = (function(){
 				return {
 					async: true,

@@ -4,6 +4,8 @@ __version__ = '0.1'
 from django.core.context_processors import csrf
 from django.template.context import RequestContext
 from django.shortcuts import render_to_response
+from django.http.response import Http404
+from django.core.exceptions import ObjectDoesNotExist
 
 def mm_render_to_response(request, context, page_to_render):
     """

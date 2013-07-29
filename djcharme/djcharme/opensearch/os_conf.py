@@ -26,35 +26,18 @@ HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABI
 OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE 
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-Created on 9 Jan 2012
+Created on 4 May 2012
 
 @author: Maurizio Nagni
 '''
+from ceda_markup.opensearch.os_request import OpenSearchDescription
+from ceda_markup.opensearch.os_engine import OSEngine
+from djcharme.opensearch.cimpl import COSQuery, COSAtomResponse
 
-
-import logging
-
-formatter = logging.Formatter(fmt='%(name)s %(levelname)s %(asctime)s %(module)s %(message)s')
-handler = logging.StreamHandler()
-handler.setFormatter(formatter)
-handler.setLevel(logging.DEBUG)
-logging.getLogger().addHandler(handler)
-#Temporary solution!!!
-loggers = ('djcharme',)
-for log_name in loggers:
-    log = logging.getLogger(log_name)
-    log.addHandler(handler)
-    log.setLevel(logging.DEBUG)
-
-LOGGING = logging.getLogger(__name__)
-
-class CharmeMiddleware(object):
-      
-    def process_request(self, request):          
-        pass
-
-    def process_response(self, request, response):                
-        return response
-    
-    def process_exception(self, request, exception):
-        print 'ERROR!'
+def setUp(): 
+    query = COSQuery()
+    atomResponse = COSAtomResponse()     
+    os_short_name = "Web Search"
+    os_description = "A default description"
+    os = OpenSearchDescription(os_short_name, os_description)
+    return OSEngine(query, [atomResponse], os)   

@@ -30,3 +30,12 @@ define(["dojo/_base/declare", "dijit/form/Textarea", "dijit/_WidgetBase", "dijit
 			}
         });
 });
+
+                    //[
+                    //    "@type": [
+                    //        "http://www.w3.org/2011/content#ContentAsText",
+                    //        "http://purl.org/dc/dcmitype/Text"
+                    //    ],
+                    //    "http://purl.org/dc/elements/1.1/format": "text/plain",
+                    //    "http://www.w3.org/2011/content#chars": "hello there!"
+                    //]

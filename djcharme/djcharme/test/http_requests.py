@@ -1,12 +1,14 @@
 '''
-Created on 31 May 2013
+Created on 25 Jul 2013
 
 @author: mnagni
 '''
 import unittest
-from djcharme.node.actions import insert_rdf
-from rdflib.graph import Graph
+from django.test.client import RequestFactory
+from djcharme.views.node_gate import index
 from rdflib.plugins.stores.sparqlstore import SPARQLUpdateStore
+from rdflib.graph import Graph
+
 
 class Test(unittest.TestCase):
 
@@ -27,34 +29,10 @@ class Test(unittest.TestCase):
         self.graphstore = SPARQLUpdateStore(queryEndpoint = GRAPH_STORE_R,
                                        update_endpoint = GRAPH_STORE_RW)
         
-        
         self.graph = 'stable'
         self.identifier = '%s/%s' % (SPARQL_DATA, self.graph)
         self.g = Graph(store=self.store, identifier=self.identifier)
         self.gs = Graph(store=self.graphstore, identifier=self.identifier)        
-        
-        self.rdf_data = '''
-            <rdf:RDF
-               xmlns:ns1="http://www.w3.org/2011/content#"
-               xmlns:ns2="http://www.w3.org/ns/oa#"
-               xmlns:ns3="http://purl.org/dc/elements/1.1/"
-               xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
-              <rdf:Description rdf:about="http://charm.eu/data/anno/a_1374142212954">
-                <rdf:type rdf:resource="http://charm.eu/ch#anno"/>
-                <ns2:hasTarget rdf:resource="http://localhost:8001/ca960608.dm3"/>
-                <ns2:hasBody rdf:resource="http://charm.eu/data/anno/b_1374142212953"/>
-              </rdf:Description>
-              <rdf:Description rdf:about="http://localhost:8001/ca960608.dm3">
-                <ns3:format>html/text</ns3:format>
-              </rdf:Description>
-              <rdf:Description rdf:about="http://charm.eu/data/anno/b_1374142212953">
-                <rdf:type rdf:resource="http://purl.org/dc/dcmitype/Text"/>
-                <rdf:type rdf:resource="http://www.w3.org/2011/content#ContentAsText"/>
-                <ns3:format>text/plain</ns3:format>
-                <ns1:chars>hello there!</ns1:chars>
-              </rdf:Description>
-            </rdf:RDF>
-        '''
         
         self.turtle_data = '''
             @prefix charm: <http://charm.eu/ch#> . 
@@ -105,25 +83,31 @@ class Test(unittest.TestCase):
                 ]
             }        
         '''
-    
-    '''    
-    def tearDown(self):      
+        g = Graph()        
+        g.parse(data = self.turtle_data, format = 'text/turtle')        
+        for res in g:
+            self.g.add(res)
+        
+        self.factory = RequestFactory()
+
+
+    def tearDown(self):        
         for res in self.g:
             self.g.remove(res)
-    '''
 
-    def test_insert_turtle(self):
-        graph = 'stable'
-        insert_rdf(self.turtle_data, 'text/turtle', graph=graph)
 
-    def test_insert_jsonld(self):
-        graph = 'stable'
-        insert_rdf(self.jsonld_data, 'application/ld+json', graph=graph)
-        
-    def test_insert_rdf(self):
-        graph = 'stable'
-        insert_rdf(self.rdf_data, 'application/rdf+xml', graph=graph)        
+    def test_get_index(self):
+        # Create an instance of a GET request.
+        request = self.factory.get('/index/stable')
+        request.META['HTTP_ACCEPT'] = 'application/rdf+xml'  
+        self.assert_('hasTarget' in str(index(request, 'stable')), 
+                     "Cannot generate index page")
+
+        request = self.factory.get('/index/retired')
+        request.META['HTTP_ACCEPT'] = 'application/rdf+xml' 
+        self.assert_('hasTarget' not in  str(index(request, 'retired')), 
+                     "Cannot generate index page")
 
 if __name__ == "__main__":
-    #import sys;sys.argv = ['', 'Test.testName']
+    #import sys;sys.argv = ['', 'Test.test_get_index']
     unittest.main()

@@ -3,6 +3,7 @@ Created on 14 May 2013
 
 @author: mnagni
 '''
+from rdflib.plugins.stores.sparqlstore import SPARQLUpdateStore
 
 # A sample logging configuration. The only tangible logging
 # performed by this configuration is to send an email to
@@ -44,3 +45,13 @@ LOGGING = {
         }
     }
 }
+
+FUSEKI_URL = 'TRIPLESTORE_URL'
+
+SPARQL_UPDATE = FUSEKI_URL + '/update'
+SPARQL_QUERY = FUSEKI_URL + '/sparql'
+SPARQL_DATA = FUSEKI_URL + '/data'
+
+GRAPH_STORE_R = FUSEKI_URL + '/get'
+GRAPH_STORE_RW = FUSEKI_URL + '/data'
+

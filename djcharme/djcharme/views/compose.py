@@ -10,7 +10,7 @@ import httplib2
 from xml.sax.saxutils import unescape
 from xml.etree.ElementTree import XML, tostring
 import html5lib
-from djcharme.node.actions import load_file, do_update
+from djcharme.node.actions import do_update, insert_rdf
 
 LOGGING = logging.getLogger(__name__)
 
@@ -37,7 +37,7 @@ def compose_annotation(request):
         return mm_render_to_response(request, context, 'compose_annotation.html')
     
     if request.POST:
-            load_file('', request.body)
+            insert_rdf('', request.body)
     #target_link = request.REQUEST['target_link']
     #extract_alternative_links(target_link)
     return mm_render_to_response(request, context, 'compose_annotation.html')

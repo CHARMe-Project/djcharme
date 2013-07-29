@@ -25,36 +25,26 @@ SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRU
 HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE 
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+Created on 26 July 2013
 
-Created on 9 Jan 2012
-
-@author: Maurizio Nagni
+@author: mnagni
 '''
 
-
-import logging
-
-formatter = logging.Formatter(fmt='%(name)s %(levelname)s %(asctime)s %(module)s %(message)s')
-handler = logging.StreamHandler()
-handler.setFormatter(formatter)
-handler.setLevel(logging.DEBUG)
-logging.getLogger().addHandler(handler)
-#Temporary solution!!!
-loggers = ('djcharme',)
-for log_name in loggers:
-    log = logging.getLogger(log_name)
-    log.addHandler(handler)
-    log.setLevel(logging.DEBUG)
-
-LOGGING = logging.getLogger(__name__)
-
-class CharmeMiddleware(object):
-      
-    def process_request(self, request):          
-        pass
-
-    def process_response(self, request, response):                
-        return response
+class CharmeError(Exception):
+    """
+        Raises all the exceptions related to the dj_charme 
+        class operations
+    """    
+    def __init__(self, value):
+        self.value = value
+    def __str__(self):
+        return self.value  
     
-    def process_exception(self, request, exception):
-        print 'ERROR!'
+class SerializeError(CharmeError):
+    """
+        General error during grpah serialization 
+    """    
+    def __init__(self, value):
+        self.value = value
+    def __str__(self):
+        return self.value     

@@ -27,7 +27,8 @@ define(["dojox/xml/parser", "dojox/grid/DataGrid", "dojo/store/Memory",
 		            		}
 		            		if (child.localName == "hasTarget") {
 		            			storedAnnotation.hasTarget 
-				            		= child.getAttribute('rdf:resource')		            			
+				            		= "<a href=\'" + child.getAttribute('rdf:resource') + "\'>" +
+				            		child.getAttribute('rdf:resource') + "</a>"
 		            		}
 		            		if (storedAnnotation.hasBody && storedAnnotation.hasTarget) {
 		            			break
@@ -42,6 +43,7 @@ define(["dojox/xml/parser", "dojox/grid/DataGrid", "dojo/store/Memory",
 					grid = new DataGrid({
 						store: dataStore,
 						query: { annotation: "*" },
+						escapeHTMLInData: false,
 						structure: [
 						            {name: "Annotation", field: "annotation", width: "auto"},
 						            {name: "hasTarget", field: "hasTarget", width: "auto"},
