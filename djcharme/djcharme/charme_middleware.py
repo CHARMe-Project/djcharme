@@ -33,6 +33,10 @@ Created on 9 Jan 2012
 
 
 import logging
+from rdflib.plugins.stores.sparqlstore import SPARQLUpdateStore
+from django.conf import settings
+from django.contrib import messages
+from djcharme import mm_render_to_response_error
 
 formatter = logging.Formatter(fmt='%(name)s %(levelname)s %(asctime)s %(module)s %(message)s')
 handler = logging.StreamHandler()
@@ -50,8 +54,34 @@ LOGGING = logging.getLogger(__name__)
 
 class CharmeMiddleware(object):
       
+    __store = None  
+
+    @classmethod      
+    def __initStore(self): 
+        store = SPARQLUpdateStore(queryEndpoint = getattr(settings,
+                                                              'SPARQL_QUERY'),
+                                update_endpoint = getattr(settings,
+                                                          'SPARQL_UPDATE'), 
+                                postAsEncoded=False)
+        store.bind("rdf", "http://www.w3.org/1999/02/22-rdf-syntax-ns#")
+        store.bind("oa", "http://www.w3.org/ns/oa#")
+        store.bind("chnode", getattr(settings, 'NODE_URI', 'http://localhost'))
+        CharmeMiddleware.__store = store        
+      
+    @classmethod
+    def get_store(self, debug = False):
+        if debug and CharmeMiddleware.__store is None:
+            CharmeMiddleware.__initStore()
+        return CharmeMiddleware.__store
+      
     def process_request(self, request):          
-        pass
+        if not CharmeMiddleware.get_store():
+            try:
+                self.__initStore()
+            except AttributeError, e:
+                messages.add_message(request, messages.ERROR, e)
+                messages.add_message(request, messages.INFO, 'Missing configuration')
+                return mm_render_to_response_error(request, '503.html', 503)
 
     def process_response(self, request, response):                
         return response

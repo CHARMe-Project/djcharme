@@ -4,20 +4,16 @@ Created on 12 Apr 2013
 @author: mnagni
 '''
 
-from rdflib import Graph, URIRef, plugin
-import httplib2
-import urllib
-from SPARQLWrapper.Wrapper import SPARQLWrapper, JSON, RDF
-import json
+from rdflib import Graph, URIRef
 import logging
-from rdflib.plugins.stores.sparqlstore import SPARQLStore, SPARQLUpdateStore
-from rdflib.store import Store
 from django.conf import settings
 from rdflib.namespace import Namespace
 import uuid
+from djcharme.charme_middleware import CharmeMiddleware
+from rdflib.graph import ConjunctiveGraph
 
 LOGGING = logging.getLogger(__name__)
-
+'''
 SELECT_ANNOTATION = """
     PREFIX an: <http://charm.eu/data/anno/> 
     SELECT ?s ?p ?o
@@ -58,41 +54,31 @@ WHERE {
  an:%s ?p ?o .
 }
 """
-
+'''
 FORMAT_MAP = {'jsonld': 'application/ld+json',
               'xml': 'application/rdf+xml',
               'turtle': 'text/turtle'}
 
-__store = SPARQLUpdateStore(queryEndpoint = getattr(settings, 'SPARQL_QUERY'),
-                            update_endpoint = getattr(settings, 'SPARQL_UPDATE'), postAsEncoded=False)
 
-__store.bind("charm", "http://charm.eu/ch#")
-__store.bind("rdf", "http://www.w3.org/1999/02/22-rdf-syntax-ns#")
-__store.bind("oa", "http://www.w3.org/ns/oa#")
 
 # Create a namespace object for the CHARMe namespace.
 CHARM = Namespace("http://charm.eu/ch#")
 RDF = Namespace("http://www.w3.org/1999/02/22-rdf-syntax-ns#")
 OA = Namespace("http://www.w3.org/ns/oa#")
 
-
-#Has to be dumped?
-__graphstore = SPARQLUpdateStore(queryEndpoint = getattr(settings, 'GRAPH_STORE_R'),
-                                  update_endpoint = getattr(settings, 'GRAPH_STORE_RW'), postAsEncoded=False)
-__graphstore.bind("charm", "http://charm.eu/ch#")
-
 ANNO_SUBMITTED = 'submitted'
 ANNO_INVALID = 'invalid'
 ANNO_STABLE = 'stable'
 ANNO_RETIRED = 'retired'
 
-NODE_URI = 'nodeURI'
-ANNO_URI = 'annoURI'
-BODY_URI = 'bodyURI'
+NODE_URI = 'http://localhost/'
+ANNO_URI = 'annoID'
+BODY_URI = 'bodyID'
+CH_NODE = 'chnode'
 
+RESOURCE = 'resource'
 
-def get_store():
-    return __store
+LOGGING = logging.getLogger(__name__)
 
 def get_identifier(graph, baseurl = 'http://dummyhost'):
     '''
@@ -102,7 +88,7 @@ def get_identifier(graph, baseurl = 'http://dummyhost'):
         * graph: String - the graph name
         * return String
     '''
-    return'%s/%s' % (getattr(settings, 'SPARQL_DATA', baseurl), graph)
+    return '%s/%s' % (getattr(settings, 'SPARQL_DATA', baseurl), graph)
 
 
 def generate_graph(store, graph):
@@ -122,8 +108,8 @@ def insert_rdf(data, mimetype, graph = None, store=None):
         * graph:string the named graph
         * store:rdflib.Store if none use the return of get_store()        
     '''
-    if not store:
-        store = get_store()
+    if store is None:
+        store = CharmeMiddleware.get_store()
     tmp_g = Graph()
     #Necessary as RDFlib does not contain the json-ld lib
     if mimetype == 'application/ld+json':
@@ -131,8 +117,23 @@ def insert_rdf(data, mimetype, graph = None, store=None):
     else:        
         tmp_g.parse(data = data, format = mimetype)
     _formatSubmittedAnnotation(tmp_g)
+    final_g = generate_graph(store, graph)
+    
+    for ns in tmp_g.namespaces():
+        final_g.store.bind(str(ns[0]), ns[1])
+     
     for res in tmp_g:
-        generate_graph(store, graph).add(res)
+        final_g.add(res)
+        
+    return final_g
+
+def _formatResourceURIRef(resource_id):
+    '''
+        Returns the URIRef associated with the id for this specific node
+    '''
+    return URIRef('%s%s/%s' % (getattr(settings, 'NODE_URI', NODE_URI), 
+                                RESOURCE,
+                                resource_id))
         
 def _formatNodeURIRef(uriref, anno_uri, body_uri):
     '''
@@ -142,12 +143,18 @@ def _formatNodeURIRef(uriref, anno_uri, body_uri):
         * body_uri:String as hexadecimal
     ''' 
     if isinstance(uriref, URIRef) and NODE_URI in uriref:
-        uriref = uriref.replace(uriref[:uriref.index('nodeURI')], getattr(settings, 'NODE_URI', 'http://localhost'))
-        uriref = URIRef(uriref.replace(NODE_URI, '/data'))
+        uriref = URIRef(uriref.replace(NODE_URI,
+                               getattr(settings,
+                                       'NODE_URI', 
+                                       NODE_URI)))
+
+    if isinstance(uriref, URIRef) and CH_NODE in uriref:
+        uriref = URIRef(uriref.replace(CH_NODE + ':', 
+                                       getattr(settings, 'NODE_URI', NODE_URI)))        
     if isinstance(uriref, URIRef) and ANNO_URI in uriref:
         uriref = URIRef(uriref.replace(ANNO_URI, anno_uri))
     if isinstance(uriref, URIRef) and BODY_URI in uriref:
-        uriref = URIRef(uriref.replace(BODY_URI, body_uri))
+        uriref = URIRef(uriref.replace(BODY_URI, body_uri))    
     return uriref
 
 def _formatSubmittedAnnotation(graph):
@@ -164,184 +171,15 @@ def _formatSubmittedAnnotation(graph):
             o = _formatNodeURIRef(o, anno_uri, body_uri)
             graph.add((s, p, o))
 
+def find_resource_by_id(resource_id):
+    '''
+        Returns the charme resource associated with the given resource_id
+        * resource_id:String
+        * return: an rdflib.Graph object
+    '''
+    g = ConjunctiveGraph(store=CharmeMiddleware.get_store())
+    tmp_g = Graph()
+    for res in g.triples((_formatResourceURIRef(resource_id), None, None)):
+        tmp_g.add(res) 
+    return tmp_g
 #----------------------
-
-
-
-
-__mem_store = plugin.get('IOMemory', Store)()
-
-def serialize_to_RDF(data, mimetype):
-    '''
-    * data:String - the document to serialize
-    * mimetype:String -  the data's mimetype
-    * return:String - Returns an RDF serialization of the given data/mimetype document
-    '''
-    return _generate_graph(data, mimetype).serialize()
-
-def _generate_graph(data, mimetype, store = __mem_store):
-    '''
-        Generate a new Graph
-        * data:String - the document to serialize
-        * mimetype:String -  the data's mimetype
-        * return:rdflib.Graph - Returns an RDFlib graph containing the given data
-    '''
-    g = Graph(store=store)
-    if mimetype == 'application/ld+json':
-        g.parse(data=data, format='json-ld')
-    else:         
-        g.parse(data=data, format=mimetype)
-    return g
-
-def get_graphstore():
-    return __graphstore
-
-
-
-def get_memstore():
-    return __mem_store
-   
-def search_annotations(store=get_memstore(), 
-                      initNs={},
-              initBindings={},
-              queryGraph=None,
-              DEBUG=False):
-    return store.query(DESCRIBE_ANNOTATIONS, 
-                       initNs=initNs,
-                       initBindings=initBindings,
-                       queryGraph=queryGraph,
-                       DEBUG=DEBUG)
-
-def search_annotation(anno_id, store=get_memstore(), 
-                      initNs={},
-              initBindings={},
-              queryGraph=None,
-              DEBUG=False):
-    return store.query(DESCRIBE_ANNOTATION % anno_id, 
-                       initNs=initNs,
-                       initBindings=initBindings,
-                       queryGraph=queryGraph,
-                       DEBUG=DEBUG)
-store=get_graphstore()
-def remove_annotation(anno_id, query_endpoint, ):
-    '''
-        Removed a charme annotation from the triplestore
-        * anno_id the charme annotation ID
-    '''
-    results = do_query(DESCRIBE_ANNOTATION % anno_id) 
-    print results.serialize()
-                
-    sparql_wr = SPARQLUpdateStore(queryEndpoint = getattr(settings, 'SPARQL_QUERY'),
-                                 update_endpoint = getattr(settings, 'GRAPHSTORE_UPDATE'), context_aware=False)
-    for s, p, o in results:
-        print s, p, o      
-        sparql_wr.remove((s, p, o), None)
-
-def do_query(query, endpoint = getattr(settings, 'SPARQL_QUERY'), graph='stable'):
-    sparql_wr = get_graphstore()
-    return sparql_wr.query(query, queryGraph=graph)
-
-def get_by_known_namespace():
-    g = Graph()
-    #g.parse(location=http://dbpedia.org/resource/Elvis_Presley")
-    g.parse(location="http://localhost:8080/openrdf-sesame/repositories/firstTest/rdf-graphs/service?default")
-    for stmt in g.subject_predicates(URIRef("charm:anno")):
-        print stmt
-
-'''
-def insert_rdf(data, mimetype, store=get_memstore()): 
-    return generate_graph(data, mimetype, store = store)
-'''
-
-
-
-def delete_rdf(data, endpoint, graph=''):
-    return _delete_rdf(endpoint, data, graph=None)
-
-'''
-def do_query(query):
-    params = { 'query': query }    
-    endpoint = SPARQL_QUERY % (urllib.urlencode(params))       
-    return get_by_sparql(endpoint)
-'''
-
-def do_update(data, defaultGraph):
-    return _do_query(data, defaultGraph)
-
-def _do_query(query, mimetype = None, endpoint = None, defaultGraph = None):
-    ret_format = None
-    if mimetype == 'application/json':
-        ret_format = JSON    
-    if mimetype == 'application/rdf+xml':
-        ret_format = RDF        
-    
-    results = __do_query(query, ret_format, defaultGraph)
-    
-    #Is an update
-    if mimetype == None:
-        return True
-
-    if not results:
-        return ""
-        
-    if hasattr(results, 'read') and results.headers.type == 'application/rdf+json':
-        return json.load(results)
-    
-    if ret_format == RDF:
-        res = results.read()
-        return res
-    return results
-
-def __do_query(query, ret_format = None, defaultGraph = None):
-    sparql = SPARQLWrapper(getattr(settings, 'SPARQL_QUERY'), updateEndpoint=getattr(settings, 'GRAPHSTORE_UPDATE'), defaultGraph=defaultGraph)
-    sparql.setQuery(query)
-    
-    if ret_format:
-        sparql.setReturnFormat(ret_format)
-        return sparql.query().convert()
-    else:
-        return sparql.query()
-
-    
-
-def get_by_sparql(endpoint):
-    """
-        Executes a query
-    """
-    (response, content) = httplib2.Http().request(endpoint, 'GET')
-    LOGGING.info("Getting: \n %s \n Response: %s" % (endpoint, response.status))
-    return content
-
-def create_graph(endpoint, graph, silent=False):
-    action = "CREATE SILENT GRAPH %s" % graph
-    return _insert_rdf(endpoint, action, content_type='text/turtle')
-
-def _insert_rdf(endpoint, data, graph=None, content_type='application/rdf+xml'):
-    """
-        Inserts a turtle file
-        * endpoint:String - the SPARQL GraphStore endpointURL
-    """     
-    (response, content) = httplib2.Http().request(_assemple_endpoint(endpoint, graph), 
-                                                  method='PUT', 
-                                                  body=data, 
-                                                  headers={ 'content-type': content_type })
-    LOGGING.info("Inserting: \n %s \n Response: %s" % (data, response.status))
-    return response.status     
-
-    
-def _delete_rdf(endpoint, data, graph=None):
-    """
-        Inserts a turtle file
-    """ 
-    (response, content) = httplib2.Http().request(_assemple_endpoint(endpoint, graph), 
-                                                  body=data, 
-                                                  method='DELETE',
-                                                  headers={ 'content-type': 'application/rdf+xml' })
-    LOGGING.info("Deleting graph: \n %s \n Response: %s" % (endpoint, response.status))    
-
-def _assemple_endpoint(endpoint, graph):
-    if graph is None:
-        return endpoint + "?default"
-     
-    params = { 'graph': graph }    
-    return endpoint + "?" + urllib.urlencode(params)    
