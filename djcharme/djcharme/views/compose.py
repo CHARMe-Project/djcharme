@@ -6,16 +6,13 @@ Created on 17 May 2013
 
 import logging
 from djcharme import mm_render_to_response
-import httplib2 
-from xml.sax.saxutils import unescape
-from xml.etree.ElementTree import XML, tostring
-import html5lib
-from djcharme.node.actions import do_update, insert_rdf
+from djcharme.node.actions import  insert_rdf
 
 LOGGING = logging.getLogger(__name__)
 
 HTML_NS = "{http://www.w3.org/1999/xhtml}"
 
+'''
 def extract_alternative_links(link):
     h = httplib2.Http(".cache")
     resp, content = h.request(link, "GET", headers={'accept':'*/*'} )    
@@ -27,6 +24,7 @@ def extract_alternative_links(link):
                 and el.attrib['rel'] == "alternate":
             ret.append(el.get('type'))
     print ret
+'''
 
 def compose_annotation(request):
     context = {}

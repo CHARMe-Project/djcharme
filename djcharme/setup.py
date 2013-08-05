@@ -32,7 +32,6 @@ setup(
 
     # Adds dependencies    
     install_requires = ['cedatheme_mf54',
-                        'httplib2',
                         'rdflib',
                         'sparqlwrapper',
                         'lxml', 
