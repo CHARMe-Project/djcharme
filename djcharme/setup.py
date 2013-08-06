@@ -34,7 +34,6 @@ setup(
     install_requires = ['cedatheme_mf54',
                         'rdflib==4.1-dev',
                         'rdflib-jsonld',
-                        'sparqlwrapper',
                         'lxml', 
                         'ceda-markup'],
 )
