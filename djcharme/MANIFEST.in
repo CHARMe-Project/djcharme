@@ -2,4 +2,3 @@ include LICENSE
 recursive-include resources *
 recursive-include djcharme/templates *
 recursive-include djcharme/static *
-recursive-include surf/plugins *
