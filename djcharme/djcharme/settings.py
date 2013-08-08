@@ -142,9 +142,15 @@ INSTALLED_APPS = (
     "django.contrib.sites",
     "django.contrib.sitemaps",
     "django.contrib.staticfiles",
+    "django_openid_auth",
     "djcharme",
     "cookielaw",
 )
+
+
+
+# For Profiles
+AUTH_PROFILE_MODULE = 'djcharme.userprofile.models.UserProfile'
 
 # List of processors used by RequestContext to populate the context.
 # Each one should be a callable that takes the request object as its

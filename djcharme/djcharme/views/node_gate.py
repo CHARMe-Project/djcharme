@@ -3,17 +3,20 @@ Created on 14 May 2013
 
 @author: mnagni
 '''
-from djcharme.node.actions import CHARM, OA, get_identifier, FORMAT_MAP, \
-    ANNO_SUBMITTED, insert_rdf, find_resource_by_id, RESOURCE
+from djcharme.node.actions import CHARM, OA, FORMAT_MAP, \
+    ANNO_SUBMITTED, insert_rdf, find_resource_by_id, RESOURCE,\
+    _collect_annotations, change_annotation_state, find_annotation_graph
     
 from django.http.response import HttpResponseRedirectBase, Http404, HttpResponse
-from djcharme import mm_render_to_response
+from djcharme import mm_render_to_response, mm_render_to_response_error
 
 import logging
-from rdflib.graph import Graph
-from djcharme.exception import SerializeError
-from djcharme.charme_middleware import CharmeMiddleware
-from djcharme.views import isGET, isPOST
+from djcharme.exception import SerializeError, StoreConnectionError
+from djcharme.views import isGET, isPOST, hasContentType
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required
+import json
+from rdflib.term import URIRef
 
 LOGGING = logging.getLogger(__name__)
 
@@ -52,31 +55,34 @@ def _validateFormat(request):
             raise SerializeError("Cannot generate the required format %s " % req_format)
     return req_format
 
+@login_required
 def index(request, graph = 'stable'):
     '''
         Returns a tabular view of the stored annotations.
         *request: HTTPRequest - the client request
         *graph: String -  the required named graph
         TDB - In a future implemenation this actions should be supported by an OpenSearch implementation
-    '''     
-    g = Graph(store=CharmeMiddleware.get_store(), identifier=get_identifier(graph))
-
-    tmp_g = Graph()             
-    for res in g.triples((None, None, CHARM['anno'])):
-        tmp_g.add(res)
-    for res in g.triples((None, OA['hasTarget'], None)):
-        tmp_g.add(res)        
-    for res in g.triples((None, OA['hasBody'], None)):
-        tmp_g.add(res)
+    '''
+    tmp_g = None
+    try:
+        tmp_g = _collect_annotations(graph)
+    except StoreConnectionError as e:
+        messages.add_message(request, messages.ERROR, e)
+        return mm_render_to_response_error(request, '503.html', 503)
+        
                 
     req_format = _validateFormat(request)
     
     if req_format:
         LOGGING.debug("Annotations %s" % __serialize(tmp_g, req_format = req_format))
         return HttpResponse(__serialize(tmp_g, req_format = req_format))
-            
-    LOGGING.debug("Annotations %s" % tmp_g.serialize())          
-    context = {'results': tmp_g.serialize()}
+
+    states = {}            
+    LOGGING.debug("Annotations %s" % tmp_g.serialize())
+    for s, p, o in tmp_g.triples((None, None, OA['Annotation'])):
+        states[s] = find_annotation_graph(s)   
+        
+    context = {'results': tmp_g.serialize(), 'states': json.dumps(states.value)}
     return mm_render_to_response(request, context, 'viewer.html')
 
 
@@ -90,6 +96,17 @@ def insert(request):
         triples = request.body
         tmp_g = insert_rdf(triples, req_format, graph=ANNO_SUBMITTED) 
         return HttpResponse(__serialize(tmp_g, req_format = req_format))
+        
+def advance_status(request):
+    '''
+        Advance the status of an annotation
+    '''            
+    if isPOST(request) and hasContentType(request, 'application/json'):
+        params = json.loads(request.body) 
+        LOGGING.info("advancing %s to state:%s" % (params.get('annotation'), params.get('toState')))
+        tmp_g = change_annotation_state(params.get('annotation'), params.get('toState'))
+        
+        return HttpResponse(tmp_g.serialize())
         
         
 def process_resource(request, resource_id):  

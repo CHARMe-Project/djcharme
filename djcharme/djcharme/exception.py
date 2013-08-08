@@ -42,9 +42,18 @@ class CharmeError(Exception):
     
 class SerializeError(CharmeError):
     """
-        General error during grpah serialization 
+        General error during graph serialisation 
     """    
     def __init__(self, value):
         self.value = value
     def __str__(self):
-        return self.value     
+        return self.value
+    
+class StoreConnectionError(CharmeError):
+    """
+        General connection error to the triplestore   
+    """    
+    def __init__(self, value):
+        self.value = value
+    def __str__(self):
+        return self.value    

@@ -66,16 +66,16 @@ class CharmeMiddleware(object):
         store.bind("rdf", "http://www.w3.org/1999/02/22-rdf-syntax-ns#")
         store.bind("oa", "http://www.w3.org/ns/oa#")
         store.bind("chnode", getattr(settings, 'NODE_URI', 'http://localhost'))
-        CharmeMiddleware.__store = store        
+        CharmeMiddleware.__store = store
       
     @classmethod
     def get_store(self, debug = False):
-        if debug and CharmeMiddleware.__store is None:
+        if debug or CharmeMiddleware.__store is None:
             CharmeMiddleware.__initStore()
         return CharmeMiddleware.__store
       
     def process_request(self, request):          
-        if not CharmeMiddleware.get_store():
+        if CharmeMiddleware.get_store() is None:
             try:
                 self.__initStore()
             except AttributeError, e:

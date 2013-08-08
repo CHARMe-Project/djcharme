@@ -1,9 +1,10 @@
 {% extends "charme_base.html" %} 
 
 {% block extra_head %}
-
-<link rel="stylesheet" href="//ajax.googleapis.com/ajax/libs/dojo/1.9.0/dojox/grid/resources/tundraGrid.css" />
-<link rel="stylesheet" href="//ajax.googleapis.com/ajax/libs/dojo/1.9.0/dijit/themes/tundra/tundra.css" />
+<link rel="stylesheet" href="//ajax.googleapis.com/ajax/libs/dojo/1.9.0/dijit/themes/claro/claro.css" />
+<link rel="stylesheet" href="//ajax.googleapis.com/ajax/libs/dojo/1.9.0/dojox/grid/resources/Grid.css" />
+<link rel="stylesheet" href="//ajax.googleapis.com/ajax/libs/dojo/1.9.0/dojox/grid/resources/claroGrid.css" />
+<link rel="stylesheet" href="{{ STATIC_URL }}/charme/css/charme.css" />
 {% endblock %}    
 
 {% block main %}
@@ -12,7 +13,11 @@
         margin: 0;
     }
 </style>
-	
+	{% for group in user.groups.all %}
+    	{% if group.name == 'moderator' %}
+       		<input type="hidden" id="node_group" name="node_group" value='True' />
+    	{% endif %}
+	{% endfor %}
 	<script>
 		 var dojoConfig = (function(){
 			return {
@@ -28,6 +33,7 @@
 
 
 <input type="hidden" id="results" name="results" value='{{results|safe}}' />
+<input type="hidden" id="states" name="states" value='{{states|safe}}' />
 
 <!-- 
 <a href="/compose/annotation" target="_blank">
@@ -37,7 +43,8 @@
 
 <div data-dojo-type="dijit/layout/ContentPane" id="gridContainer" 
 					data-dojo-props="region:'center',splitter:true" style="height: 200px;">
-<div id="grid"></div>
+<div id="grid" ></div>
+<div id="clicked"></div>
 </div>
 
 <script src="//ajax.googleapis.com/ajax/libs/dojo/1.9.0/dojo/dojo.js" data-dojo-config="async:true"></script>
@@ -47,7 +54,7 @@
 	         "rdf/Triple", "dojo/dom", "dojo/query", "dojo/domReady!"],
     	function(registry, parser, Triple, dom, query){
 		    var xml = dom.byId("results").value;		    
-		   	Triple.describeAnnotation(xml, "grid");
+		   	Triple.describeAnnotation(xml, states, "grid");
        });
 </script>
 

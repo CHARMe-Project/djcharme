@@ -2,8 +2,6 @@
 from django.conf.urls.defaults import patterns, include, url
 from django.contrib import admin
 
-from django.conf import settings
-
 
 admin.autodiscover()
 
@@ -11,10 +9,11 @@ admin.autodiscover()
 # from django.contrib import admin
 # admin.autodiscover()
 
-urlpatterns = patterns("", 
-    # Change the admin prefix here to use an alternate URL for the
-    # admin interface, which would be marginally more secure.
-    #("^admin/", include(admin.site.urls)),
+urlpatterns = patterns('',
+
+    # Uncomment the next line to enable the admin:
+     (r'^admin/', include(admin.site.urls)),
+     (r'^accounts/login/$', 'django.contrib.auth.views.login', {'template_name': 'login.html'}),
 )
 
 urlpatterns += patterns('djcharme.views.node_gate',
@@ -41,6 +40,9 @@ urlpatterns += patterns('djcharme.views.node_gate',
     (r'^page/(\w+)', 'process_page'),
 )
 
+urlpatterns += patterns('djcharme.views.node_gate',
+    (r'^advance_status', 'advance_status'),
+)
 
 urlpatterns += patterns('djcharme.views.compose',
     (r'^compose/annotation', 'compose_annotation'),
