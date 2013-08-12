@@ -47,3 +47,7 @@ urlpatterns += patterns('djcharme.views.node_gate',
 urlpatterns += patterns('djcharme.views.compose',
     (r'^compose/annotation', 'compose_annotation'),
 )
+
+urlpatterns += patterns('djcharme.views.endpoint',
+    (r'^endpoint', 'endpoint'),
+)

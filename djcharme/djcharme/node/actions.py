@@ -84,11 +84,14 @@ WHERE {
 }
 """
 '''
-FORMAT_MAP = {'jsonld': 'application/ld+json',
+FORMAT_MAP = {'json-ld': 'application/ld+json',
               'xml': 'application/rdf+xml',
               'turtle': 'text/turtle'}
 
-
+def rdf_format_from_mime(mimetype):
+    for k,v in FORMAT_MAP.iteritems():
+        if mimetype == v:
+            return k 
 
 # Create a namespace object for the CHARMe namespace.
 CHARM = Namespace("http://charm.eu/ch#")
@@ -110,7 +113,7 @@ RESOURCE = 'resource'
 LOGGING = logging.getLogger(__name__)
 
 
-def get_identifier(graph, baseurl = 'http://dummyhost'):
+def format_graphIRI(graph, baseurl = 'http://dummyhost'):
     '''
         Builds a named graph URIRef using, if exists, 
         a settings.SPARQL_QUERY parameter.
@@ -119,6 +122,9 @@ def get_identifier(graph, baseurl = 'http://dummyhost'):
             the graph name
         * return String
     '''
+    if 'http://' in graph:
+        return graph
+    
     return '%s/%s' % (getattr(settings, 'SPARQL_DATA', baseurl), graph)
 
 def generate_graph(store, graph):
@@ -128,7 +134,7 @@ def generate_graph(store, graph):
             the graph name
         * return:rdflib.Graph - Returns an RDFlib graph containing the given data
     '''
-    return Graph(store=store, identifier = get_identifier(graph))
+    return Graph(store=store, identifier = format_graphIRI(graph))
 
 def insert_rdf(data, mimetype, graph = None, store=None):
     '''
@@ -146,10 +152,8 @@ def insert_rdf(data, mimetype, graph = None, store=None):
         store = CharmeMiddleware.get_store()
     tmp_g = Graph()
     #Necessary as RDFlib does not contain the json-ld lib
-    if mimetype == 'application/ld+json':
-        tmp_g.parse(data=data, format='json-ld')
-    else:        
-        tmp_g.parse(data = data, format = mimetype)
+
+    tmp_g.parse(data = data, format = rdf_format_from_mime(mimetype))
     _formatSubmittedAnnotation(tmp_g)
     final_g = generate_graph(store, graph)
     
@@ -167,7 +171,7 @@ def _formatResourceURIRef(resource_id):
     '''
     if resource_id.startswith('http:'):
         return URIRef(resource_id) 
-    return URIRef('%s%s/%s' % (getattr(settings, 'NODE_URI', NODE_URI), 
+    return URIRef('%s/%s/%s' % (getattr(settings, 'NODE_URI', NODE_URI), 
                                 RESOURCE,
                                 resource_id))
         
@@ -182,11 +186,11 @@ def _formatNodeURIRef(uriref, anno_uri, body_uri):
         uriref = URIRef(uriref.replace(NODE_URI,
                                getattr(settings,
                                        'NODE_URI', 
-                                       NODE_URI)))
+                                       NODE_URI) + '/'))
 
     if isinstance(uriref, URIRef) and CH_NODE in uriref:
         uriref = URIRef(uriref.replace(CH_NODE + ':', 
-                                       getattr(settings, 'NODE_URI', NODE_URI)))        
+                                       getattr(settings, 'NODE_URI', NODE_URI) + '/'))        
     if isinstance(uriref, URIRef) and ANNO_URI in uriref:
         uriref = URIRef(uriref.replace(ANNO_URI, anno_uri))
     if isinstance(uriref, URIRef) and BODY_URI in uriref:

@@ -4,7 +4,7 @@ Created on 2 Aug 2013
 @author: mnagni
 '''
 import unittest
-from djcharme.node.actions import get_identifier
+from djcharme.node.actions import format_graphIRI
 from djcharme.views.node_gate import index
 
 
@@ -20,7 +20,7 @@ class Test(unittest.TestCase):
 
     def testName(self):
 
-        get_identifier('myGraph', baseurl = 'http://localhost')
+        format_graphIRI('myGraph', baseurl = 'http://localhost')
 
 
 if __name__ == "__main__":

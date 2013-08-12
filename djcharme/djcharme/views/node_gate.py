@@ -12,7 +12,7 @@ from djcharme import mm_render_to_response, mm_render_to_response_error
 
 import logging
 from djcharme.exception import SerializeError, StoreConnectionError
-from djcharme.views import isGET, isPOST, hasContentType
+from djcharme.views import isGET, isPOST, content_type, validateMimeFormat
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 import json
@@ -31,13 +31,7 @@ def __serialize(graph, req_format = 'application/rdf+xml'):
         req_format = 'json-ld'
     return graph.serialize(format=req_format)
 
-def _validateMimeFormat(request):
-    req_format = request.META.get('HTTP_ACCEPT', None)
-    if req_format:
-        for k,v in FORMAT_MAP.iteritems():
-            if req_format == v:
-                return k
-    return None
+
 
 def _validateFormat(request):
     '''
@@ -59,8 +53,8 @@ def _validateFormat(request):
 def index(request, graph = 'stable'):
     '''
         Returns a tabular view of the stored annotations.
-        *request: HTTPRequest - the client request
-        *graph: String -  the required named graph
+        - HTTPRequest **request** the client request
+        - string **graph**  the required named graph
         TDB - In a future implemenation this actions should be supported by an OpenSearch implementation
     '''
     tmp_g = None
@@ -82,7 +76,7 @@ def index(request, graph = 'stable'):
     for s, p, o in tmp_g.triples((None, None, OA['Annotation'])):
         states[s] = find_annotation_graph(s)   
         
-    context = {'results': tmp_g.serialize(), 'states': json.dumps(states.value)}
+    context = {'results': tmp_g.serialize(), 'states': json.dumps(states)}
     return mm_render_to_response(request, context, 'viewer.html')
 
 
@@ -92,7 +86,7 @@ def insert(request):
     '''
     req_format = _validateFormat(request)
     
-    if request.method == 'POST':
+    if isPOST(request):
         triples = request.body
         tmp_g = insert_rdf(triples, req_format, graph=ANNO_SUBMITTED) 
         return HttpResponse(__serialize(tmp_g, req_format = req_format))
@@ -101,7 +95,7 @@ def advance_status(request):
     '''
         Advance the status of an annotation
     '''            
-    if isPOST(request) and hasContentType(request, 'application/json'):
+    if isPOST(request) and 'application/json' in content_type(request):
         params = json.loads(request.body) 
         LOGGING.info("advancing %s to state:%s" % (params.get('annotation'), params.get('toState')))
         tmp_g = change_annotation_state(params.get('annotation'), params.get('toState'))
@@ -110,7 +104,7 @@ def advance_status(request):
         
         
 def process_resource(request, resource_id):  
-    if _validateMimeFormat(request):           
+    if validateMimeFormat(request):           
         LOGGING.info("Redirecting to /%s/%s" % (RESOURCE, resource_id))
         return HttpResponseSeeOther('/%s/%s' % (RESOURCE, resource_id))
     if 'text/html' in request.META.get('HTTP_ACCEPT', None):
@@ -119,7 +113,7 @@ def process_resource(request, resource_id):
     return Http404()
         
 def process_data(request, resource_id):
-    req_format = _validateMimeFormat(request)
+    req_format = validateMimeFormat(request)
     if req_format is None:
         return process_resource(request, resource_id)
             

@@ -4,18 +4,19 @@ Created on 25 Jul 2013
 @author: mnagni
 '''
 
-from django.test.client import RequestFactory
+
 from djcharme.views.node_gate import index, insert, advance_status
-from rdflib.graph import Graph
 from djcharme.local_settings import SPARQL_DATA
 from djcharme.charme_middleware import CharmeMiddleware
 from djcharme.test import turtle_usecase1
+from django.contrib.auth.models import User
+from django.test.client import RequestFactory
+
+from rdflib.graph import Graph
 
 import unittest
-import logging
-from django.contrib.auth.models import User
 import json
-from djcharme.node.actions import ANNO_SUBMITTED
+import logging
 
 LOGGING = logging.getLogger(__name__)
 
