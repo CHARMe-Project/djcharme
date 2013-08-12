@@ -3,7 +3,22 @@ Created on 14 May 2013
 
 @author: mnagni
 '''
-from rdflib.plugins.stores.sparqlstore import SPARQLUpdateStore
+
+#############
+# DATABASES #
+#############
+'''
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.sqlite3', # Add 'postgresql_psycopg2', 'mysql', 'sqlite3' or 'oracle'.
+        'NAME': '<DB_PATH>',                      # Or path to database file if using sqlite3.
+        # The following settings are not used with sqlite3:
+        'USER': '',
+        'PASSWORD': '',
+        'HOST': '',                      # Empty for localhost through domain sockets or '127.0.0.1' for localhost through TCP.
+        'PORT': '',                      # Set to empty string for default.
+    }
+}
 
 # A sample logging configuration. The only tangible logging
 # performed by this configuration is to send an email to
@@ -46,14 +61,20 @@ LOGGING = {
     }
 }
 
-'''
-FUSEKI_URL = 'http://localhost:3333/privateds'
-NODE_URI = 'http://proteus.badc.rl.ac.uk'
+def _format_fuseki_url(service):
+    return 'http://%s:%s/%s/%s' % (FUSEKI_URL, FUSEKI_PORT, NODE_ROOT_URL, service)
 
-SPARQL_UPDATE = FUSEKI_URL + '/update'
-SPARQL_QUERY = FUSEKI_URL + '/sparql'
-SPARQL_DATA = FUSEKI_URL + '/data'
+FUSEKI_URL = 'localhost'
+FUSEKI_PORT = '3333'
+NODE_URI = 'http://proteus.badc.rl.ac.uk:8000'
+NODE_ROOT_URL = 'privateds'
 
-GRAPH_STORE_R = FUSEKI_URL + '/get'
-GRAPH_STORE_RW = FUSEKI_URL + '/data'
+
+SPARQL_UPDATE = _format_fuseki_url('update')
+SPARQL_QUERY = _format_fuseki_url('sparql')
+SPARQL_DATA = _format_fuseki_url('data')
+
+GRAPH_STORE_RW_PATH = '/%s/%s' % (NODE_ROOT_URL, 'data')
+GRAPH_STORE_DATA = FUSEKI_URL + NODE_ROOT_URL + '/data'
+GRAPH_STORE_R = FUSEKI_URL + NODE_ROOT_URL +'/get'
 '''
