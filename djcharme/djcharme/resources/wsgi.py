@@ -3,12 +3,12 @@ import site
 import os
 
 #this is the path to the virtualenv python site-package dir
-vepath = '/opt/toTrash/ceda_resource_registration/lib64/python2.6/site-packages'
+vepath = 'VEPATH_PAR'
 #this is the path to dir parent to the django project 
-djangoPath = '/opt/toTrash/wsgiauth/ceda_resource_registration/ceda_resource_registration'
+djangoPath = 'DJANGO_PATH'
 
 #this is the project's name
-projectLibPath = '/opt/toTrash/wsgiauth/ceda_resource_registration'
+projectLibPath = 'PROJECT_LIB_PATH'
 
 #EXAMPLE
 #vepath = '/home/jenkins/testEnv/pyEnv/ve/cedaManager/lib/python2.6/site-packages'
@@ -35,7 +35,8 @@ for item in list(sys.path):
         sys.path.remove(item)
 sys.path[:0] = new_sys_path
 
-os.environ['DJANGO_SETTINGS_MODULE'] = 'ceda_resource_registration.settings'
+os.environ['DJANGO_SETTINGS_MODULE'] = 'settings'
 
 import django.core.handlers.wsgi
 application = django.core.handlers.wsgi.WSGIHandler()
+
