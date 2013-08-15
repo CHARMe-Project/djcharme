@@ -1,16 +1,15 @@
 {% extends "charme_base.html" %} 
 
 {% block extra_css %}
-<link rel="stylesheet" href="{{ STATIC_URL }}css/djcharme_style.css" media="screen">
-<link rel="stylesheet" href="//ajax.googleapis.com/ajax/libs/dojo/1.9.0/dijit/themes/claro/claro.css" media="screen">
-<script src="{{ STATIC_URL }}/charme/jsonld.js"></script>
+<link rel="stylesheet" href="{{ STATIC_URL }}charme/css/charme.css" media="screen">
+<link rel="stylesheet" href="//ajax.googleapis.com/ajax/libs/dojo/1.9.1/dijit/themes/claro/claro.css" media="screen">
+<script src="{{ STATIC_URL }}charme/jsonld.js"></script>
 {% endblock %}
 
 
 {% block main %}
 		<script>
-			var processor = JsonLdProcessor();
-			alert(obj);
+			
 		
 		
 			 var dojoConfig = (function(){
@@ -19,7 +18,7 @@
 					isDebug: true,
 					packages: [{
 						name: "rdf",
-						location: {{ STATIC_URL }} + "charme/rdf"
+						location: "{{ STATIC_URL }}charme/rdf"
 					}]
 				};
 			})();
@@ -63,7 +62,7 @@
 	
 
 <!-- load dojo and provide config via data attribute -->
-<script src="//ajax.googleapis.com/ajax/libs/dojo/1.9.0/dojo/dojo.js" data-dojo-config="async:true"></script>
+<script src="//ajax.googleapis.com/ajax/libs/dojo/1.9.1/dojo/dojo.js" data-dojo-config="async:true"></script>
 <script type="text/javascript">
 require(["dijit/registry", "dojo/parser", "dojo/dom", "dojo/cookie", "dojo/dom-style",
          "dojox/form/Manager",         
