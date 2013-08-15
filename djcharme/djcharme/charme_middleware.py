@@ -38,8 +38,8 @@ from django.conf import settings
 from django.contrib import messages
 from djcharme import mm_render_to_response_error
 from django.contrib.auth.models import User
-from django.contrib.auth.management import create_superuser
 from django.db.utils import DatabaseError
+from django.http.response import HttpResponse
 
 formatter = logging.Formatter(fmt='%(name)s %(levelname)s %(asctime)s %(module)s %(message)s')
 handler = logging.StreamHandler()
@@ -86,7 +86,10 @@ class CharmeMiddleware(object):
             CharmeMiddleware.__initStore()
         return CharmeMiddleware.__store
       
-    def process_request(self, request): 
+    def process_request(self, request):
+        if request.method == 'OPTIONS':
+            return HttpResponse(status=200)             
+         
         if CharmeMiddleware.get_store() is None:
             try:
                 self.__initStore()
@@ -94,10 +97,17 @@ class CharmeMiddleware(object):
                 messages.add_message(request, messages.ERROR, e)
                 messages.add_message(request, messages.INFO, 'Missing configuration')
                 return mm_render_to_response_error(request, '503.html', 503)
-                
+
         self._validate_request(request)
 
-    def process_response(self, request, response):                
+    def process_response(self, request, response):
+        if request.method == 'OPTIONS':
+            response['Access-Control-Allow-Methods'] = "POST, GET, OPTIONS"                 
+            response['Access-Control-Allow-Headers'] = "origin, x-requested-with, content-type"
+            response['Access-Control-Allow-Origin'] = request.META.get('HTTP_ORIGIN', 'http://localhost:8000')
+            response['Access-Control-Max-Age'] = 10
+            response['Content-Type'] = "text/plain"
+            return response
         return response
     
     def process_exception(self, request, exception):

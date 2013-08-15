@@ -7,6 +7,7 @@ Created on 17 May 2013
 import logging
 from djcharme import mm_render_to_response
 from djcharme.node.actions import  insert_rdf
+from djcharme.views import isPOST
 
 LOGGING = logging.getLogger(__name__)
 
@@ -34,7 +35,7 @@ def compose_annotation(request):
         context['target_link'] = request.REQUEST.get('target_link')
         return mm_render_to_response(request, context, 'compose_annotation.html')
     
-    if request.POST:
+    if isPOST(request):
             insert_rdf('', request.body)
     #target_link = request.REQUEST['target_link']
     #extract_alternative_links(target_link)

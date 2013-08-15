@@ -12,11 +12,13 @@ from djcharme import mm_render_to_response, mm_render_to_response_error
 
 import logging
 from djcharme.exception import SerializeError, StoreConnectionError
-from djcharme.views import isGET, isPOST, content_type, validateMimeFormat
+from djcharme.views import isGET, isPOST, content_type, validateMimeFormat,\
+    isOPTIONS
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 import json
 from rdflib.term import URIRef
+from django.views.decorators.csrf import csrf_exempt
 
 LOGGING = logging.getLogger(__name__)
 
@@ -44,9 +46,12 @@ def _validateFormat(request):
     if isPOST(request):
         req_format = request.environ.get('CONTENT_TYPE', None)        
     
-    if req_format:
-        if req_format not in FORMAT_MAP.values():
-            raise SerializeError("Cannot generate the required format %s " % req_format)
+    if req_format is None:
+        raise SerializeError("Cannot generate the required format %s " % req_format)
+    
+    if req_format not in FORMAT_MAP.values():
+        raise SerializeError("Cannot generate the required format %s " % req_format)
+    
     return req_format
 
 def index(request, graph = 'stable'):
@@ -78,17 +83,22 @@ def index(request, graph = 'stable'):
     context = {'results': tmp_g.serialize(), 'states': json.dumps(states)}
     return mm_render_to_response(request, context, 'viewer.html')
 
-@login_required
+@csrf_exempt
 def insert(request):
     '''
         Inserts in the triplestore a new annotation under the "ANNO_SUBMITTED" graph
     '''
-    req_format = _validateFormat(request)
+    try:
+        req_format = _validateFormat(request)
+        
+    except SerializeError as e:
+        messages.add_message(request, messages.ERROR, e)
+        return mm_render_to_response_error(request, '400.html', 400)
     
-    if isPOST(request):
+    if isPOST(request) or isOPTIONS(request):
         triples = request.body
         tmp_g = insert_rdf(triples, req_format, graph=ANNO_SUBMITTED) 
-        return HttpResponse(__serialize(tmp_g, req_format = req_format))
+        return HttpResponse(__serialize(tmp_g, req_format = req_format), content_type=req_format)
         
 def advance_status(request):
     '''

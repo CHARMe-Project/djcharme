@@ -12,6 +12,9 @@ def isDELETE(request):
 def isPOST(request):
     return request.method == 'POST'
 
+def isOPTIONS(request):
+    return request.method == 'OPTIONS'
+
 def isHEAD(request):
     return request.method == 'HEAD'
 
