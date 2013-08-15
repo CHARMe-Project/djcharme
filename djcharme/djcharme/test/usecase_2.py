@@ -12,7 +12,7 @@ from djcharme.node.actions import ANNO_SUBMITTED
 from rdflib.graph import Graph
 from djcharme.local_settings import SPARQL_DATA
 from djcharme.charme_middleware import CharmeMiddleware
-from djcharme.test import _dump_store, turtle_usecase2_data_describing,\
+from djcharme.test import _dump_store, \
     turtle_usecase2_data_citing
 from djcharme.views.node_gate import insert
 from django.test.client import RequestFactory

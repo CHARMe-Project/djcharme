@@ -37,6 +37,9 @@ from rdflib.plugins.stores.sparqlstore import SPARQLUpdateStore
 from django.conf import settings
 from django.contrib import messages
 from djcharme import mm_render_to_response_error
+from django.contrib.auth.models import User
+from django.contrib.auth.management import create_superuser
+from django.db.utils import DatabaseError
 
 formatter = logging.Formatter(fmt='%(name)s %(levelname)s %(asctime)s %(module)s %(message)s')
 handler = logging.StreamHandler()
@@ -67,6 +70,15 @@ class CharmeMiddleware(object):
         store.bind("oa", "http://www.w3.org/ns/oa#")
         store.bind("chnode", getattr(settings, 'NODE_URI', 'http://localhost'))
         CharmeMiddleware.__store = store
+        
+        #Creates a superuser if there is not any
+        try:
+            users = User.objects.all()
+            if len(users) == 0:
+                User.objects.create_superuser('admin', '', 'admin')
+        except DatabaseError:
+            LOGGING.error("Cannot find or create an application superuser")         
+      
       
     @classmethod
     def get_store(self, debug = False):
@@ -74,7 +86,7 @@ class CharmeMiddleware(object):
             CharmeMiddleware.__initStore()
         return CharmeMiddleware.__store
       
-    def process_request(self, request):          
+    def process_request(self, request): 
         if CharmeMiddleware.get_store() is None:
             try:
                 self.__initStore()
@@ -82,9 +94,26 @@ class CharmeMiddleware(object):
                 messages.add_message(request, messages.ERROR, e)
                 messages.add_message(request, messages.INFO, 'Missing configuration')
                 return mm_render_to_response_error(request, '503.html', 503)
+                
+        self._validate_request(request)
 
     def process_response(self, request, response):                
         return response
     
     def process_exception(self, request, exception):
         print 'ERROR!'
+
+    def _get_user_roles(self, user):
+        #user.roles = contact_role_server
+        #return user
+        pass
+
+    def _is_authenticated(self, request):
+        pass
+
+    def _validate_request(self, request):
+        user = self._is_authenticated(request)
+        #Here should compare:
+        # - the request method ('get/put/post/delete')
+        # - the request resource ('URI')
+        pass

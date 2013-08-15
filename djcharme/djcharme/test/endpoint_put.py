@@ -6,7 +6,6 @@ Created on 25 Jul 2013
 
 from django.test.client import RequestFactory
 from rdflib.graph import Graph
-from djcharme.local_settings import SPARQL_DATA
 from djcharme.charme_middleware import CharmeMiddleware
 from djcharme.test import turtle_usecase1
 
@@ -14,6 +13,7 @@ import unittest
 import logging
 from djcharme.node.actions import format_graphIRI
 from djcharme.views.endpoint import endpoint
+from djcharme import settings
 
 LOGGING = logging.getLogger(__name__)
 
@@ -25,7 +25,8 @@ class Test(unittest.TestCase):
         
         
         self.graph = 'submitted'
-        self.identifier = '%s/%s' % (SPARQL_DATA, self.graph)
+        self.identifier = '%s/%s' % (getattr(settings, 'SPARQL_DATA'), 
+                                     self.graph)
         self.g = Graph(store=self.store, identifier=self.identifier)               
         self.factory = RequestFactory()       
 

@@ -49,7 +49,6 @@ def _validateFormat(request):
             raise SerializeError("Cannot generate the required format %s " % req_format)
     return req_format
 
-@login_required
 def index(request, graph = 'stable'):
     '''
         Returns a tabular view of the stored annotations.
@@ -79,7 +78,7 @@ def index(request, graph = 'stable'):
     context = {'results': tmp_g.serialize(), 'states': json.dumps(states)}
     return mm_render_to_response(request, context, 'viewer.html')
 
-
+@login_required
 def insert(request):
     '''
         Inserts in the triplestore a new annotation under the "ANNO_SUBMITTED" graph

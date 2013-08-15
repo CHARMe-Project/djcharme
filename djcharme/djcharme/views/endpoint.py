@@ -3,17 +3,18 @@ Created on 14 May 2013
 
 @author: mnagni
 '''
-from djcharme.node.actions import CHARM, OA, FORMAT_MAP, \
+from djcharme.node.actions import OA, FORMAT_MAP, \
     ANNO_SUBMITTED, insert_rdf, find_resource_by_id, RESOURCE,\
     _collect_annotations, change_annotation_state, find_annotation_graph,\
     generate_graph, rdf_format_from_mime
     
 from django.http.response import HttpResponseRedirectBase, Http404, HttpResponse
-from djcharme import mm_render_to_response, mm_render_to_response_error
+from djcharme import mm_render_to_response, mm_render_to_response_error,\
+    settings
 
 import logging
 from djcharme.exception import SerializeError, StoreConnectionError
-from djcharme.views import isGET, isPOST, content_type, isPUT, isDELETE,\
+from djcharme.views import isGET, isPOST, isPUT, isDELETE,\
     isHEAD, isPATCH, http_accept, content_type
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
@@ -21,7 +22,6 @@ import json
 from djcharme.charme_middleware import CharmeMiddleware
 from rdflib.graph import ConjunctiveGraph
 import httplib
-from djcharme.local_settings import FUSEKI_URL, GRAPH_STORE_RW_PATH, FUSEKI_PORT
 import urllib
 from rdflib.term import URIRef
 
@@ -56,13 +56,15 @@ def _get_connection():
         Returns an httplib.HTTPConnection instance pointing to 
         settings.FUSEKI_URL
     '''
-    return httplib.HTTPConnection(FUSEKI_URL, port = FUSEKI_PORT)
+    return httplib.HTTPConnection(getattr(settings, 'FUSEKI_URL'), 
+                                  port = getattr(settings, 'FUSEKI_PORT'))
 
 def _submit_get(graph, accept):
     headers = {"Accept": accept}
     params = urllib.urlencode({'graph': graph})
     conn = _get_connection()
-    conn.request('GET', GRAPH_STORE_RW_PATH, params, headers)
+    conn.request('GET', getattr(settings, 'GRAPH_STORE_RW_PATH'), 
+                 params, headers)
     response = conn.getresponse() 
     return response
 
