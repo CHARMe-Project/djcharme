@@ -4,34 +4,35 @@ Created on 14 May 2013
 @author: mnagni
 '''
 from djcharme.node.actions import OA, FORMAT_MAP, \
-    ANNO_SUBMITTED, insert_rdf, find_resource_by_id, RESOURCE, \
-    _collect_annotations, change_annotation_state, find_annotation_graph    
-from django.http.response import HttpResponseRedirectBase, Http404, HttpResponse
+ANNO_SUBMITTED, insert_rdf, find_resource_by_id, RESOURCE, \
+_collect_annotations, change_annotation_state, find_annotation_graph    
 from djcharme import mm_render_to_response, mm_render_to_response_error
-
-import logging
 from djcharme.exception import SerializeError, StoreConnectionError
 from djcharme.views import isGET, isPOST, content_type, validateMimeFormat,\
     isOPTIONS
+
+from django.http.response import HttpResponseRedirectBase, Http404, HttpResponse
 from django.contrib import messages
-import json
 from django.views.decorators.csrf import csrf_exempt
+
+import logging
+import json
 
 LOGGING = logging.getLogger(__name__)
 
 class HttpResponseSeeOther(HttpResponseRedirectBase):
-    """
+    '''
         Implements a simple HTTP 303 response
-    """
+    '''
     status_code = 303
 
 def __serialize(graph, req_format = 'application/rdf+xml'):
-    """
+    '''
         Serializes a graph according to the required format
         - rdflib:Graph **graph** the graph to serialize
         - string **req_format** the serialization format
         - **return** the serialized graph                
-    """         
+    '''         
     if req_format == 'application/ld+json':
         req_format = 'json-ld'
     return graph.serialize(format=req_format)
@@ -45,11 +46,11 @@ def _validateFormat(request):
     '''
     req_format = None
     
-    if request.GET.get('format', 'html') == 'html':
-        return 'html'
-    
     if isGET(request):
+        if request.GET.get('format', 'html') == 'html':
+            return 'html'
         req_format = FORMAT_MAP.get(request.GET.get('format', None))        
+    
     if isPOST(request):
         req_format = request.environ.get('CONTENT_TYPE', None)        
     
