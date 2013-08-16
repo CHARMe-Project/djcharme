@@ -1,0 +1,75 @@
+<html>
+<head>
+
+<meta http-equiv="Content-type" content="text/html; charset=utf-8">
+<meta name="viewport" content="width=device-width">
+<meta name="keywords" content="">
+<meta name="description" content="">
+<title></title> 
+
+<link rel="stylesheet" href="//ajax.googleapis.com/ajax/libs/dojo/1.9.1/dijit/themes/claro/claro.css" media="screen">
+</head>
+
+<body>
+
+
+	<form data-dojo-type="dojox/form/Manager" id="composeAnnotation">
+
+		<textarea id="annotation" name="textarea2" data-dojo-type="dijit/form/Textarea" style="width:200px;">
+			Lorem ipsum dolor sit amet, consectetuer adipiscing elit, 
+			sed diam nonummy nibh euismod tincidunt ut laoreet dolore 
+			magna aliquam erat volutpat.
+		</textarea>
+				
+		<button data-dojo-type="dijit/form/Button"
+			id="submit_annotation" data-dojo-attach-point="submit_annotation">Submit
+			<script type="dojo/on" data-dojo-event="click" data-dojo-args="evt">
+        		require(["dojo", "dojo/dom", "dijit/registry"], function(dojo, dom, registry) {
+		 			// The parameters to pass to xhrPost, the message, and the url to send it to
+					// Also, how to handle the return and callbacks.
+					    
+				var xhrArgs = {
+					url: "http://http://charme-dev.cems.rl.ac.uk/djcharme/insert/annotation",
+					postData: dom.byId("annotation").value,
+					handleAs: "text",
+ 					headers: {
+						"Content-Type": "text/turtle",
+						"Accept": "*/*"
+ 					},
+					load: function(data){
+						dom.byId("response2").innerHTML = "Message posted.";
+					},
+					error: function(error){
+	 					// We'll 404 in the demo, but that's okay.  We don't have a 'postIt' service on the
+	 					// docs server.
+						alert(error)
+	 					dom.byId("response2").innerHTML = "Error.";
+					}
+				}
+				dom.byId("response2").innerHTML = "Message being sent..."
+				console.log(xhrArgs.postData)
+				// Call the asynchronous xhrPost
+				var deferred = dojo.xhrPost(xhrArgs);
+				} 
+			);
+    		</script>
+		</button>		
+	</form>
+	
+	<div id="response2"></div>
+
+	
+
+<!-- load dojo and provide config via data attribute -->
+<script src="http://ajax.googleapis.com/ajax/libs/dojo/1.9.1/dojo/dojo.js" data-dojo-config="async:true"></script>
+<script type="text/javascript">
+require(["dijit/registry", "dojo/parser", "dojo/dom",         
+         "dijit/form/Textarea", 
+         "dijit/form/Button",
+         "dojo/domReady!"],function(registry, parser, dom) {
+    parser.parse();
+});
+</script>
+
+</body>
+</html>
