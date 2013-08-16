@@ -29,12 +29,13 @@
 					    
 				var xhrArgs = {
 					url: "http://charme-dev.cems.rl.ac.uk/djcharme/insert/annotation",
+                                        //url: "http://proteus.badc.rl.ac.uk:8000/insert/annotation",
 					postData: dom.byId("annotation").value,
 					handleAs: "text",
  					headers: {
-						"Origin": "http://localhost",
-						"Content-Type": "text/turtle",
-						"Accept": "*/*"
+						//"X-Requested-With": "",
+						"Content-Type": "text/turtle"
+						//"Accept": "*/*"
  					},
 					load: function(data){
 						dom.byId("response2").innerHTML = "Message posted.";
