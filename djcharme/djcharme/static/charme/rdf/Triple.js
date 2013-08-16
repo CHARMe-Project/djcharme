@@ -15,46 +15,53 @@ define(["dojox/xml/parser", "dojox/grid/DataGrid", "dojo/store/Memory",
 					var states_obj = JSON.parse(states.value);
 
 					var value = queryResult.iterateNext();
-					var storedAnnotation = ''
+					var storedAnnotation = '';
 		            while(value){
-		            	store.put({annotation:value.getAttribute('rdf:about')})
-		            	storedAnnotation = store.get(value.getAttribute('rdf:about'))
-		            	storedAnnotation.state = states_obj[storedAnnotation.annotation]
+		            	store.put({annotation:value.getAttribute('rdf:about')});
+		            	storedAnnotation = store.get(value.getAttribute('rdf:about'));
+		            	storedAnnotation.state = states_obj[storedAnnotation.annotation];
 		            	var nodes = value.childNodes;
-		            	var child = ""
+		            	var child = "";
 		            	for(i=0; i<nodes.length; i++) {
 		            		child = nodes[i];
 		            		if (child.localName == "hasBody") {
-		            			storedAnnotation.hasBody 
-		            				= "<a href=\'" + child.getAttribute('rdf:resource') + "\'>" +
-				            		child.getAttribute('rdf:resource') + "</a>" 		            			
+		            			storedAnnotation.hasBody = child.getAttribute('rdf:resource')		            			
 		            		}
 		            		if (child.localName == "hasTarget") {
-		            			storedAnnotation.hasTarget 
-				            		= "<a href=\'" + child.getAttribute('rdf:resource') + "\'>" +
-				            		child.getAttribute('rdf:resource') + "</a>"
+		            			storedAnnotation.hasTarget = child.getAttribute('rdf:resource');
 		            		}
 		            		if (storedAnnotation.hasBody && storedAnnotation.hasTarget) { 
-		            			break
+		            			break;
 		            		}
 		            	}
 		                value = queryResult.iterateNext();
 		            }
-					 
 					
-					dataStore = new ObjectStore({ objectStore: store });
+					var dataStore = new ObjectStore({ objectStore: store });
 
-					grid = new DataGrid({
+					var grid = new DataGrid({
 						store: dataStore,
 						query: { annotation: "*" },
 						escapeHTMLInData: false,
 						structure: 
 						            [
 						             new gridCells.RowIndex({ width: "10%" }),
-						             {name: "Annotation", field: "annotation", width: "auto"},
-						             {name: "hasTarget", field: "hasTarget", width: "auto"},
-						             {name: "hasBody", field: "hasBody", width: "auto"},
-						             {name: "state", field: "state", width: "auto"}
+						             {name: "Annotation", field: "annotation", width: "100%",
+						            	 formatter: function(value) {  
+						            	 	return "<a href=\'" + value + "\'>" + value + "</a>"; 
+						             	 }
+						             },
+						             {name: "hasTarget", field: "hasTarget", width: "100%",
+						            	 formatter: function(value) {  
+					            	 		return "<a href=\'" + value + "\'>" + value + "</a>"; 
+					             	 	}
+						             },
+						             {name: "hasBody", field: "hasBody", width: "100%",
+					            	 formatter: function(value) {  
+				            	 		return "<a href=\'" + value + "\'>" + value + "</a>"; 				             	 	
+						             	}
+						             },						             
+						             {name: "state", field: "state", width: "100%"}
 						            ],
 						selectionMode: "multiple"
 					 },div_id); 
