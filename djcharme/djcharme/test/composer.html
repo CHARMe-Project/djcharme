@@ -6,14 +6,13 @@
 <meta name="keywords" content="">
 <meta name="description" content="">
 <title></title> 
-
-<link rel="stylesheet" href="//ajax.googleapis.com/ajax/libs/dojo/1.9.1/dijit/themes/claro/claro.css" media="screen">
+<link rel="stylesheet" href="http://ajax.googleapis.com/ajax/libs/dojo/1.9.1/dijit/themes/claro/claro.css" />
 </head>
 
 <body>
 
 
-	<form data-dojo-type="dojox/form/Manager" id="composeAnnotation">
+	<form id="composeAnnotation">
 
 		<textarea id="annotation" name="textarea2" data-dojo-type="dijit/form/Textarea" style="width:200px;">
 			Lorem ipsum dolor sit amet, consectetuer adipiscing elit, 
@@ -29,10 +28,11 @@
 					// Also, how to handle the return and callbacks.
 					    
 				var xhrArgs = {
-					url: "http://http://charme-dev.cems.rl.ac.uk/djcharme/insert/annotation",
+					url: "http://charme-dev.cems.rl.ac.uk/djcharme/insert/annotation",
 					postData: dom.byId("annotation").value,
 					handleAs: "text",
  					headers: {
+						"Origin": "http://localhost",
 						"Content-Type": "text/turtle",
 						"Accept": "*/*"
  					},
