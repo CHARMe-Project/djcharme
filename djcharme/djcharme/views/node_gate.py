@@ -40,7 +40,11 @@ def _validateFormat(request):
         Returns the mimetype of the required format as mapped by rdflib
         return: String - an allowed rdflib mimetype 
     '''
-    req_format = None    
+    req_format = None
+    
+    if request.GET.get('format', 'html') == 'html':
+        return 'html'
+    
     if isGET(request):
         req_format = FORMAT_MAP.get(request.GET.get('format', None))        
     if isPOST(request):
@@ -71,7 +75,7 @@ def index(request, graph = 'stable'):
                 
     req_format = _validateFormat(request)
     
-    if req_format:
+    if req_format != 'html':
         LOGGING.debug("Annotations %s" % __serialize(tmp_g, req_format = req_format))
         return HttpResponse(__serialize(tmp_g, req_format = req_format))
 
