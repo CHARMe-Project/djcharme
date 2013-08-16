@@ -104,7 +104,7 @@ class CharmeMiddleware(object):
         if request.method == 'OPTIONS':
             response['Access-Control-Allow-Methods'] = "POST, GET, OPTIONS"                 
             response['Access-Control-Allow-Headers'] = "origin, x-requested-with, content-type"
-            response['Access-Control-Allow-Origin'] = "*"
+            response['Access-Control-Allow-Origin'] = request.META.get('HTTP_ORIGIN', 'http://localhost:8000')
             response['Access-Control-Max-Age'] = 10
             response['Content-Type'] = "text/plain"
             return response
