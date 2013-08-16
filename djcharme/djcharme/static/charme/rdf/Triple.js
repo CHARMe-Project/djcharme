@@ -12,14 +12,23 @@ define(["dojox/xml/parser", "dojox/grid/DataGrid", "dojo/store/Memory",
 								xmldom.ownerDocument.documentElement );
 					var queryResult = xmldom.evaluate('//rdf:Description', xmldom, nsResolver, 
 							5, null);
-					var states_obj = JSON.parse(states.value);
+					
+					var states_obj = null
+					try { 
+						states_obj = JSON.parse(states.value);
+					} catch (e) {
+						
+					}
 
 					var value = queryResult.iterateNext();
 					var storedAnnotation = '';
 		            while(value){
 		            	store.put({annotation:value.getAttribute('rdf:about')});
 		            	storedAnnotation = store.get(value.getAttribute('rdf:about'));
-		            	storedAnnotation.state = states_obj[storedAnnotation.annotation];
+		            	storedAnnotation.state = "None"
+		            	if (states_obj != null) {
+		            		storedAnnotation.state = states_obj[storedAnnotation.annotation];	
+		            	}		            	
 		            	var nodes = value.childNodes;
 		            	var child = "";
 		            	for(i=0; i<nodes.length; i++) {

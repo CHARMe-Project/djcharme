@@ -3,10 +3,9 @@ Created on 14 May 2013
 
 @author: mnagni
 '''
-from djcharme.node.actions import CHARM, OA, FORMAT_MAP, \
-    ANNO_SUBMITTED, insert_rdf, find_resource_by_id, RESOURCE,\
-    _collect_annotations, change_annotation_state, find_annotation_graph
-    
+from djcharme.node.actions import OA, FORMAT_MAP, \
+    ANNO_SUBMITTED, insert_rdf, find_resource_by_id, RESOURCE, \
+    _collect_annotations, change_annotation_state, find_annotation_graph    
 from django.http.response import HttpResponseRedirectBase, Http404, HttpResponse
 from djcharme import mm_render_to_response, mm_render_to_response_error
 
@@ -15,20 +14,24 @@ from djcharme.exception import SerializeError, StoreConnectionError
 from djcharme.views import isGET, isPOST, content_type, validateMimeFormat,\
     isOPTIONS
 from django.contrib import messages
-from django.contrib.auth.decorators import login_required
 import json
-from rdflib.term import URIRef
 from django.views.decorators.csrf import csrf_exempt
 
 LOGGING = logging.getLogger(__name__)
 
 class HttpResponseSeeOther(HttpResponseRedirectBase):
+    """
+        Implements a simple HTTP 303 response
+    """
     status_code = 303
 
 def __serialize(graph, req_format = 'application/rdf+xml'):
-    '''
-        Serializes a graph according to the required format                 
-    '''         
+    """
+        Serializes a graph according to the required format
+        - rdflib:Graph **graph** the graph to serialize
+        - string **req_format** the serialization format
+        - **return** the serialized graph                
+    """         
     if req_format == 'application/ld+json':
         req_format = 'json-ld'
     return graph.serialize(format=req_format)
