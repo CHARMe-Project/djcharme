@@ -51,3 +51,7 @@ urlpatterns += patterns('djcharme.views.compose',
 urlpatterns += patterns('djcharme.views.endpoint',
     (r'^endpoint', 'endpoint'),
 )
+
+urlpatterns += patterns('djcharme.views.main_gui',
+    (r'^', 'welcome'),
+)
