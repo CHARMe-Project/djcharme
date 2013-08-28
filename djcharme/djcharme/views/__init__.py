@@ -31,7 +31,7 @@ def validateMimeFormat(request):
     req_format = http_accept(request)
     if req_format:
         for k,v in FORMAT_MAP.iteritems():
-            if req_format == v:
+            if v in req_format:
                 return k
     return None 
 

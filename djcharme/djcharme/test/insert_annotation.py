@@ -36,7 +36,6 @@ class Test(unittest.TestCase):
         for res in self.g:
             self.g.remove(res)
 
-
     def test_insert_turtle(self):
         tmp_g = insert_rdf(turtle_data, 'text/turtle', graph=ANNO_SUBMITTED)
         final_doc = tmp_g.serialize()

@@ -9,7 +9,7 @@ _collect_annotations, change_annotation_state, find_annotation_graph
 from djcharme import mm_render_to_response, mm_render_to_response_error
 from djcharme.exception import SerializeError, StoreConnectionError
 from djcharme.views import isGET, isPOST, content_type, validateMimeFormat,\
-    isOPTIONS
+    isOPTIONS, http_accept
 
 from django.http.response import HttpResponseRedirectBase, Http404, HttpResponse
 from django.contrib import messages
@@ -106,7 +106,10 @@ def insert(request):
     if isPOST(request) or isOPTIONS(request):
         triples = request.body
         tmp_g = insert_rdf(triples, req_format, graph=ANNO_SUBMITTED) 
-        return HttpResponse(__serialize(tmp_g, req_format = req_format), content_type=req_format)
+        ret_format = validateMimeFormat(request)
+        if ret_format is None:
+            ret_format = req_format
+        return HttpResponse(__serialize(tmp_g, req_format = ret_format), content_type=FORMAT_MAP.get(ret_format))
         
 def advance_status(request):
     '''
@@ -124,7 +127,7 @@ def process_resource(request, resource_id):
     if validateMimeFormat(request):           
         LOGGING.info("Redirecting to /%s/%s" % (RESOURCE, resource_id))
         return HttpResponseSeeOther('/%s/%s' % (RESOURCE, resource_id))
-    if 'text/html' in request.META.get('HTTP_ACCEPT', None):
+    if 'text/html' in http_accept(request):
         LOGGING.info("Redirecting to /page/%s" % resource_id)
         return HttpResponseSeeOther('/page/%s' % resource_id)
     return Http404()
@@ -136,10 +139,10 @@ def process_data(request, resource_id):
             
     tmp_g = find_resource_by_id(resource_id)           
     return HttpResponse(tmp_g.serialize(format = req_format), 
-                            mimetype = request.META.get('HTTP_ACCEPT'))  
+                            mimetype = FORMAT_MAP.get(req_format))  
 
 def process_page(request, resource_id = None):
-    if 'text/html' not in request.META.get('HTTP_ACCEPT', None):
+    if 'text/html' not in http_accept(request):
         process_resource(request, resource_id)
         
     tmp_g = find_resource_by_id(resource_id)                 

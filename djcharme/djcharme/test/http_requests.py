@@ -5,7 +5,7 @@ Created on 25 Jul 2013
 '''
 
 
-from djcharme.views.node_gate import insert, advance_status
+from djcharme.views.node_gate import insert, advance_status, process_page
 from djcharme.charme_middleware import CharmeMiddleware
 from djcharme.test import turtle_usecase1
 from django.contrib.auth.models import User
@@ -17,6 +17,7 @@ import unittest
 import json
 import logging
 from djcharme import settings
+from xml.etree import ElementTree
 
 LOGGING = logging.getLogger(__name__)
 
@@ -43,12 +44,30 @@ class Test(unittest.TestCase):
         self.user.delete()
         
 
+    def extract_annotation_uri(self, document):
+        xml = ElementTree.fromstring(document)
+        RDF = "{http://www.w3.org/1999/02/22-rdf-syntax-ns#}"
+        descriptions = xml.findall('%sDescription' % (RDF))
+        for desc in descriptions:
+            anno = desc.find('./%stype[@%sresource="http://www.w3.org/ns/oa#Annotation"]' % (RDF, RDF))
+            if anno is not None:
+                return desc.get('%sabout' % RDF)
+
     def test_insert_anotation(self):
         response = insert(self.factory.post('/insert/annotation',
                                             content_type='text/turtle',
-                                            data=turtle_usecase1))        
+                                            data=turtle_usecase1,
+                                            HTTP_ACCEPT = 'application/rdf+xml'))        
         
         self.assert_(response.status_code == 200, "HTTPResponse has status_code: %s" % response.status_code)
+        
+        anno_uri = self.extract_annotation_uri(response.content)
+        annoid = anno_uri[anno_uri.rfind('/') + 1 : ]
+        
+        request = self._prepare_get('/resource/%s' % annoid)
+        request.META['HTTP_ACCEPT'] = "text/html"
+        response = process_page(request, resource_id = annoid)
+        print response
         return response
 
     def _prepare_get(self, url):
