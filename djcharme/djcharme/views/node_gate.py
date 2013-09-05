@@ -13,7 +13,7 @@ from djcharme.views import isGET, isPOST, content_type, validateMimeFormat,\
 
 from django.http.response import HttpResponseRedirectBase, Http404, HttpResponse
 from django.contrib import messages
-from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.csrf import csrf_exempt, csrf_protect
 
 import logging
 import json
@@ -91,7 +91,9 @@ def index(request, graph = 'stable'):
     context = {'results': tmp_g.serialize(), 'states': json.dumps(states)}
     return mm_render_to_response(request, context, 'viewer.html')
 
-@csrf_exempt
+# Temporary solution as long identify a solution for csrf
+#@csrf_protect
+@csrf_exempt  
 def insert(request):
     '''
         Inserts in the triplestore a new annotation under the "ANNO_SUBMITTED" graph
@@ -110,13 +112,20 @@ def insert(request):
         if ret_format is None:
             ret_format = req_format
         return HttpResponse(__serialize(tmp_g, req_format = ret_format), content_type=FORMAT_MAP.get(ret_format))
-        
+
+
+# Temporary solution as long identify a solution for csrf
+#@csrf_protect
+@csrf_exempt         
 def advance_status(request):
     '''
         Advance the status of an annotation
     '''            
     if isPOST(request) and 'application/json' in content_type(request):
         params = json.loads(request.body) 
+        if not params.has_key('annotation') or not params.has_key('state'):
+            messages.add_message(request, messages.ERROR, "Missing annotation/state parameters")
+            return mm_render_to_response_error(request, '400.html', 400)
         LOGGING.info("advancing %s to state:%s" % (params.get('annotation'), params.get('toState')))
         tmp_g = change_annotation_state(params.get('annotation'), params.get('toState'))
         

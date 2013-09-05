@@ -1,5 +1,7 @@
 from django.test.client import RequestFactory
-from djcharme.views.node_gate import index
+from djcharme.views.node_gate import index, insert, process_page, advance_status
+from xml.etree import ElementTree
+
 
 rdf_data = '''
     <rdf:RDF
@@ -139,6 +141,48 @@ turtle_usecase2_data_citing = '''
     <http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_EAAM>
         a dctypes:Dataset .
 '''
+def _prepare_get(factory, url, user = None):
+    """
+        **RequestFactory** - factory
+        **String** - url
+        **User** - user
+    """
+    request = factory.get(url)    
+    request.user = user
+    return request
+
+def extract_annotation_uri(document):
+    xml = ElementTree.fromstring(document)
+    RDF = "{http://www.w3.org/1999/02/22-rdf-syntax-ns#}"
+    descriptions = xml.findall('%sDescription' % (RDF))
+    for desc in descriptions:
+        anno = desc.find('./%stype[@%sresource="http://www.w3.org/ns/oa#Annotation"]' % (RDF, RDF))
+        if anno is not None:
+            return desc.get('%sabout' % RDF)
+
+def test_advance_status(test_instance, 
+                   url='/advance_status', 
+                   data=None):
+    return test_instance.factory.post(url,
+                               content_type='application/json',
+                               data=data)
+
+def test_insert_anotation(test_instance, http_accept='application/rdf+xml'):
+    response = insert(test_instance.factory.post('/insert/annotation',
+                                        content_type='text/turtle',
+                                        data=turtle_usecase1,
+                                        HTTP_ACCEPT = http_accept))        
+    
+    test_instance.assert_(response.status_code == 200, "HTTPResponse has status_code: %s" % response.status_code)
+    
+    '''
+    anno_uri = extract_annotation_uri(response.content)
+    annoid = anno_uri[anno_uri.rfind('/') + 1 : ]    
+    request = _prepare_get(test_instance.factory, '/resource/%s' % annoid)
+    request.META['HTTP_ACCEPT'] = "text/html"
+    response = process_page(request, resource_id = annoid)
+    '''
+    return response
 
 def _dump_store(graph = 'submitted', req_format = 'turtle'):
     factory = RequestFactory()
