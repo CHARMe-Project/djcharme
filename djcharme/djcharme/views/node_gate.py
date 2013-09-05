@@ -5,7 +5,8 @@ Created on 14 May 2013
 '''
 from djcharme.node.actions import OA, FORMAT_MAP, \
 ANNO_SUBMITTED, insert_rdf, find_resource_by_id, RESOURCE, \
-_collect_annotations, change_annotation_state, find_annotation_graph    
+_collect_annotations, change_annotation_state, find_annotation_graph    , DATA,\
+    PAGE
 from djcharme import mm_render_to_response, mm_render_to_response_error
 from djcharme.exception import SerializeError, StoreConnectionError
 from djcharme.views import isGET, isPOST, content_type, validateMimeFormat,\
@@ -134,14 +135,17 @@ def advance_status(request):
         
 def process_resource(request, resource_id):  
     if validateMimeFormat(request):           
-        LOGGING.info("Redirecting to /%s/%s" % (RESOURCE, resource_id))
-        return HttpResponseSeeOther('/%s/%s' % (RESOURCE, resource_id))
+        LOGGING.info("Redirecting to /%s/%s" % (DATA, resource_id))
+        return HttpResponseSeeOther('/%s/%s' % (DATA, resource_id))
     if 'text/html' in http_accept(request):
-        LOGGING.info("Redirecting to /page/%s" % resource_id)
-        return HttpResponseSeeOther('/page/%s' % resource_id)
+        LOGGING.info("Redirecting to /%s/%s" % (PAGE, resource_id))
+        return HttpResponseSeeOther('/%s/%s' % (PAGE, resource_id))
     return Http404()
         
 def process_data(request, resource_id):
+    if 'text/html' in http_accept(request):
+        return process_resource(request, resource_id = None)
+    
     req_format = validateMimeFormat(request)
     if req_format is None:
         return process_resource(request, resource_id)
@@ -152,7 +156,7 @@ def process_data(request, resource_id):
 
 def process_page(request, resource_id = None):
     if 'text/html' not in http_accept(request):
-        process_resource(request, resource_id)
+        return process_resource(request, resource_id)
         
     tmp_g = find_resource_by_id(resource_id)                 
     context = {'results': tmp_g.serialize()}

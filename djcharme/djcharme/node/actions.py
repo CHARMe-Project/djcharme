@@ -109,6 +109,8 @@ BODY_URI = 'bodyID'
 CH_NODE = 'chnode'
 
 RESOURCE = 'resource'
+DATA = 'data'
+PAGE = 'page'
 
 LOGGING = logging.getLogger(__name__)
 

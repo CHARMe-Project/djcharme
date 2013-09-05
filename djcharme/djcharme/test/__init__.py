@@ -167,10 +167,13 @@ def test_advance_status(test_instance,
                                content_type='application/json',
                                data=data)
 
-def test_insert_anotation(test_instance, http_accept='application/rdf+xml'):
+def test_insert_anotation(test_instance,
+                          http_accept='application/rdf+xml', 
+                          content_type='text/turtle', 
+                          data=turtle_usecase1):
     response = insert(test_instance.factory.post('/insert/annotation',
-                                        content_type='text/turtle',
-                                        data=turtle_usecase1,
+                                        content_type=content_type,
+                                        data=data,
                                         HTTP_ACCEPT = http_accept))        
     
     test_instance.assert_(response.status_code == 200, "HTTPResponse has status_code: %s" % response.status_code)
