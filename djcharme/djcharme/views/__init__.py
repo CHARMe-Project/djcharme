@@ -24,7 +24,7 @@ def isPATCH(request):
     return request.method == 'PATCH'
 
 def content_type(request):
-    return request.environ.get('CONTENT_TYPE', None)
+    return request.environ.get('CONTENT_TYPE', None).split(';')[0]
 
 def get_format(request):
     try:
@@ -33,20 +33,30 @@ def get_format(request):
         return None
 
 def http_accept(request):
-    return request.META.get('HTTP_ACCEPT', None)
+    accept = request.META.get('HTTP_ACCEPT', None)
+    if accept is None:
+        return None
+    return accept.split(';')[0].split(',')
 
-def validateMimeFormat(request):
-    req_format = get_format(request) 
-    if req_format is None:
-        req_format = http_accept(request)
-    if '/' in req_format:
+def checkMimeFormat(mimeformat):
+    if '/' in mimeformat:
         for k,v in FORMAT_MAP.iteritems():
-            if v in req_format:
+            if v in mimeformat:
                 return k
     else:
         for k,v in FORMAT_MAP.iteritems():
-            if k in req_format:
+            if k in mimeformat:
                 return k
+
+def validateMimeFormat(request):
+    req_format = [get_format(request)] 
+    if req_format[0] is None: 
+        req_format = http_accept(request)
+
+    for mimeformat in req_format:
+        ret = checkMimeFormat(mimeformat)
+        if ret is not None:
+            return ret        
     return None 
 
 '''

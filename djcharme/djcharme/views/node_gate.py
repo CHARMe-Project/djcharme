@@ -10,7 +10,7 @@ _collect_annotations, change_annotation_state, find_annotation_graph    , DATA,\
 from djcharme import mm_render_to_response, mm_render_to_response_error
 from djcharme.exception import SerializeError, StoreConnectionError
 from djcharme.views import isGET, isPOST, content_type, validateMimeFormat,\
-    isOPTIONS, http_accept, get_format
+    isOPTIONS, http_accept, get_format, checkMimeFormat
 
 from django.http.response import HttpResponseRedirectBase, Http404, HttpResponse
 from django.contrib import messages
@@ -40,31 +40,6 @@ def __serialize(graph, req_format = 'application/rdf+xml'):
 
 
 
-def _validateFormat(request):
-    '''
-        Returns the mimetype of the required format as mapped by rdflib
-        return: String - an allowed rdflib mimetype 
-    '''
-    req_format = None
-    
-    if isGET(request):
-        if request.GET.get('format', 'html') == 'html':
-            return 'html'
-        req_format = FORMAT_MAP.get(request.GET.get('format', None))        
-    
-    if isPOST(request):
-        req_format = request.environ.get('CONTENT_TYPE', None)        
-    
-    if req_format is None:
-        raise SerializeError("Cannot generate the required format %s " % req_format)
-    else:
-        req_format = req_format.split(';')[0]
-    
-    if req_format not in FORMAT_MAP.values():
-        raise SerializeError("Cannot generate the required format %s " % req_format)
-    
-    return req_format
-
 def index(request, graph = 'stable'):
     '''
         Returns a tabular view of the stored annotations.
@@ -80,19 +55,24 @@ def index(request, graph = 'stable'):
         return mm_render_to_response_error(request, '503.html', 503)
         
                 
-    req_format = _validateFormat(request)
+    req_format = validateMimeFormat(request)
     
-    if req_format != 'html':
+    if req_format is not None:
         LOGGING.debug("Annotations %s" % __serialize(tmp_g, req_format = req_format))
         return HttpResponse(__serialize(tmp_g, req_format = req_format))
+    elif 'text/html' in http_accept(request):
+        states = {}
+        LOGGING.debug("Annotations %s" % tmp_g.serialize())
+        for s, p, o in tmp_g.triples((None, None, OA['Annotation'])):
+            states[s] = find_annotation_graph(s)   
+            
+        context = {'results': tmp_g.serialize(), 'states': json.dumps(states)}
+        return mm_render_to_response(request, context, 'viewer.html')
+    
+    messages.add_message(request, messages.ERROR, e)
+    return mm_render_to_response_error(request, '400.html', 400)
 
-    states = {}            
-    LOGGING.debug("Annotations %s" % tmp_g.serialize())
-    for s, p, o in tmp_g.triples((None, None, OA['Annotation'])):
-        states[s] = find_annotation_graph(s)   
-        
-    context = {'results': tmp_g.serialize(), 'states': json.dumps(states)}
-    return mm_render_to_response(request, context, 'viewer.html')
+
 
 # Temporary solution as long identify a solution for csrf
 #@csrf_protect
@@ -101,17 +81,18 @@ def insert(request):
     '''
         Inserts in the triplestore a new annotation under the "ANNO_SUBMITTED" graph
     '''
-    try:
-        req_format = _validateFormat(request)
-        
-    except SerializeError as e:
-        messages.add_message(request, messages.ERROR, e)
+    req_format = content_type()
+    req_format = checkMimeFormat(req_format)
+    
+    if req_format is None:        
+        messages.add_message(request, messages.ERROR, "Cannot ingest the posted format")
         return mm_render_to_response_error(request, '400.html', 400)
     
     if isPOST(request) or isOPTIONS(request):
         triples = request.body
-        tmp_g = insert_rdf(triples, req_format, graph=ANNO_SUBMITTED) 
-        ret_format = validateMimeFormat(request)
+        tmp_g = insert_rdf(triples, req_format, graph=ANNO_SUBMITTED)
+        ret_format = http_accept(request) 
+        ret_format = checkMimeFormat(ret_format)
         if ret_format is None:
             ret_format = req_format
         return HttpResponse(__serialize(tmp_g, req_format = ret_format), content_type=FORMAT_MAP.get(ret_format))
