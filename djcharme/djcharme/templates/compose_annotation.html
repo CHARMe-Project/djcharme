@@ -84,8 +84,7 @@ require(["dijit/registry", "dojo/parser", "dojo/dom", "dojo/cookie", "dojo/dom-s
 
 	function generate_annotation() {
 		var ret = ''
-		ret += '@prefix charm: <http://charm.eu/ch#> . \n'
-		ret += '@prefix anno: <http://charm.eu/data/anno/> . \n'
+		ret += '@prefix anno: <http://localhost/> . \n'
 		ret += '@prefix oa: <http://www.w3.org/ns/oa#> . \n'		
 		ret += '@prefix dc: <http://purl.org/dc/elements/1.1/> . \n'		
 		ret += '@prefix cnt: <http://www.w3.org/2011/content#> . \n'
@@ -93,7 +92,7 @@ require(["dijit/registry", "dojo/parser", "dojo/dom", "dojo/cookie", "dojo/dom-s
 
 		var body = registry.byId("body").generate();
 		var target = registry.byId("target").generate();
-		ret += "anno:a_" + new Date().getTime() + " a charm:anno ;\n"
+		ret += "anno:a_" + new Date().getTime() + " a oa:Annotation ;\n"
 		ret += "oa:hasTarget " + target.uri + " ;\n";
 		ret += "oa:hasBody " + body.uri + " .\n";
 		ret += "\n";

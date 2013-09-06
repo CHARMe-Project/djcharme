@@ -81,7 +81,7 @@ def insert(request):
     '''
         Inserts in the triplestore a new annotation under the "ANNO_SUBMITTED" graph
     '''
-    req_format = content_type()
+    req_format = content_type(request)
     req_format = checkMimeFormat(req_format)
     
     if req_format is None:        

@@ -94,7 +94,6 @@ def rdf_format_from_mime(mimetype):
             return k 
 
 # Create a namespace object for the CHARMe namespace.
-CHARM = Namespace("http://charm.eu/ch#")
 RDF = Namespace("http://www.w3.org/1999/02/22-rdf-syntax-ns#")
 OA = Namespace("http://www.w3.org/ns/oa#")
 
@@ -155,7 +154,7 @@ def insert_rdf(data, mimetype, graph = None, store=None):
     tmp_g = Graph()
     #Necessary as RDFlib does not contain the json-ld lib
 
-    tmp_g.parse(data = data, format = rdf_format_from_mime(mimetype))
+    tmp_g.parse(data = data, format = mimetype)
     _formatSubmittedAnnotation(tmp_g)
     final_g = generate_graph(store, graph)
     
