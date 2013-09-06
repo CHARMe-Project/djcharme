@@ -107,10 +107,10 @@ require(["dijit/registry", "dojo/parser", "dojo/dom", "dojo/cookie", "dojo/dom-s
 			// Also, how to handle the return and callbacks.
 					    
 			var xhrArgs = {
-				url: "http://localhost:8000/compose/annotation",
+				url: "http://localhost:8000/insert/annotation",
 				postData: generate_annotation(),
 				handleAs: "text",
-				headers: {"X-CSRFToken": cookie('csrftoken')},
+				headers: {"X-CSRFToken": cookie('csrftoken'), "Content-Type": "text/turtle"},
 				load: function(data){
 					dom.byId("response2").innerHTML = "Message posted.";
 				},

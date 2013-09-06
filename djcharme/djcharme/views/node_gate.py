@@ -10,7 +10,7 @@ _collect_annotations, change_annotation_state, find_annotation_graph    , DATA,\
 from djcharme import mm_render_to_response, mm_render_to_response_error
 from djcharme.exception import SerializeError, StoreConnectionError
 from djcharme.views import isGET, isPOST, content_type, validateMimeFormat,\
-    isOPTIONS, http_accept
+    isOPTIONS, http_accept, get_format
 
 from django.http.response import HttpResponseRedirectBase, Http404, HttpResponse
 from django.contrib import messages
@@ -57,6 +57,8 @@ def _validateFormat(request):
     
     if req_format is None:
         raise SerializeError("Cannot generate the required format %s " % req_format)
+    else:
+        req_format = req_format.split(';')[0]
     
     if req_format not in FORMAT_MAP.values():
         raise SerializeError("Cannot generate the required format %s " % req_format)
@@ -133,17 +135,22 @@ def advance_status(request):
         return HttpResponse(tmp_g.serialize())
         
         
-def process_resource(request, resource_id):  
-    if validateMimeFormat(request):           
-        LOGGING.info("Redirecting to /%s/%s" % (DATA, resource_id))
-        return HttpResponseSeeOther('/%s/%s' % (DATA, resource_id))
+def process_resource(request, resource_id):   
+    if validateMimeFormat(request) is not None:
+        getformat = get_format(request)
+        path = "/%s/%s" % (DATA, resource_id)
+        if getformat is not None:
+            path = "%s/?format=%s" % (path, getformat)                           
+        LOGGING.info("Redirecting to %s" % path)
+        return HttpResponseSeeOther(path)
+    
     if 'text/html' in http_accept(request):
         LOGGING.info("Redirecting to /%s/%s" % (PAGE, resource_id))
         return HttpResponseSeeOther('/%s/%s' % (PAGE, resource_id))
     return Http404()
         
 def process_data(request, resource_id):
-    if 'text/html' in http_accept(request):
+    if get_format(request) is None and 'text/html' in http_accept(request):
         return process_resource(request, resource_id = None)
     
     req_format = validateMimeFormat(request)

@@ -194,9 +194,9 @@ def _formatNodeURIRef(uriref, anno_uri, body_uri):
         uriref = URIRef(uriref.replace(CH_NODE + ':', 
                                        getattr(settings, 'NODE_URI', NODE_URI) + '/'))        
     if isinstance(uriref, URIRef) and ANNO_URI in uriref:
-        uriref = URIRef(uriref.replace(ANNO_URI, "resource/" + anno_uri))
+        uriref = URIRef(uriref.replace(ANNO_URI, "%s/%s" % (RESOURCE, anno_uri)))
     if isinstance(uriref, URIRef) and BODY_URI in uriref:
-        uriref = URIRef(uriref.replace(BODY_URI, "resource/" + body_uri))    
+        uriref = URIRef(uriref.replace(BODY_URI, "%s/%s" % (RESOURCE, body_uri)))    
     return uriref
 
 def _formatSubmittedAnnotation(graph):
