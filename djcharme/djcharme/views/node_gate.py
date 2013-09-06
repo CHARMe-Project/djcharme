@@ -91,7 +91,7 @@ def insert(request):
     if isPOST(request) or isOPTIONS(request):
         triples = request.body
         tmp_g = insert_rdf(triples, req_format, graph=ANNO_SUBMITTED)
-        ret_format = http_accept(request) 
+        ret_format = http_accept(request)[0] 
         ret_format = checkMimeFormat(ret_format)
         if ret_format is None:
             ret_format = req_format

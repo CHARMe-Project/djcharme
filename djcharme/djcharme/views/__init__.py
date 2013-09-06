@@ -60,10 +60,5 @@ def validateMimeFormat(request):
     return None 
 
 '''
-        SELECT Distinct ?g ?s ?p ?o
-        WHERE {
-           GRAPH ?g {
-             ?s ?p ?o .
-           } 
-        }
+        SELECT Distinct ?g ?s ?p ?o WHERE { GRAPH ?g { ?s ?p ?o . }}
 '''

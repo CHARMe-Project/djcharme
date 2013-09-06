@@ -5,7 +5,7 @@ Created on 25 Jul 2013
 '''
 
 
-from djcharme.views.node_gate import insert, process_page, process_resource,\
+from djcharme.views.node_gate import process_page, process_resource,\
     process_data
 from djcharme.charme_middleware import CharmeMiddleware
 from djcharme.test import turtle_usecase1, test_insert_anotation,\

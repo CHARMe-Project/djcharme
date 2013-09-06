@@ -37,7 +37,7 @@ class Test(unittest.TestCase):
             self.g.remove(res)
 
     def test_insert_turtle(self):
-        tmp_g = insert_rdf(turtle_data, 'text/turtle', graph=ANNO_SUBMITTED)
+        tmp_g = insert_rdf(turtle_data, 'turtle', graph=ANNO_SUBMITTED)
         final_doc = tmp_g.serialize()
         print tmp_g.serialize()
         self.assertFalse('localhost' in final_doc, "Error ingesting turtle")
@@ -48,7 +48,7 @@ class Test(unittest.TestCase):
         self.assertFalse('chnode:bodyID' in final_doc, "Error ingesting turtle")
         
     def test_insert_jsonld(self):
-        tmp_g = insert_rdf(jsonld_data, 'application/ld+json', graph=ANNO_SUBMITTED)
+        tmp_g = insert_rdf(jsonld_data, 'json-ld', graph=ANNO_SUBMITTED)
         final_doc = tmp_g.serialize()
         print tmp_g.serialize()        
         self.assertFalse('localhost' in final_doc, "Error ingesting jsonld")
@@ -58,7 +58,7 @@ class Test(unittest.TestCase):
         self.assertFalse('localhost/annoID' in final_doc, "Error ingesting jsonld")  
     
     def test_insert_rdf(self):
-        tmp_g = insert_rdf(rdf_data, 'application/rdf+xml', graph=ANNO_SUBMITTED)
+        tmp_g = insert_rdf(rdf_data, 'xml', graph=ANNO_SUBMITTED)
         final_doc = tmp_g.serialize()
         print tmp_g.serialize()
         self.assertFalse('localhost' in final_doc, "Error ingesting rdf")

@@ -245,9 +245,18 @@ def find_resource_by_id(resource_id):
     '''
     g = ConjunctiveGraph(store=CharmeMiddleware.get_store())
     tmp_g = Graph()
-    for res in g.triples((_formatResourceURIRef(resource_id), None, None)):
-        tmp_g.add(res) 
+    uriRef = _formatResourceURIRef(resource_id)
+    LOGGING.debug("Looking resource %s" % (uriRef))
+    for res in g.triples((uriRef, None, None)):
+        tmp_g.add(res)
+        collect_all(g, tmp_g, res[2]) 
     return tmp_g
+
+def collect_all(graph, cache_graph, uriRef):
+    for res in graph.triples((uriRef, None, None)):
+        cache_graph.add(res) 
+    
+    
 
 def _collect_annotations(graph):
     '''    

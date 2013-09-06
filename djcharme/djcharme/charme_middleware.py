@@ -59,7 +59,7 @@ class CharmeMiddleware(object):
       
     __store = None  
 
-    @classmethod      
+    @classmethod   
     def __initStore(self): 
         store = SPARQLUpdateStore(queryEndpoint = getattr(settings,
                                                               'SPARQL_QUERY'),
@@ -69,6 +69,7 @@ class CharmeMiddleware(object):
         store.bind("rdf", "http://www.w3.org/1999/02/22-rdf-syntax-ns#")
         store.bind("oa", "http://www.w3.org/ns/oa#")
         store.bind("chnode", getattr(settings, 'NODE_URI', 'http://localhost'))
+        LOGGING.info("Store created")
         CharmeMiddleware.__store = store
         
         #Creates a superuser if there is not any
@@ -81,7 +82,7 @@ class CharmeMiddleware(object):
       
       
     @classmethod
-    def get_store(self, debug = False):
+    def get_store(self, debug = False):        
         if debug or CharmeMiddleware.__store is None:
             CharmeMiddleware.__initStore()
         return CharmeMiddleware.__store
