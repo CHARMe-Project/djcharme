@@ -1,6 +1,7 @@
 from djcharme.node.actions import FORMAT_MAP
 
 FORMAT = 'format'
+DEPTH = 'depth'
 
 def isGET(request):
     return request.method == 'GET'
@@ -31,6 +32,15 @@ def get_format(request):
         return request.GET[FORMAT]
     except KeyError:
         return None
+
+def get_depth(request):
+    depth = request.GET.get(DEPTH, None)
+    if depth is not None:
+        try:    
+            return int(depth)
+        except ValueError:
+            return None
+    return None
 
 def http_accept(request):
     accept = request.META.get('HTTP_ACCEPT', None)

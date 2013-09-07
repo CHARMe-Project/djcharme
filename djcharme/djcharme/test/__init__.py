@@ -75,36 +75,118 @@ jsonld_data = '''
     }        
 '''
 
-turtle_usecase1 = ''' 
+rdf_usecase1 = '''
+<rdf:RDF
+   xmlns:ns1="http://purl.org/spar/cito/"
+   xmlns:ns2="http://www.w3.org/ns/oa#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:dcterm="http://purl.org/dc/terms/"
+>
+  <rdf:Description rdf:about="http://data.gov.uk//dataset/index-of-multiple-deprivation">
+    <rdf:type rdf:resource="http://purl.org/dc/dcmitype/Dataset"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="http://localhost/annoID">
+    <ns2:motivatedBy rdf:resource="http://www.w3.org/ns/oa#linking"/>
+    <ns2:hasBody rdf:resource="http://localhost/bodyID"/>
+    <rdf:type rdf:resource="http://www.w3.org/ns/oa#Annotation"/>
+    <ns2:hasTarget rdf:resource="http://data.gov.uk//dataset/index-of-multiple-deprivation"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="http://localhost/bodyID">
+    <ns1:hasCitationEvent rdf:resource="http://purl.org/spar/cito/citesAsDataSource"/>
+    <ns1:hasCitingEntity rdf:resource="http://dx.doi.org/10.1371/journal.pone.0043294"/>
+    <ns1:hasCitedEntity rdf:resource="http://data.gov.uk//dataset/index-of-multiple-deprivation"/>
+    <rdf:type rdf:resource="http://purl.org/spar/cito/CitationAct"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="http://dx.doi.org/10.1371/journal.pone.0043294">
+      <dcterm:title xml:lang="en-us">Lost Letter Measure of Variation in Altruistic Behaviour in 20 Neighbourhoods</dcterm:title>
+      <dcterm:creator>John R. Anderson</dcterm:creator>
+  </rdf:Description>
+</rdf:RDF>
+'''
+
+turtle_usecase1 = '''
     @prefix chnode: <http://localhost/> . 
     @prefix oa: <http://www.w3.org/ns/oa#> . 
-    @prefix dctypes: <http://purl.org/dc/dcmitype/> .
+    @prefix dctype: <http://purl.org/dc/dcmitype/> .
+    @prefix dcterm="http://purl.org/dc/terms/"
     @prefix cito: <http://purl.org/spar/cito/> . 
     
     <chnode:annoID> a oa:Annotation ;
     oa:hasTarget <http://data.gov.uk//dataset/index-of-multiple-deprivation> ;
-    oa:hasBody <http://dx.doi.org/10.1371/journal.pone.0043294> ;
+    oa:hasBody <chnode:bodyID> ;
     oa:motivatedBy oa:linking .
 
-    <http://dx.doi.org/10.1371/journal.pone.0043294>
-        a cito:CitationAct, dctypes:Text .
+    <chnode:bodyID> a cito:CitationAct ;
+       cito:hasCitingEntity <http://dx.doi.org/10.1371/journal.pone.0043294> ;
+       cito:hasCitationEvent cito:citesAsDataSource ;
+       cito:hasCitedEntity <http://data.gov.uk//dataset/index-of-multiple-deprivation> .
         
     <http://data.gov.uk//dataset/index-of-multiple-deprivation>
-        a dctypes:Dataset .
+        a dctype:Dataset .
+        
+    <http://dx.doi.org/10.1371/journal.pone.0043294>
+        dcterm:creator "John R. Anderson" ;  
+        dcterm:title "Lost Letter Measure of Variation in Altruistic Behaviour in 20 Neighbourhoods"@en-us .                  
 '''        
+
+jsonld_usecase1 = ''' 
+{
+  "@graph": [
+    {
+      "@id": "http://data.gov.uk//dataset/index-of-multiple-deprivation",
+      "@type": "http://purl.org/dc/dcmitype/Dataset"
+    },
+    {
+      "@id": "http://localhost/annoID",
+      "@type": "http://www.w3.org/ns/oa#Annotation",
+      "http://www.w3.org/ns/oa#hasBody": {
+        "@id": "http://localhost/bodyID"
+      },
+      "http://www.w3.org/ns/oa#hasTarget": {
+        "@id": "http://data.gov.uk//dataset/index-of-multiple-deprivation"
+      },
+      "http://www.w3.org/ns/oa#motivatedBy": {
+        "@id": "http://www.w3.org/ns/oa#linking"
+      }
+    },
+    {
+      "@id": "http://localhost/bodyID",
+      "@type": "http://purl.org/spar/cito/CitationAct",
+      "http://purl.org/spar/cito/hasCitationEvent": {
+        "@id": "http://purl.org/spar/cito/citesAsDataSource"
+      },
+      "http://purl.org/spar/cito/hasCitedEntity": {
+        "@id": "http://data.gov.uk//dataset/index-of-multiple-deprivation"
+      },
+      "http://purl.org/spar/cito/hasCitingEntity": {
+        "@id": "http://dx.doi.org/10.1371/journal.pone.0043294"
+      }
+    },
+    {
+      "@id": "http://dx.doi.org/10.1371/journal.pone.0043294",
+      "http://purl.org/dc/terms/creator": "John R. Anderson",
+      "http://purl.org/dc/terms/title": {
+        "@language": "en-us",
+        "@value": "Lost Letter Measure of Variation in Altruistic Behaviour in 20 Neighbourhoods"
+      }
+    }
+  ]
+}
+'''
 
 turtle_usecase2_data_describing = ''' 
     @prefix chnode: <http://localhost/> . 
     @prefix oa: <http://www.w3.org/ns/oa#> . 
     @prefix dctypes: <http://purl.org/dc/dcmitype/> .
+    @prefix dctterms: <http://purl.org/dc/dcterms/> .    
     @prefix cito: <http://purl.org/spar/cito/> . 
     
     <chnode:annoID> a oa:Annotation ;
     oa:hasTarget <http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_EAAM> ;
-    oa:hasBody <http://dx.doi.org/10.1175/1520-0469%281983%29040%3C1584%3ATLHSOD%3E2.0.CO%3B2> ;
+    oa:hasBody <chnode:bodyID> ;
     oa:motivatedBy oa:describing .
 
-    <http://dx.doi.org/10.1175/1520-0469%281983%29040%3C1584%3ATLHSOD%3E2.0.CO%3B2>
+    <chnode:bodyID>
         a cito:CitationAct, dctypes:Text ;
         cito:hasCitingEntity <http://dx.doi.org/10.1175/1520-0469%281983%29040%3C1584%3ATLHSOD%3E2.0.CO%3B2> ;
         cito:hasCitationCharacterization cito:describes ;

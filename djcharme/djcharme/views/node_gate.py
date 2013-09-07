@@ -10,7 +10,7 @@ _collect_annotations, change_annotation_state, find_annotation_graph    , DATA,\
 from djcharme import mm_render_to_response, mm_render_to_response_error
 from djcharme.exception import SerializeError, StoreConnectionError
 from djcharme.views import isGET, isPOST, content_type, validateMimeFormat,\
-    isOPTIONS, http_accept, get_format, checkMimeFormat
+    isOPTIONS, http_accept, get_format, checkMimeFormat, get_depth
 
 from django.http.response import HttpResponseRedirectBase, Http404, HttpResponse
 from django.contrib import messages
@@ -138,7 +138,7 @@ def process_data(request, resource_id):
     if req_format is None:
         return process_resource(request, resource_id)
             
-    tmp_g = find_resource_by_id(resource_id)           
+    tmp_g = find_resource_by_id(resource_id, get_depth(request))           
     return HttpResponse(tmp_g.serialize(format = req_format), 
                             mimetype = FORMAT_MAP.get(req_format))  
 
@@ -146,6 +146,6 @@ def process_page(request, resource_id = None):
     if 'text/html' not in http_accept(request):
         return process_resource(request, resource_id)
         
-    tmp_g = find_resource_by_id(resource_id)                 
+    tmp_g = find_resource_by_id(resource_id, get_depth(request))                 
     context = {'results': tmp_g.serialize()}
     return mm_render_to_response(request, context, 'viewer.html')

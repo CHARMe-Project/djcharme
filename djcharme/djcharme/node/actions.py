@@ -237,7 +237,7 @@ def find_annotation_graph(resource_id):
     
     
 
-def find_resource_by_id(resource_id):
+def find_resource_by_id(resource_id, depth=None):
     '''
         Returns the charme resource associated with the given resource_id
         * resource_id:String
@@ -249,12 +249,18 @@ def find_resource_by_id(resource_id):
     LOGGING.debug("Looking resource %s" % (uriRef))
     for res in g.triples((uriRef, None, None)):
         tmp_g.add(res)
-        collect_all(g, tmp_g, res[2]) 
+        if depth is None or depth > 0:        
+            collect_all(g, tmp_g, res[2], depth) 
     return tmp_g
 
-def collect_all(graph, cache_graph, uriRef):
+def collect_all(graph, cache_graph, uriRef, depth = None):
     for res in graph.triples((uriRef, None, None)):
-        cache_graph.add(res) 
+        cache_graph.add(res)
+        if depth is None or depth > 0:
+            if depth > 0: #if fixed depth decrease the depth by one
+                depth = depth - 1
+            collect_all(graph, cache_graph, res[2], depth)
+         
     
     
 
