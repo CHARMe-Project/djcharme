@@ -9,6 +9,8 @@ admin.autodiscover()
 # from django.contrib import admin
 # admin.autodiscover()
 
+
+
 urlpatterns = patterns('',
 
     # Uncomment the next line to enable the admin:
@@ -52,6 +54,20 @@ urlpatterns += patterns('djcharme.views.endpoint',
     (r'^endpoint', 'endpoint'),
 )
 
+#----------------------
+# Open Search
+iformat = ["rdf", "turtle", "json-ld"]
+iformats_re = '(' + '|'.join(iformat) + ')'
+
+urlpatterns += patterns('djcharme.views.search',
+    (r'^search/description', 'get_description'),
+)
+
+urlpatterns += patterns('djcharme.views.search',
+    (r'^search/' + iformats_re, 'do_search'),
+)
+
 urlpatterns += patterns('djcharme.views.main_gui',
     (r'^', 'welcome'),
 )
+#----------------------

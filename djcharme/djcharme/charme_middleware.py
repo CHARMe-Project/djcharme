@@ -55,9 +55,24 @@ for log_name in loggers:
 
 LOGGING = logging.getLogger(__name__)
 
+import mimetypes
+if not mimetypes.inited:
+    mimetypes.init()
+    mimetypes.add_type('application/rdf+xml', '.rdf')
+    mimetypes.add_type('text/turtle', '.ttl')
+    mimetypes.add_type('application/ld+json', '.json-ld')
+
 class CharmeMiddleware(object):
       
     __store = None  
+    __osEngine = None
+
+    @classmethod   
+    def __initOsEngine(self):
+        from djcharme.opensearch.os_conf import setUp
+        LOGGING.info("OpenSearch Engine created")
+        CharmeMiddleware.__osEngine =setUp()
+         
 
     @classmethod   
     def __initStore(self): 
@@ -87,6 +102,12 @@ class CharmeMiddleware(object):
             CharmeMiddleware.__initStore()
         return CharmeMiddleware.__store
       
+    @classmethod
+    def get_osengine(self, debug = False):        
+        if debug or CharmeMiddleware.__osEngine is None:
+            CharmeMiddleware.__initOsEngine()
+        return CharmeMiddleware.__osEngine
+      
     def process_request(self, request):
         if request.method == 'OPTIONS':
             return HttpResponse(status=200)             
@@ -97,6 +118,15 @@ class CharmeMiddleware(object):
             except AttributeError, e:
                 messages.add_message(request, messages.ERROR, e)
                 messages.add_message(request, messages.INFO, 'Missing configuration')
+                return mm_render_to_response_error(request, '503.html', 503)
+
+        if CharmeMiddleware.get_osengine() is None:
+            try:
+                self.__initOsEngine()
+            except Exception, e:
+                messages.add_message(request, messages.ERROR, e)
+                messages.add_message(request, messages.INFO, 'Missing configuration. \
+Cannot initialize OpenSearch Engine')
                 return mm_render_to_response_error(request, '503.html', 503)
 
         self._validate_request(request)

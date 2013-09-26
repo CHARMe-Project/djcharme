@@ -108,7 +108,7 @@ turtle_usecase1 = '''
     @prefix chnode: <http://localhost/> . 
     @prefix oa: <http://www.w3.org/ns/oa#> . 
     @prefix dctype: <http://purl.org/dc/dcmitype/> .
-    @prefix dcterm="http://purl.org/dc/terms/"
+    @prefix dcterm: <http://purl.org/dc/terms/> .
     @prefix cito: <http://purl.org/spar/cito/> . 
     
     <chnode:annoID> a oa:Annotation ;

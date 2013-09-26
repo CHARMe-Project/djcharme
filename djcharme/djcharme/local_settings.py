@@ -7,11 +7,11 @@ Created on 14 May 2013
 #############
 # DATABASES #
 #############
-'''
+
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3', # Add 'postgresql_psycopg2', 'mysql', 'sqlite3' or 'oracle'.
-        'NAME': '<DB_PATH>',                      # Or path to database file if using sqlite3.
+        'NAME': '/home/users/mnagni/git/djcharme/djcharme/sqlite.db',                      # Or path to database file if using sqlite3.
         # The following settings are not used with sqlite3:
         'USER': '',
         'PASSWORD': '',
@@ -61,6 +61,11 @@ LOGGING = {
     }
 }
 
+SITE_PREFIX = ""
+#SITE_PREFIX = "cedasite"
+
+STATIC_URL = SITE_PREFIX + "/static/"
+
 def _format_fuseki_url(service):
     return 'http://%s:%s/%s/%s' % (FUSEKI_URL, FUSEKI_PORT, NODE_ROOT_URL, service)
 
@@ -77,4 +82,4 @@ SPARQL_DATA = _format_fuseki_url('data')
 GRAPH_STORE_RW_PATH = '/%s/%s' % (NODE_ROOT_URL, 'data')
 GRAPH_STORE_DATA = FUSEKI_URL + NODE_ROOT_URL + '/data'
 GRAPH_STORE_R = FUSEKI_URL + NODE_ROOT_URL +'/get'
-'''
+

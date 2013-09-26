@@ -26,26 +26,23 @@ HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABI
 OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE 
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-Created on 5 May 2012
+Created on 25 May 2013
 
 @author: Maurizio Nagni
 '''
 from ceda_markup.opensearch.osquery import OSQuery
-from ceda_markup.atom.atom import createID, createUpdated, \
-    createPublished, createEntry
-from ceda_markup.atom.info import createTitle, HTML_TYPE, createContent
-from ceda_markup.dc.dc import createDate
 from ceda_markup.gml.gml import createBeginPosition, createEndPosition, \
     createTimePeriod, createValidTime
-from ceda_markup.atom.link import REL_SEARCH, REL_ALTERNATE, createLink
-from ceda_markup.opensearch import filter_results, COUNT_DEFAULT, \
-    START_INDEX_DEFAULT, START_PAGE_DEFAULT, create_autodiscovery_link
-from ceda_markup.opensearch.template.osresponse import Result, Subresult
-from ceda_markup.opensearch.template.atom import OSAtomResponse
+from ceda_markup.opensearch import COUNT_DEFAULT, \
+    START_INDEX_DEFAULT, START_PAGE_DEFAULT
+from ceda_markup.opensearch.template.osresponse import OSEngineResponse
 from ceda_markup.opensearch.template.html import OSHTMLResponse
-from ceda_markup.georss import create_where_from_postgis
+
 from ceda_markup.opensearch.os_request import OS_NAMESPACE
 from ceda_markup.opensearch.os_param import OSParam
+from djcharme.node.search import search_title
+from ceda_markup.opensearch.template.atom import OSAtomResponse
+from djcharme.node.actions import CH_NS, CH_NODE, ANNO_STABLE
 
 
 
@@ -134,96 +131,61 @@ def import_count_and_page(context):
     
     return tuple(ret)
 
-class COSAtomResponse(OSAtomResponse):
+class COSRDFResponse(OSEngineResponse):
     '''
     classdocs
     '''
 
     def __init__(self):
-        super(COSAtomResponse, self).__init__()       
+        '''
+        Constructor
+        '''
+        super(COSRDFResponse, self).__init__('rdf')
 
     def digest_search_results(self, results, context):
-        pass                                                           
-        #return Result(count, start_index, start_page, tot_results, \
-        #              subresult = subresults, title = title)
-        
-    def generateEntryLinks(self, entry, atomroot, path, params_model, context):
-        entry.append(create_autodiscovery_link(atomroot, path, \
-                                               params_model, context, \
-                                               self.extension, \
-                                               rel = REL_ALTERNATE))                
-        
-        entry.append(create_autodiscovery_link(atomroot, path, \
-                                           params_model, context, \
-                                           extension = self.extension, \
-                                           rel = REL_SEARCH))                
+        return results.serialize(format='xml')
+            
+    def generate_response(self, results, query, \
+                          ospath, params_model, context):
+        return results
 
-    def generate_url(self, os_host_urlURL, context):
-        return generate_url_id(os_host_urlURL, context.get('guid'))  
+class COSJsonLDResponse(OSEngineResponse):
+    '''
+    classdocs
+    '''
 
-    def generate_entries(self, atomroot, subresults, path, params_model, context):
-        if subresults is None:
-            return
-              
-        entries = []
-        
-        for subresult in subresults: 
-            #Here could loop over results
-            entry_path = generate_url_id(path, subresult.id)
-            atom_id = createID(entry_path + '/' + self.extension, root = atomroot)
-            ititle = createTitle(root = atomroot, 
-                                 body = subresult.title, 
-                                 itype = HTML_TYPE)
-            atom_content = createContent(root = atomroot, 
-                                        body = subresult.description, 
-                                        itype = HTML_TYPE)
-            atom_updated = createUpdated(subresult.updated, root = atomroot)
-            atom_published = createPublished('TO_BE_DONE_2011-01-21T11:05:29.511Z', 
-                                            root = atomroot)            
-            entry = createEntry(atom_id, ititle, atom_updated,
-                                published=atom_published,
-                                content=atom_content, root = atomroot)
-            
-            begin_position = None
-            end_position = None
-            if hasattr(subresult, 'beginPosition') \
-                    and subresult.beginPosition is not None:
-                begin_position = subresult.beginPosition
-            if hasattr(subresult, 'endPosition') \
-                    and subresult.endPosition is not None:                
-                end_position = subresult.endPosition 
-            append_valid_time(subresult, entry, atomroot, 
-                              begin_position, end_position)            
-            
-            idate = createDate(root = atomroot, 
-                body = 'TO_BE_DONE_2002-10-18T08:07:37.387Z/2012-03-29T07:12:20.735Z')        
-            entry.append(idate)
-            
-            if hasattr(subresult, 'geometry') \
-                    and subresult.geometry is not None:
-                where = create_where_from_postgis(subresult.geometry, atomroot)
-                entry.append(where)
-            
-            
-            
-            self.generateEntryLinks(entry, atomroot, entry_path, \
-                                    params_model, context)
-            if hasattr(subresult, 'enclosure') \
-                    and subresult.enclosure is not None: 
-                for enclosure in subresult.enclosure:
-                    if enclosure.get('rel', None) == 'enclosure': 
-                        entry.append(createLink(enclosure.get('href'), 
-                                            rel = 'enclosure', 
-                                            root = atomroot, 
-                                            itype = enclosure.get('type'),
-                                            length = enclosure.get('length')))                
-                            
-            entries.append(entry)
+    def __init__(self):
+        '''
+        Constructor
+        '''
+        super(COSJsonLDResponse, self).__init__('json-ld')
 
-        for entry in entries:
-            atomroot.append(entry) 
+    def digest_search_results(self, results, context):
+        return results.serialize(format='json-ld')
+            
+    def generate_response(self, results, query, \
+                          ospath, params_model, context):
+        return results
 
-class COSHTMLResponse(OSHTMLResponse):
+class COSTurtleResponse(OSEngineResponse):
+    '''
+    classdocs
+    '''
+
+    def __init__(self):
+        '''
+        Constructor
+        '''
+        super(COSTurtleResponse, self).__init__('turtle')
+
+    def digest_search_results(self, results, context):
+        return results.serialize(format='turtle')
+            
+    def generate_response(self, results, query, \
+                          ospath, params_model, context):
+        return results
+
+class COSHTMLResponse(OSAtomResponse):
     '''
     classdocs
     '''
@@ -254,10 +216,12 @@ class COSQuery(OSQuery):
         params.append(OSParam("startIndex", "startIndex", 
                               namespace = OS_NAMESPACE))                
         params.append(OSParam("q", "searchTerms", 
-                              namespace = OS_NAMESPACE))
-        '''         
-        params.append(OSParam("uid", "uid", 
-                namespace = "http://a9.com/-/opensearch/extensions/geo/1.0/"))        
+                              namespace = OS_NAMESPACE))                 
+        params.append(OSParam("title", "title", 
+                namespace = "http://purl.org/dc/terms/"))
+        params.append(OSParam("status", "status", 
+                namespace = CH_NODE, default=ANNO_STABLE))    
+        '''        
         params.append(OSParam(BBOX, 'box', 
                 namespace = "http://a9.com/-/opensearch/extensions/geo/1.0/"))       
         params.append(OSParam("start", "start", 
@@ -267,5 +231,6 @@ class COSQuery(OSQuery):
         '''        
         super(COSQuery, self).__init__(params)
         
-    def do_search(self, context):
-        pass
+    def do_search(self, query, context):
+        return search_title(title=query.attrib['title'], 
+                            graph=str(query.attrib['status']))

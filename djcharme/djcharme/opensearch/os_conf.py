@@ -32,12 +32,13 @@ Created on 4 May 2012
 '''
 from ceda_markup.opensearch.os_request import OpenSearchDescription
 from ceda_markup.opensearch.os_engine import OSEngine
-from djcharme.opensearch.cimpl import COSQuery, COSAtomResponse
+from djcharme.opensearch.cimpl import COSQuery, COSRDFResponse,\
+    COSTurtleResponse, COSJsonLDResponse
 
 def setUp(): 
     query = COSQuery()
-    atomResponse = COSAtomResponse()     
+    responses = [COSRDFResponse(), COSTurtleResponse(), COSJsonLDResponse()]     
     os_short_name = "Web Search"
     os_description = "A default description"
     os = OpenSearchDescription(os_short_name, os_description)
-    return OSEngine(query, [atomResponse], os)   
+    return OSEngine(query, responses, os)   

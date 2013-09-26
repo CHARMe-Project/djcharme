@@ -34,7 +34,7 @@ def __serialize(graph, req_format = 'application/rdf+xml'):
         - string **req_format** the serialization format
         - **return** the serialized graph                
     '''         
-    if req_format == 'application/ld+json':
+    if req_format == FORMAT_MAP['json-ld']:
         req_format = 'json-ld'
     return graph.serialize(format=req_format)
 
@@ -69,7 +69,7 @@ def index(request, graph = 'stable'):
         context = {'results': tmp_g.serialize(), 'states': json.dumps(states)}
         return mm_render_to_response(request, context, 'viewer.html')
     
-    messages.add_message(request, messages.ERROR, e)
+    messages.add_message(request, messages.ERROR, "Format not accepted")
     return mm_render_to_response_error(request, '400.html', 400)
 
 

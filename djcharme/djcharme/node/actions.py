@@ -33,13 +33,14 @@ Created on 12 Apr 2013
 
 from rdflib import Graph, URIRef
 import logging
-from django.conf import settings
 from rdflib.namespace import Namespace
 import uuid
 from djcharme.charme_middleware import CharmeMiddleware
 from rdflib.graph import ConjunctiveGraph
 from urllib2 import URLError
 from djcharme.exception import StoreConnectionError
+from djcharme.node import _extractSubject
+from django.conf import settings
 
 LOGGING = logging.getLogger(__name__)
 '''
@@ -86,6 +87,7 @@ WHERE {
 '''
 FORMAT_MAP = {'json-ld': 'application/ld+json',
               'xml': 'application/rdf+xml',
+              'rdf': 'application/rdf+xml',
               'turtle': 'text/turtle'}
 
 def rdf_format_from_mime(mimetype):
@@ -93,9 +95,11 @@ def rdf_format_from_mime(mimetype):
         if mimetype == v:
             return k 
 
+CH_NS = "http://charm.eu/ch#"
 # Create a namespace object for the CHARMe namespace.
 RDF = Namespace("http://www.w3.org/1999/02/22-rdf-syntax-ns#")
 OA = Namespace("http://www.w3.org/ns/oa#")
+CH = Namespace(CH_NS)
 
 ANNO_SUBMITTED = 'submitted'
 ANNO_INVALID = 'invalid'
@@ -235,8 +239,6 @@ def find_annotation_graph(resource_id):
         if triple in new_g:
             return graph                   
     
-    
-
 def find_resource_by_id(resource_id, depth=None):
     '''
         Returns the charme resource associated with the given resource_id
@@ -244,25 +246,9 @@ def find_resource_by_id(resource_id, depth=None):
         * return: an rdflib.Graph object
     '''
     g = ConjunctiveGraph(store=CharmeMiddleware.get_store())
-    tmp_g = Graph()
     uriRef = _formatResourceURIRef(resource_id)
     LOGGING.debug("Looking resource %s" % (uriRef))
-    for res in g.triples((uriRef, None, None)):
-        tmp_g.add(res)
-        if depth is None or depth > 0:        
-            collect_all(g, tmp_g, res[2], depth) 
-    return tmp_g
-
-def collect_all(graph, cache_graph, uriRef, depth = None):
-    for res in graph.triples((uriRef, None, None)):
-        cache_graph.add(res)
-        if depth is None or depth > 0:
-            if depth > 0: #if fixed depth decrease the depth by one
-                depth = depth - 1
-            collect_all(graph, cache_graph, res[2], depth)
-         
-    
-    
+    return _extractSubject(g, uriRef, depth)
 
 def _collect_annotations(graph):
     '''    
