@@ -88,7 +88,8 @@ WHERE {
 FORMAT_MAP = {'json-ld': 'application/ld+json',
               'xml': 'application/rdf+xml',
               'rdf': 'application/rdf+xml',
-              'turtle': 'text/turtle'}
+              'turtle': 'text/turtle',
+              'ttl': 'text/turtle'}
 
 def rdf_format_from_mime(mimetype):
     for k,v in FORMAT_MAP.iteritems():

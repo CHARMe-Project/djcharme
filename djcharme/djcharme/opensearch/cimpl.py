@@ -176,7 +176,7 @@ class COSTurtleResponse(OSEngineResponse):
         '''
         Constructor
         '''
-        super(COSTurtleResponse, self).__init__('turtle')
+        super(COSTurtleResponse, self).__init__('ttl')
 
     def digest_search_results(self, results, context):
         return results.serialize(format='turtle')
