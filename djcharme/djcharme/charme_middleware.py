@@ -132,10 +132,16 @@ Cannot initialize OpenSearch Engine')
         self._validate_request(request)
 
     def process_response(self, request, response):
+        response['Access-Control-Allow-Origin'] = \
+            request.META.get('HTTP_ORIGIN', 
+                             'http://localhost:8000')
+        response['Access-Control-Allow-Credentials'] = 'true'
+        response['Access-Control-Expose-Headers'] = 'Location, Content-Type, Content-Length';
+        
         if request.method == 'OPTIONS':
-            response['Access-Control-Allow-Methods'] = "POST, GET, OPTIONS"                 
-            response['Access-Control-Allow-Headers'] = "X-Requested-With, x-requested-with, Content-Type"
-            response['Access-Control-Allow-Origin'] = request.META.get('HTTP_ORIGIN', 'http://localhost:8000')
+            response['Access-Control-Allow-Methods'] = 'GET, OPTIONS'               
+            response['Access-Control-Allow-Headers'] = 'X-Requested-With, x-requested-with, Content-Type, Content-Length'
+            #response['Access-Control-Allow-Origin'] = request.META.get('HTTP_ORIGIN', 'http://localhost:8000')
             response['Access-Control-Max-Age'] = 10
             response['Content-Type'] = "text/plain"
             return response
