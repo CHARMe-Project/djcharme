@@ -34,6 +34,7 @@ from djcharme.node.actions import generate_graph, ANNO_STABLE
 from djcharme.node import _extractSubject
 from rdflib.graph import Graph
 from djcharme.charme_middleware import CharmeMiddleware
+from rdflib.term import URIRef
 
 SEARCH_TITLE = """
 PREFIX text: <http://jena.apache.org/text#>
@@ -62,6 +63,23 @@ def search_title(title, graph=ANNO_STABLE, depth=3):
     tmp_g = Graph()
     for row in g.query(SEARCH_TITLE % (title)):
         for subj in _extractSubject(g, row[0], depth): 
+            tmp_g.add(subj)
+    return tmp_g
+
+def search_annotationByTarget(predicate, graph=ANNO_STABLE, depth=3):
+    '''
+        Returns annotations which have hasTarget the given predicate
+        - string **predicate**
+            the annotation predicate
+        - string **graph**
+            the triplestore repository where to look into
+        - integer **depth**
+            how deep should the subject's properties be described
+    '''
+    g = generate_graph(CharmeMiddleware.get_store(), graph)
+    tmp_g = Graph() 
+    for row in g.subjects(object=URIRef(predicate)):
+        for subj in _extractSubject(g, row, depth): 
             tmp_g.add(subj)
     return tmp_g
     

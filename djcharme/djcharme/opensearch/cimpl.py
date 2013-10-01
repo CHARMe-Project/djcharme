@@ -40,7 +40,7 @@ from ceda_markup.opensearch.template.html import OSHTMLResponse
 
 from ceda_markup.opensearch.os_request import OS_NAMESPACE
 from ceda_markup.opensearch.os_param import OSParam
-from djcharme.node.search import search_title
+from djcharme.node.search import search_title, search_annotationByTarget
 from ceda_markup.opensearch.template.atom import OSAtomResponse
 from djcharme.node.actions import CH_NS, CH_NODE, ANNO_STABLE
 
@@ -219,8 +219,12 @@ class COSQuery(OSQuery):
                               namespace = OS_NAMESPACE))                 
         params.append(OSParam("title", "title", 
                 namespace = "http://purl.org/dc/terms/"))
+        params.append(OSParam("target", "target", 
+                namespace = CH_NODE))
         params.append(OSParam("status", "status", 
-                namespace = CH_NODE, default=ANNO_STABLE))    
+                namespace = CH_NODE, default=ANNO_STABLE))            
+        params.append(OSParam("depth", "depth", 
+                namespace = CH_NODE, default=1))
         '''        
         params.append(OSParam(BBOX, 'box', 
                 namespace = "http://a9.com/-/opensearch/extensions/geo/1.0/"))       
@@ -232,5 +236,20 @@ class COSQuery(OSQuery):
         super(COSQuery, self).__init__(params)
         
     def do_search(self, query, context):
-        return search_title(title=query.attrib['title'], 
-                            graph=str(query.attrib['status']))
+        results = []
+        if query.attrib['title'] != None:
+            results.append(search_title(title=query.attrib['title'], 
+                            graph=str(query.attrib['status']),
+                            depth=int(query.attrib['depth'])))
+            
+        if query.attrib['target'] != None:
+            results.append(search_annotationByTarget(query.attrib['target'], 
+                            graph=str(query.attrib['status']),
+                            depth=int(query.attrib['depth'])))
+            
+        # "AND"s all the extracted graphs     
+        ret = results[0]
+        if len(results) > 1:
+            for res in results[1:]:
+                ret = ret and res
+        return ret            
