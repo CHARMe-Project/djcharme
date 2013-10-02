@@ -3,6 +3,52 @@ from djcharme.views.node_gate import index, insert, process_page, advance_status
 from xml.etree import ElementTree
 
 
+charme_turtle_model = '''
+@prefix charme: <http://charme.ac.uk/2012/charme#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix skos: <http://www.w3.org/2004/02/skos/core#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix oa: <http://www.w3.org/ns/oa#> .
+
+charme:motivationScheme a skos:ConceptScheme .
+
+charme:Classifier a oa:Motivation ;
+    skos:inScheme charme:motivationScheme ;
+    skos:prefLabel "Classifier"@en ;
+    skos:broader oa:classifying;
+    rdfs:domain oa:Annotation ;
+    rdfs:range oa:Motivation;
+    rdfs:comment "Classifies the Annotation"@en .
+
+charme:AtmosphericScience a charme:Classifier ;
+    skos:inScheme charme:motivationScheme ;
+    skos:prefLabel "AtmosphericScience"@en ;
+    rdfs:comment "Specifies the Annotation category as suitable for AtmosphericScience"@en .
+    
+charme:RiskEvaluation a charme:Classifier ;
+    skos:inScheme charme:motivationScheme ;
+    skos:prefLabel "RiskEvaluation"@en ;
+    rdfs:comment "Specifies the Annotation category as suitable for RiskEvaluation"@en .    
+
+charme:DeprecateAnnotation a oa:Motivation ;
+    skos:inScheme charme:motivationScheme ;
+    skos:prefLabel "deprecateAnnotation"@en ;
+    skos:broader oa:commenting;
+    rdfs:domain oa:Annotation ;
+    rdfs:range oa:Annotation;
+    rdfs:comment "Marks the target annotation as deprecated"@en .
+    
+###  http://charme.ac.uk/2012/charme#deprecatedFor
+charme:deprecatedFor rdf:type owl:ObjectProperty ;
+    rdfs:label "DeprecateFor"@en ;
+    rdfs:comment "The relationship between an Annotation and a Motivation, indicating the reasons that Annotation is deprecated for"@en ;
+    rdfs:isDefinedBy <http://charme.ac.uk/2012/charme#> ;
+    rdfs:domain oa:Annotation ;
+    rdfs:range oa:Motivation.
+    
+'''
+
 rdf_data = '''
     <rdf:RDF
        xmlns:ns1="http://www.w3.org/2011/content#"
@@ -223,6 +269,69 @@ turtle_usecase2_data_citing = '''
     <http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_EAAM>
         a dctypes:Dataset .
 '''
+
+turtle_usecase3 = '''
+    @prefix chnode: <http://localhost/> . 
+    @prefix charme: <http://charme.ac.uk/2012/charme#> .    
+    @prefix oa: <http://www.w3.org/ns/oa#> . 
+    @prefix dctype: <http://purl.org/dc/dcmitype/> .
+    
+    <chnode:annoID> a oa:Annotation ;    
+    oa:hasTarget <http://rda.ucar.edu/datasets/ds131.1> ;
+    oa:motivatedBy charme:AtmosphericScience .
+        
+    <http://rda.ucar.edu/datasets/ds131.1>
+        a dctype:Dataset .
+''' 
+
+json_ld_usecase3 = '''
+{ 
+  "@graph": [
+    {
+      "@id": "http://localhost/annoID",
+      "@type": "http://www.w3.org/ns/oa#Annotation",
+      "http://www.w3.org/ns/oa#hasTarget": {
+      "@id": "http://rda.ucar.edu/datasets/ds131.1"
+       },
+      "http://www.w3.org/ns/oa#motivatedBy": {
+        "@id": "http://charme.ac.uk/2012/charme#AtmosphericScience"
+       }
+    },
+    {
+      "@id": "http://rda.ucar.edu/datasets/ds131.1",
+      "@type": "http://purl.org/dc/dcmitype/Dataset"
+    }
+ ]
+}
+'''
+
+#The %s in the target has to be another Annotation
+turtle_usecase4 = '''
+    @prefix chnode: <http://localhost/> . 
+    @prefix charme: <http://charme.ac.uk/2012/charme#> .    
+    @prefix oa: <http://www.w3.org/ns/oa#> . 
+    @prefix dctype: <http://purl.org/dc/dcmitype/> .
+    
+    <chnode:annoID> a oa:Annotation ;    
+    oa:hasTarget <%s> ;
+    oa:motivatedBy charme:Deprecating .
+''' 
+
+turtle_usecase4_1 = '''
+    @prefix chnode: <http://localhost/> . 
+    @prefix charme: <http://charme.ac.uk/2012/charme#> .    
+    @prefix oa: <http://www.w3.org/ns/oa#> . 
+    @prefix dctype: <http://purl.org/dc/dcmitype/> .
+    
+    <chnode:annoID> a oa:Annotation ;    
+    oa:hasTarget <http://rda.ucar.edu/datasets/ds131.1> ;
+    oa:motivatedBy charme:AtmosphericScience ;
+    charme:deprecatedFor charme:RiskEvaluation .
+        
+    <http://rda.ucar.edu/datasets/ds131.1>
+        a dctype:Dataset .
+''' 
+
 def _prepare_get(factory, url, user = None):
     """
         **RequestFactory** - factory

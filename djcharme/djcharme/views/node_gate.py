@@ -90,11 +90,19 @@ def insert(request):
     
     if isPOST(request) or isOPTIONS(request):
         triples = request.body
-        tmp_g = insert_rdf(triples, req_format, graph=ANNO_SUBMITTED)
-        ret_format = http_accept(request)[0] 
-        ret_format = checkMimeFormat(ret_format)
+        tmp_g = insert_rdf(triples, req_format, graph=ANNO_SUBMITTED)        
+        ret_format = http_accept(request)
+        if type(ret_format) == list:
+            ret_format = ret_format[0]
+
         if ret_format is None:
             ret_format = req_format
+        else:            
+            ret_format = checkMimeFormat(ret_format)
+
+        if ret_format is None:
+            ret_format = req_format
+
         return HttpResponse(__serialize(tmp_g, req_format = ret_format), content_type=FORMAT_MAP.get(ret_format))
 
 
