@@ -1,3 +1,4 @@
+# coding: utf-8
 '''
 Created on 31 May 2013
 
@@ -9,7 +10,8 @@ import unittest
 from djcharme.node.actions import FORMAT_MAP
 from rdflib.graph import Graph
 from djcharme.charme_middleware import CharmeMiddleware
-from djcharme.test import turtle_usecase1, test_insert_anotation, rdf_usecase1
+from djcharme.test import turtle_usecase1, test_insert_anotation, rdf_usecase1,\
+    turtle_semantic, turtle_citation
 from djcharme import settings
 from django.test.client import RequestFactory
 
@@ -32,9 +34,9 @@ class Test(unittest.TestCase):
 
     def test_usecase_1(self):
         response = test_insert_anotation(self,
-                  http_accept=FORMAT_MAP['turtle'], 
-                  content_type=FORMAT_MAP['xml'], 
-                  data=rdf_usecase1) 
+                  http_accept=FORMAT_MAP['json-ld'], 
+                  content_type=FORMAT_MAP['turtle'], 
+                  data=turtle_semantic) 
         print response
         pass
 

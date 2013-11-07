@@ -40,7 +40,8 @@ from ceda_markup.opensearch.template.html import OSHTMLResponse
 
 from ceda_markup.opensearch.os_request import OS_NAMESPACE
 from ceda_markup.opensearch.os_param import OSParam
-from djcharme.node.search import search_title, search_annotationByTarget
+from djcharme.node.search import search_title, search_annotationByTarget,\
+    search_annotationsByStatus
 from ceda_markup.opensearch.template.atom import OSAtomResponse
 from djcharme.node.actions import CH_NS, CH_NODE, ANNO_STABLE
 
@@ -244,6 +245,11 @@ class COSQuery(OSQuery):
             
         if query.attrib['target'] != None:
             results.append(search_annotationByTarget(query.attrib['target'], 
+                            graph=str(query.attrib['status']),
+                            depth=int(query.attrib['depth'])))
+            
+        if query.attrib['status'] != None:
+            results.append(search_annotationsByStatus( 
                             graph=str(query.attrib['status']),
                             depth=int(query.attrib['depth'])))
             

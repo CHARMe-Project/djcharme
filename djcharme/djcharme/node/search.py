@@ -66,6 +66,21 @@ def search_title(title, graph=ANNO_STABLE, depth=3):
             tmp_g.add(subj)
     return tmp_g
 
+def search_annotationsByStatus(graph=ANNO_STABLE, depth=3):
+    '''
+        Returns annotations which refer to a given dcterm:title
+        - string **graph**
+            the triplestore repository where to look into
+        - integer **depth**
+            how deep should the subject's properties be described            
+    ''' 
+    g = generate_graph(CharmeMiddleware.get_store(), graph)
+    tmp_g = Graph()
+    for row in g.triples((None, None, None)):
+        for subj in _extractSubject(g, row[0], depth): 
+            tmp_g.add(subj)
+    return tmp_g
+
 def search_annotationByTarget(predicate, graph=ANNO_STABLE, depth=3):
     '''
         Returns annotations which have hasTarget the given predicate

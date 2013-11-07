@@ -106,7 +106,8 @@ require(["dijit/registry", "dojo/parser", "dojo/dom", "dojo/cookie", "dojo/dom-s
 			// Also, how to handle the return and callbacks.
 					    
 			var xhrArgs = {
-				url: "http://proteus.badc.rl.ac.uk:8000/insert/annotation",
+				//url: "http://proteus.badc.rl.ac.uk:8000/insert/annotation",
+				url: "http://charme-dev.cems.rl.ac.uk/insert/annotation",
 				postData: generate_annotation(),
 				handleAs: "text",
 				headers: {"X-CSRFToken": cookie('csrftoken'), "Content-Type": "text/turtle"},
