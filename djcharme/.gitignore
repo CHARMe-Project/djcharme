@@ -6,3 +6,8 @@
 /.settings
 /.project
 /.pydevproject
+/RemoteSystemsTempFiles
+/.metadata
+/.~lock.CHARMeNodeICD.odt#
+/.buildpath
+/.directory
