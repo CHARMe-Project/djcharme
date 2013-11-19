@@ -41,6 +41,7 @@ from urllib2 import URLError
 from djcharme.exception import StoreConnectionError
 from djcharme.node import _extractSubject
 from django.conf import settings
+from nose.plugins import deprecated
 
 LOGGING = logging.getLogger(__name__)
 '''
@@ -251,6 +252,21 @@ def find_resource_by_id(resource_id, depth=None):
     LOGGING.debug("Looking resource %s" % (uriRef))
     return _extractSubject(g, uriRef, depth)
 
+# This code is a workaround until FUSEKI fixes this bug
+# https://issues.apache.org/jira/browse/JENA-592
+def __query_annotations(graph, default_graph, pred = None, obj = None):
+    query = ''
+    if obj:
+        query = '''
+            SELECT ?subject ?pred ?obj WHERE { GRAPH <%s> {?subject ?pred <%s> }} 
+        ''' % (default_graph, obj)
+    if pred:
+        query = '''
+            SELECT ?subject ?pred ?obj WHERE { GRAPH <%s> {?subject <%s> ?obj }} 
+        ''' % (default_graph, pred)        
+    return graph.query(query)
+    
+
 def _collect_annotations(graph):
     '''    
         Returns a graph containing all the node annotations
@@ -258,15 +274,29 @@ def _collect_annotations(graph):
             the graph name 
     '''
     g = generate_graph(CharmeMiddleware.get_store(), graph)
-
     tmp_g = Graph()
+
+    # This code is a workaround until FUSEKI fixes this bug
+    # https://issues.apache.org/jira/browse/JENA-592
+    '''
+    anno   = __query_annotations(g, format_graphIRI(graph), obj = OA['Annotation'])
+    target = __query_annotations(g, format_graphIRI(graph), pred = OA['hasTarget'])
+    body   = __query_annotations(g, format_graphIRI(graph), pred = OA['hasBody'])
+    '''
+    
+    #To activate when the FUSEKI bug is closed
+    anno   = g.triples((None, None, OA['Annotation']))
+    target = g.triples((None, OA['hasTarget'], None))
+    body   = g.triples((None, OA['hasBody'], None))
+    
     try:
-        for res in g.triples((None, None, OA['Annotation'])):
+        for res in anno:
             tmp_g.add(res)
-        for res in g.triples((None, OA['hasTarget'], None)):
+        for res in target:
             tmp_g.add(res)        
-        for res in g.triples((None, OA['hasBody'], None)):
+        for res in body:
             tmp_g.add(res)
     except URLError as e:
-        raise StoreConnectionError("Cannot open a connection with triple store \n" + str(e))
+        raise StoreConnectionError("Cannot open a connection with triple store \n" + str(e))    
+    
     return tmp_g

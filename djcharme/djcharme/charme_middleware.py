@@ -36,10 +36,11 @@ import logging
 from rdflib.plugins.stores.sparqlstore import SPARQLUpdateStore
 from django.conf import settings
 from django.contrib import messages
-from djcharme import mm_render_to_response_error
+from djcharme import mm_render_to_response_error, LOAD_SAMPLE
 from django.contrib.auth.models import User
 from django.db.utils import DatabaseError
 from django.http.response import HttpResponse
+from multiprocessing.process import Process
 
 formatter = logging.Formatter(fmt='%(name)s %(levelname)s %(asctime)s %(module)s %(message)s')
 handler = logging.StreamHandler()
@@ -72,7 +73,6 @@ class CharmeMiddleware(object):
         from djcharme.opensearch.os_conf import setUp
         LOGGING.info("OpenSearch Engine created")
         CharmeMiddleware.__osEngine =setUp()
-         
 
     @classmethod   
     def __initStore(self): 
@@ -84,6 +84,7 @@ class CharmeMiddleware(object):
         store.bind("rdf", "http://www.w3.org/1999/02/22-rdf-syntax-ns#")
         store.bind("oa", "http://www.w3.org/ns/oa#")
         store.bind("chnode", getattr(settings, 'NODE_URI', 'http://localhost'))
+        #store.method = 'POST'
         LOGGING.info("Store created")
         CharmeMiddleware.__store = store
         
@@ -93,13 +94,17 @@ class CharmeMiddleware(object):
             if len(users) == 0:
                 User.objects.create_superuser('admin', '', 'admin')
         except DatabaseError:
-            LOGGING.error("Cannot find or create an application superuser")         
-      
+            LOGGING.error("Cannot find or create an application superuser")
       
     @classmethod
     def get_store(self, debug = False):        
         if debug or CharmeMiddleware.__store is None:
             CharmeMiddleware.__initStore()
+            if getattr(settings, LOAD_SAMPLE, False):
+                LOGGING.info("LOAD_SAMPLE: %s" % True)
+                from djcharme.node.sample import load_sample 
+                p = Process(target=load_sample) #inits thread
+                #p.start() #starts thread 
         return CharmeMiddleware.__store
       
     @classmethod
@@ -114,7 +119,7 @@ class CharmeMiddleware(object):
          
         if CharmeMiddleware.get_store() is None:
             try:
-                self.__initStore()
+                self.__initStore()               
             except AttributeError, e:
                 messages.add_message(request, messages.ERROR, e)
                 messages.add_message(request, messages.INFO, 'Missing configuration')
@@ -129,6 +134,8 @@ class CharmeMiddleware(object):
 Cannot initialize OpenSearch Engine')
                 return mm_render_to_response_error(request, '503.html', 503)
 
+
+            
         self._validate_request(request)
 
     def process_response(self, request, response):

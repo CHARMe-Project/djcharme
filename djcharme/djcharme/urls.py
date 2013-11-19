@@ -56,7 +56,8 @@ urlpatterns += patterns('djcharme.views.endpoint',
 
 #----------------------
 # Open Search
-iformat = ["rdf", "ttl", "json-ld"]
+#iformat = ["rdf", "ttl", "json-ld"]
+iformat = ["atom"]
 iformats_re = '(' + '|'.join(iformat) + ')'
 
 urlpatterns += patterns('djcharme.views.search',

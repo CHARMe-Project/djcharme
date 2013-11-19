@@ -34,8 +34,8 @@ from ceda_markup.opensearch.osquery import OSQuery
 from ceda_markup.gml.gml import createBeginPosition, createEndPosition, \
     createTimePeriod, createValidTime
 from ceda_markup.opensearch import COUNT_DEFAULT, \
-    START_INDEX_DEFAULT, START_PAGE_DEFAULT
-from ceda_markup.opensearch.template.osresponse import OSEngineResponse
+    START_INDEX_DEFAULT, START_PAGE_DEFAULT, filter_results
+from ceda_markup.opensearch.template.osresponse import OSEngineResponse, Result
 from ceda_markup.opensearch.template.html import OSHTMLResponse
 
 from ceda_markup.opensearch.os_request import OS_NAMESPACE
@@ -44,6 +44,12 @@ from djcharme.node.search import search_title, search_annotationByTarget,\
     search_annotationsByStatus
 from ceda_markup.opensearch.template.atom import OSAtomResponse
 from djcharme.node.actions import CH_NS, CH_NODE, ANNO_STABLE
+import datetime
+from rdflib.graph import Graph
+from ceda_markup.atom.atom import createID, createUpdated, createPublished,\
+    createEntry
+from ceda_markup.atom.info import createContent, createTitle, TEXT_TYPE
+from djcharme.views import checkMimeFormat
 
 
 
@@ -132,6 +138,80 @@ def import_count_and_page(context):
     
     return tuple(ret)
 
+class COSAtomResponse(OSAtomResponse):
+    '''
+    classdocs
+    '''
+
+    def __init__(self):
+        '''
+        Constructor
+        '''
+        super(COSAtomResponse, self).__init__()
+
+    def generate_entries(self, atomroot, subresults, path, \
+                         params_model, context):
+        if subresults is None:
+            return
+               
+        entries = []
+        for subresult in subresults: 
+            #Here could loop over results
+            atom_id = createID(subresult['subject'], root = atomroot)
+            ititle = createTitle(root = atomroot, 
+                                 body = subresult['subject'], 
+                                 itype = TEXT_TYPE)
+            atom_content = createContent(root = atomroot, 
+                                        body = subresult['triple'], 
+                                        itype = TEXT_TYPE)
+            atom_updated = createUpdated(datetime.datetime.now().isoformat(), root = atomroot)
+            atom_published = createPublished('TO_BE_DONE_2011-01-21T11:05:29.511Z', 
+                                            root = atomroot)            
+            entry = createEntry(atom_id, ititle, atom_updated,
+                                published=atom_published,
+                                content=atom_content, root = atomroot)        
+
+            entries.append(entry)
+
+        for entry in entries:
+            atomroot.append(entry) 
+            
+    def generate_url(self, osHostURL, context):
+        '''
+            Returns the proper URL to assemble the OSResponse links
+        '''
+        return generate_url_id(osHostURL, context.get('target', None))        
+
+    def digest_search_results(self, results, context):
+        title = "CHARMe results"
+        count, start_index, start_page = import_count_and_page(context)
+        
+        subjects = [subj for subj in set(results.subjects())]
+        subject_subresults = filter_results(subjects, count, start_index, start_page)
+        
+        subresults = []
+        format = context.get('format', 'json-ld')
+        if format == None:
+            format = 'json-ld'
+        format = checkMimeFormat(format)                   
+        for subj in subject_subresults:
+            tmp_g = Graph() 
+            for triples in results.triples((subj, None, None)): 
+                tmp_g.add(triples)
+            
+            subresults.append({'subject': str(subj), 
+                               'triple': tmp_g.serialize(format = format)})
+
+
+        return Result(count, start_index, start_page, len(subresults), \
+                      subresult = subresults, title = title) 
+
+'''            
+    def generate_response(self, results, query, \
+                          ospath, params_model, context):
+        return results
+'''
+
 class COSRDFResponse(OSEngineResponse):
     '''
     classdocs
@@ -144,7 +224,12 @@ class COSRDFResponse(OSEngineResponse):
         super(COSRDFResponse, self).__init__('rdf')
 
     def digest_search_results(self, results, context):
-        return results.serialize(format='xml')
+        title = "CHARMe results"
+        count, start_index, start_page = import_count_and_page(context)
+        subresults = filter_results(results, count, start_index, start_page)
+        return Result(count, start_index, start_page, len(results), \
+                      subresult = subresults, title = title)        
+        #return results.serialize(format='xml')
             
     def generate_response(self, results, query, \
                           ospath, params_model, context):
@@ -211,11 +296,11 @@ class COSQuery(OSQuery):
         '''
         params = []
         params.append(OSParam("count", "count", 
-                              namespace = OS_NAMESPACE))
+                              namespace = OS_NAMESPACE, default = '1'))
         params.append(OSParam("startPage", "startPage", 
-                              namespace = OS_NAMESPACE))
+                              namespace = OS_NAMESPACE, default = '1'))
         params.append(OSParam("startIndex", "startIndex", 
-                              namespace = OS_NAMESPACE))                
+                              namespace = OS_NAMESPACE, default = '1'))                
         params.append(OSParam("q", "searchTerms", 
                               namespace = OS_NAMESPACE))                 
         params.append(OSParam("title", "title", 
@@ -225,7 +310,9 @@ class COSQuery(OSQuery):
         params.append(OSParam("status", "status", 
                 namespace = CH_NODE, default=ANNO_STABLE))            
         params.append(OSParam("depth", "depth", 
-                namespace = CH_NODE, default=1))
+                namespace = CH_NODE, default='1'))
+        params.append(OSParam("format", "format", 
+                              namespace = CH_NODE, default = 'json-ld'))        
         '''        
         params.append(OSParam(BBOX, 'box', 
                 namespace = "http://a9.com/-/opensearch/extensions/geo/1.0/"))       
@@ -236,19 +323,19 @@ class COSQuery(OSQuery):
         '''        
         super(COSQuery, self).__init__(params)
         
-    def do_search(self, query, context):
+    def do_search(self, query, context):        
         results = []
-        if query.attrib['title'] != None:
+        if query.attrib.get('title', None) != None:
             results.append(search_title(title=query.attrib['title'], 
                             graph=str(query.attrib['status']),
                             depth=int(query.attrib['depth'])))
             
-        if query.attrib['target'] != None:
+        if query.attrib.get('target', None) != None:
             results.append(search_annotationByTarget(query.attrib['target'], 
                             graph=str(query.attrib['status']),
                             depth=int(query.attrib['depth'])))
             
-        if query.attrib['status'] != None:
+        if query.attrib.get('status', None) != None:
             results.append(search_annotationsByStatus( 
                             graph=str(query.attrib['status']),
                             depth=int(query.attrib['depth'])))

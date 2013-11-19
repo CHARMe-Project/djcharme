@@ -6,6 +6,14 @@ from django.template.context import RequestContext
 from django.shortcuts import render_to_response, render
 from django.http.response import Http404
 from django.core.exceptions import ObjectDoesNotExist
+import os
+
+LOAD_SAMPLE = 'LOAD_SAMPLE'
+HTTP_PROXY = 'HTTP_PROXY'
+HTTP_PROXY_PORT = 'HTTP_PROXY_PORT'
+
+def get_resource(file_name):
+    return os.path.join(__path__[0], 'resources', file_name)
 
 def mm_render_to_response(request, context, page_to_render):
     """

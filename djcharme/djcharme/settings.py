@@ -226,10 +226,14 @@ ALLOWED_HOSTS = ['*']
 ##################
 # LOCAL SETTINGS #
 ##################
-
 # Allow any settings to be defined in local_settings.py which should be
 # ignored in your version control system allowing for settings to be
 # defined per machine.
+
+#LOAD_SAMPLE = True
+#HTTP_PROXY = wwwcache.rl.ac.uk
+#HTTP_PROXY_PORT = 8080
+
 try:
     from local_settings import *
 except ImportError:

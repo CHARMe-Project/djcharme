@@ -15,7 +15,8 @@ import unittest
 import logging
 from djcharme import settings
 from djcharme.node.actions import FORMAT_MAP, ANNO_STABLE, ANNO_SUBMITTED
-from djcharme.test import _prepare_get, test_insert_anotation, turtle_usecase1
+from djcharme.test import _prepare_get, test_insert_anotation, turtle_usecase1,\
+    extract_annotation_uri
 from djcharme.views.search import get_description, do_search
 from urllib import urlencode
 
@@ -58,17 +59,20 @@ class Test(unittest.TestCase):
                           content_type='text/turtle', 
                           data=turtle_usecase1)        
         
-        params = {'title': 'L*', 'status': ANNO_SUBMITTED}
-        request = _prepare_get(self.factory, '/search/rdf?%s' % urlencode(params))
-        request.META['HTTP_ACCEPT'] = "application/rdf+xml"
-        response = do_search(request, 'rdf')
-        self.assertIn('http://proteus.badc.rl.ac.uk:8000/resource/', response.content, "Error!")
+        params = {'title': 'L*', 'status': ANNO_SUBMITTED, 'format': 'json-ld'}
+        request = _prepare_get(self.factory, '/search/atom?%s' % urlencode(params))
+        request.META['HTTP_ACCEPT'] = "application/atom+xml"
+        response = do_search(request, 'atom')
+        #print response.content
+        self.assertIn('Lost Letter Measure of Variation in Altruistic Behaviour in 20 Neighbourhoods', response.content, "Error!")
         
         params = {'title': 'L*'}
-        request = _prepare_get(self.factory, '/search/rdf?%s' % urlencode(params))
-        request.META['HTTP_ACCEPT'] = "application/rdf+xml"
-        response = do_search(request, 'rdf')
-        self.assertNotIn('http://proteus.badc.rl.ac.uk:8000/resource/fc0c428d5e204a07992b3c354da91a5b', response.content, "Error!")
+        params = {'title': 'L*', 'status': ANNO_SUBMITTED, 'format': 'xml'}
+        request = _prepare_get(self.factory, '/search/atom?%s' % urlencode(params))
+        request.META['HTTP_ACCEPT'] = "application/atom+xml"
+        response = do_search(request, 'atom')
+        #print response.content
+        self.assertIn('Lost Letter Measure of Variation in Altruistic Behaviour in 20 Neighbourhoods', response.content, "Error!")
         return response
     
 

@@ -40,6 +40,8 @@ from djcharme.node.actions import FORMAT_MAP
 from django.http.response import HttpResponse
 from django.contrib import messages
 from djcharme import mm_render_to_response_error
+from rdflib.plugin import PluginException
+from django.contrib.messages.api import MessageFailure
 
 
 hostURL = 'http://localhost:8000'
@@ -93,7 +95,12 @@ def do_search(request, iformat):
                                                          iformat, context)
         return HttpResponse(response, mimetype = FORMAT_MAP.get(iformat))
     except Exception as e:
-        messages.add_message(request, messages.ERROR, e)
+        try:
+            messages.add_message(request, messages.ERROR, e)
+        except PluginException as e:
+            print e
+        except MessageFailure as e:
+            print e            
         return mm_render_to_response_error(request, '503.html', 503)
 
 def _build_description_ospath(hostURL, collection_guid = None, observation_guid = None, result_guid = None):
