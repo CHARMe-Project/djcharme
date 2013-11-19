@@ -302,11 +302,11 @@ class COSQuery(OSQuery):
         params.append(OSParam("startIndex", "startIndex", 
                               namespace = OS_NAMESPACE, default = '1'))                
         params.append(OSParam("q", "searchTerms", 
-                              namespace = OS_NAMESPACE))                 
+                              namespace = OS_NAMESPACE, default = ''))                 
         params.append(OSParam("title", "title", 
-                namespace = "http://purl.org/dc/terms/"))
+                namespace = "http://purl.org/dc/terms/", default = ''))
         params.append(OSParam("target", "target", 
-                namespace = CH_NODE))
+                namespace = CH_NODE, default = ''))
         params.append(OSParam("status", "status", 
                 namespace = CH_NODE, default=ANNO_STABLE))            
         params.append(OSParam("depth", "depth", 
@@ -325,17 +325,20 @@ class COSQuery(OSQuery):
         
     def do_search(self, query, context):        
         results = []
-        if query.attrib.get('title', None) != None:
+        if query.attrib.get('title', None) != None \
+                and len(query.attrib.get('title')) > 0:
             results.append(search_title(title=query.attrib['title'], 
                             graph=str(query.attrib['status']),
                             depth=int(query.attrib['depth'])))
             
-        if query.attrib.get('target', None) != None:
+        elif query.attrib.get('target', None) \
+                and len(query.attrib.get('target')) > 0:
             results.append(search_annotationByTarget(query.attrib['target'], 
                             graph=str(query.attrib['status']),
                             depth=int(query.attrib['depth'])))
             
-        if query.attrib.get('status', None) != None:
+        elif query.attrib.get('status', None) \
+                and len(query.attrib.get('status')) > 0:
             results.append(search_annotationsByStatus( 
                             graph=str(query.attrib['status']),
                             depth=int(query.attrib['depth'])))
