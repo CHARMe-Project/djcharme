@@ -42,7 +42,8 @@ from django.db.utils import DatabaseError
 from django.http.response import HttpResponse
 from multiprocessing.process import Process
 
-formatter = logging.Formatter(fmt='%(name)s %(levelname)s %(asctime)s %(module)s %(message)s')
+formatter = logging.Formatter(fmt='%(name)s %(levelname)s %(asctime)s \
+%(module)s %(message)s')
 handler = logging.StreamHandler()
 handler.setFormatter(formatter)
 handler.setLevel(logging.DEBUG)
@@ -84,7 +85,6 @@ class CharmeMiddleware(object):
         store.bind("rdf", "http://www.w3.org/1999/02/22-rdf-syntax-ns#")
         store.bind("oa", "http://www.w3.org/ns/oa#")
         store.bind("chnode", getattr(settings, 'NODE_URI', 'http://localhost'))
-        #store.method = 'POST'
         LOGGING.info("Store created")
         CharmeMiddleware.__store = store
         
@@ -104,7 +104,7 @@ class CharmeMiddleware(object):
                 LOGGING.info("LOAD_SAMPLE: %s" % True)
                 from djcharme.node.sample import load_sample 
                 p = Process(target=load_sample) #inits thread
-                #p.start() #starts thread 
+                p.start() #starts thread 
         return CharmeMiddleware.__store
       
     @classmethod
@@ -122,7 +122,8 @@ class CharmeMiddleware(object):
                 self.__initStore()               
             except AttributeError, e:
                 messages.add_message(request, messages.ERROR, e)
-                messages.add_message(request, messages.INFO, 'Missing configuration')
+                messages.add_message(request, messages.INFO, 
+                                     'Missing configuration')
                 return mm_render_to_response_error(request, '503.html', 503)
 
         if CharmeMiddleware.get_osengine() is None:
@@ -130,7 +131,8 @@ class CharmeMiddleware(object):
                 self.__initOsEngine()
             except Exception, e:
                 messages.add_message(request, messages.ERROR, e)
-                messages.add_message(request, messages.INFO, 'Missing configuration. \
+                messages.add_message(request, messages.INFO, 
+                                     'Missing configuration. \
 Cannot initialize OpenSearch Engine')
                 return mm_render_to_response_error(request, '503.html', 503)
 
@@ -143,10 +145,12 @@ Cannot initialize OpenSearch Engine')
             request.META.get('HTTP_ORIGIN', 
                              'http://localhost:8000')
         response['Access-Control-Allow-Credentials'] = 'true'
-        response['Access-Control-Expose-Headers'] = 'Location, Content-Type, Content-Length';        
+        response['Access-Control-Expose-Headers'] = 'Location, Content-Type, \
+        Content-Length';        
         if request.method == 'OPTIONS':
             response['Access-Control-Allow-Methods'] = 'GET, OPTIONS'               
-            response['Access-Control-Allow-Headers'] = 'X-CSRFToken, X-Requested-With, x-requested-with, Content-Type, Content-Length'
+            response['Access-Control-Allow-Headers'] = 'X-CSRFToken, \
+            X-Requested-With, x-requested-with, Content-Type, Content-Length'
             #response['Access-Control-Allow-Origin'] = request.META.get('HTTP_ORIGIN', 'http://localhost:8000')
             response['Access-Control-Max-Age'] = 10
             response['Content-Type'] = "text/plain"
