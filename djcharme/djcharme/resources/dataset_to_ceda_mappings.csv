@@ -1,0 +1,129 @@
+"This sheet provides the mapping between the shorthand ""dataset"" name and the relevant CEDA metadata article(s)"							
+"Where possible a direct mapping between each ""dataset"" ID (column 1) and a relevant CEDA Metadata Catalogue object has been given."							
+In some cases more than one CEDA Metdata catlogue object has been listed - in cases where specific catalgoue entries have been identified these have been listed under columns C and D							
+"However, where a more general reference to data from a particular campaign/project has been given, lacking an identifiable CEDA metadata cataglogue entry the ""Dataset"" entry reference is listed again in column F next to all relevant CEDA catalogue entries listed in H"							
+Columns B and G are for CEDA internal purposes only to provide relevant mappings between objects and internal identifiers.							
+							
+							
+Dataset	CEDA internal symbolic name	CEDA Metadata catalogue entry URL 1	CEDA Metadata catalogue entry URL 2		citation group	CEDA multiple mappings	
+aam	EAAM 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_EAAM					
+aaoe	AAOE 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_AAOE					
+aase	AASE 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_AASE					
+aase2	AASE II 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_AASE2					
+acsoe					acsoe	acsoe-ace-hillcloud 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_11746737105518913
+active	active 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_active			acsoe	acsoe-mage-eae 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_11746744857718923
+amma	amma 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_amma			acsoe	acsoe-oxicoa-c130 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_11746748795418933
+armagh	armagh 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_11642968801511608			acsoe	acsoe-oxicoa-ease 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_11746761484318953
+ashoe	ASHOE_MAESA 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_ASHOE			acsoe	acsoe-oxicoa-freetex 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_11746758376318943
+assim	ASSIMATMOS 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_ASSIMATMOS			acsoe	acsoe-oxicoa-ozprof 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_1174675063118938
+atsr	ATSR 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_ATSR					
+bas	bas 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_12220884243426614					
+berlin	berlin_strat 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_berlin					
+bolton	bolton 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_bolton					
+cardington	cardington 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_cardington					
+cfarr	Chilbolton 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_chobs					
+chablis	chablis 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_chablis					
+cidc	CIDC 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_CIDC					
+cira	CIRA 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_CIRA					
+claes	CLAES 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_CLAES					
+claus	CLAUS 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_claus					
+climate prediction.net	cpdn 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_cpdn					
+cloudmap	Cloudmap 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_cloudmap					
+coapec	COAPEC 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_COAPEC					
+cobra	cobra 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_12330719779627095					
+CRU	cru 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_12354835493227111					
+cryostat and firetracc	cryostat 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_cryostat	FIRETRACC/100 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_FIRETRACC			
+cwave	CWAVE 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_cwave					
+cwvc					cwvc	cwvc - emerald 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_11716676887315086
+cwvc-grape	cwvc-grape 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_grape			cwvc	cwvc-camra 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_cwvc-camra
+dabex	dabex 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_dabex			cwvc	cwvc-hitrn 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_cwvc-hitrn
+eaquate	eaquate 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_eaquate					
+easoe	EASOE 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_EASOE			ecmwf	ECMWF ERA-15 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_ECMWF-ERA
+ecmwf					ecmwf	ECMWF ERA-40 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_ECMWF-E40
+erbe	ERBE 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_ERBE			ecmwf	ECMWF Operational Analyses 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_ECMWF-OP
+esah2o	ESA Water Vapour 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_ESA-WV					
+export	EXPORT 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_EXPORT					
+faam	faam 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_faam					
+FREE					FREE	free_coastlines 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_12272368376926865
+gerb	GERB 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_gerb			FREE	free_cofee 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_12275382103626872
+gfdex	gdfex 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_11679938403412067			FREE	free_epirus 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_12275389549426878
+gloss	GLOSS 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_GLOSS			FREE	free_exploitation 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_12275394029726885
+gome	GOME 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_GOME			FREE	free_exploratory 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_12275562808326936
+gosta/gisst	Met Office - GISST 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_GISST			FREE	free_ffi 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_1227541810226928
+gostacd	GOSTAplus CD-ROM 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_GOSTA			FREE	free_float 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_12507321480228146
+gostacd/gisst	Met Office - GISST 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_GISST			FREE	free_fracas 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_12275398740426893
+hadat	Met Office - HadAT 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_hadat			FREE	free_gridstix 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_1227540709626907
+hadcet	ukmo-cet 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_CET			FREE	free_hybrid_model 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_12275573779926949
+hadcm3 model	hadcm3c 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_12353841809527106			FREE	free_identification 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_12275401896126900
+hadcm3con	hadcm3con 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_hadcm3con			FREE	free_land_use 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_12275567859526942
+hadgem1	hadgem1 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_hadgem1			FREE	free_modelling 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_12275410436626914
+hadisst	Met Office - HadISST 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_hadisst			FREE	free_quantifying 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_12275413780326921
+hadrm3-ppe-uk	hadrm3_ppe 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_12178667495226008					
+hadrt	Met Office - HadrT 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_HADRT					
+haloe	HALOE 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_HALOE					
+higem	higem 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_higem					
+hirdls	hirdls 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_hirdls					
+hyrex	HYREX 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_HYREX					
+isams	ISAMS 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_ISAMS					
+isamsl2/isamsl3	ISAMSL2 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_ISAMSL2					
+isb52	isb52 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_isb52			isccp	isccp_d1 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_isccp_d1
+isccp					isccp	isccp_d2 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_isccp_d2
+isccp (isccp-c2/isccp-d1/isccp-d2)					isccp	isccp_c2 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_ISCCP
+islscp-1	ISLSCP 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_ISLSCP					
+islscp-2	islscp2 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_11714708332114808					
+iupac	IUPAC 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_IUPAC					
+jet2k	JET2000 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_JET2000					
+lims	LIMS 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_LIMS					
+link	OldLINK 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_linkdata					
+mls h2o	MLS_H20 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_MLS-PRO-H2					
+mls3	MLS on uars 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_MLS					
+mlsl3	MLS on uars 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_MLS					
+mrf	Met Office - C130 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_MRF			polltro	polltro_ampep 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_11738855872817340
+msf	MSF 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_MSF			polltro	polltro_clopap 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_1173886641917345
+msg	msg 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_msg			polltro	polltro_fronts 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_1173890089817415
+mst	MST Radar 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_MST			polltro	polltro_ovocs 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_11738849501317332
+namblex	namblex 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_namblex			polltro	polltro_torch 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_11738907158217423
+ndacc	NDACC 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_NDSC			polltro	polltrop_ions 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_11738870972217350
+nimrod	ukmo-nimrod 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_nimrod					
+polltro					quest	quaternary_quest 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_12233051216526744
+polluted-tropo					quest	quest_ccmap 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_12233047373426729
+ppsm	PPSM 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_PPSM			quest	quest_deglaciation 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_1223305243726749
+quest					quest	quest_desire 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_12233053378426754
+quest-desire	quest_desire 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_12233053378426754			quest	quest_firemafs 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_12233057970926779
+quest-quaternaryquest	quaternary_quest 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_12233051216526744			quest	quest_fish 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_12233057258726774
+rapid					quest	quest_gsi 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_12233055204826764
+rico	rico 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_rico			quest	quest_marquest 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_12233045943826724
+sage2	sage2 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_sage2			quest	quest_palaeoqump 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_12233050153626739
+sage3	sage3 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_sage3			quest	quest_petm 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_12233054341226759
+sam2	SAM II 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_SAM2			quest	quest_quacc 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_12233032511626714
+sferics					quest	quest_quatermass 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_12233056224726769
+soapex	SOAPEX-2 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_SOAPEX			quest	quest_quercc 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_12233043331226718
+solas	solas 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_solas					
+spade	SPADE 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_SPADE			rapid	rapid_air-sea_forcing 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_12282325640926992
+srb	SRB 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_SRB			rapid	rapid_arctic_conti_shelves 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_12282337864627016
+step	STEP 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_STEP			rapid	rapid_arther 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_12282343659427027
+surface/ukmo-midas	ukmo-midas 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_ukmo-midas	Met Office - Land Surface Stat 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_SURFACE	rapid	rapid_assimilation 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_12282346403827032
+synoptic	Met Office - European synoptic 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_SYNOPTIC			rapid	rapid_cryosphere 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_12282265399526956
+toms/tomscds	toms_CDs 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_TOMSCDS	TOMS_OMI 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_TOMS	rapid	rapid_disintegration_ice 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_12282362369227052
+toms/toms-cds	toms_CDs 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_TOMSCDS	TOMS_OMI 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_TOMS	rapid	rapid_dryas 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_12282341015427022
+tovs	UKMO_TOVS 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_TOVS			rapid	rapid_enso 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_12282328495126998
+t-rex	t-rex 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_trex			rapid	rapid_freshwater 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_12282365739127057
+ufam	ufam 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_ufam			rapid	rapid_greenland 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_12282371171827067
+ugamp-o3-clim	UGAMPO3 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_UGAMPO3			rapid	rapid_h20 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_12282322560326986
+ugamp-o3-climatology	UGAMPO3 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_UGAMPO3			rapid	rapid_holocene 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_12282273915126962
+urgent					rapid	rapid_impact_clim_change 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_12282352435527037
+utls-ozone	utls_ozone_tropopause 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_11738050456817244			rapid	rapid_isomapuk 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_12282319766926980
+wlsta	WLSTA 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_WLSTA			rapid	rapid_little_ice_age 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_12282368470627062
+					rapid	rapid_nordic_seas 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_12282332104527004
+					rapid	rapid_ocean_clim_change 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_12282354854927042
+					rapid	rapid_predictability 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_12282357411527047
+					rapid	rapid_probability 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_12282277958126968
+					rapid	rapid_salinity 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_12282292857826974
+					rapid	rapid_sloping_topography 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_12282334965227010
+					rapid	rapid_thcmip 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_12374693465527132
+							
+					urgent	urgent_gaspol 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_11744288911518198
+					urgent	urgent_phytox 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_11744317430118344
+					urgent	urgent_profil 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_11744330694718360
+					urgent	urgent_pumaco 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_11744364633818458
+					urgent	urgent_urbmet 	http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__dataent_11744351629918432
