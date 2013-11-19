@@ -175,7 +175,7 @@ class COSAtomResponse(OSAtomResponse):
         
         subresults = []
         iformat = context.get('format', 'json-ld')
-        if format == None:
+        if iformat == None:
             iformat = 'json-ld'
         iformat = checkMimeFormat(iformat)                   
         for subj in subject_subresults:
