@@ -31,7 +31,8 @@ setup(
     zip_safe=False,
 
     # Adds dependencies    
-    install_requires = ['cedatheme_mf54',
+    install_requires = ['django',
+                        'cedatheme_mf54',
                         'rdflib==4.1-dev',
                         'rdflib-jsonld',
                         'ceda-markup'],

@@ -41,7 +41,6 @@ from urllib2 import URLError
 from djcharme.exception import StoreConnectionError
 from djcharme.node import _extractSubject
 from django.conf import settings
-from nose.plugins import deprecated
 
 LOGGING = logging.getLogger(__name__)
 '''
