@@ -36,14 +36,13 @@ from ceda_markup.gml.gml import createBeginPosition, createEndPosition, \
 from ceda_markup.opensearch import COUNT_DEFAULT, \
     START_INDEX_DEFAULT, START_PAGE_DEFAULT, filter_results
 from ceda_markup.opensearch.template.osresponse import OSEngineResponse, Result
-from ceda_markup.opensearch.template.html import OSHTMLResponse
 
 from ceda_markup.opensearch.os_request import OS_NAMESPACE
 from ceda_markup.opensearch.os_param import OSParam
 from djcharme.node.search import search_title, search_annotationByTarget,\
     search_annotationsByStatus
 from ceda_markup.opensearch.template.atom import OSAtomResponse
-from djcharme.node.actions import CH_NS, CH_NODE, ANNO_STABLE
+from djcharme.node.actions import CH_NODE, ANNO_STABLE
 import datetime
 from rdflib.graph import Graph
 from ceda_markup.atom.atom import createID, createUpdated, createPublished,\
@@ -100,24 +99,6 @@ def generate_url_id(url, iid = None):
     return "%s/search/%s" % (url, iid)
 
 
-
-def apply_query_params(context, results):
-    # A cleaner implementation would require calls to
-    # db's merge_period_instant_views() but actually it does not collect 
-    # infos about CEDA_Results
-    
-    subresults = []
-    if results is None:
-        return subresults
-    for result in results:          
-        pass
-        '''
-        item = Subresult(result_guid.id, ititle, datetime.now().isoformat(), 
-                         **kwargs)               
-        subresults.append(item)
-        '''
-    return subresults
-
 def import_count_and_page(context):
     ret = []        
     
@@ -164,7 +145,8 @@ class COSAtomResponse(OSAtomResponse):
             atom_content = createContent(root = atomroot, 
                                         body = subresult['triple'], 
                                         itype = TEXT_TYPE)
-            atom_updated = createUpdated(datetime.datetime.now().isoformat(), root = atomroot)
+            atom_updated = createUpdated(datetime.datetime.now().isoformat(), 
+                                         root = atomroot)
             atom_published = createPublished('TO_BE_DONE_2011-01-21T11:05:29.511Z', 
                                             root = atomroot)            
             entry = createEntry(atom_id, ititle, atom_updated,
@@ -186,24 +168,26 @@ class COSAtomResponse(OSAtomResponse):
         title = "CHARMe results"
         count, start_index, start_page = import_count_and_page(context)
         
-        subjects = [subj for subj in set(results.subjects())]
-        subject_subresults = filter_results(subjects, count, start_index, start_page)
+        set_subresults = set(results.subjects())
+        subjects = [subj for subj in set_subresults]
+        subject_subresults = filter_results(subjects, 
+                                            count, start_index, start_page)
         
         subresults = []
-        format = context.get('format', 'json-ld')
+        iformat = context.get('format', 'json-ld')
         if format == None:
-            format = 'json-ld'
-        format = checkMimeFormat(format)                   
+            iformat = 'json-ld'
+        iformat = checkMimeFormat(iformat)                   
         for subj in subject_subresults:
             tmp_g = Graph() 
             for triples in results.triples((subj, None, None)): 
                 tmp_g.add(triples)
             
             subresults.append({'subject': str(subj), 
-                               'triple': tmp_g.serialize(format = format)})
+                               'triple': tmp_g.serialize(format = iformat)})
 
 
-        return Result(count, start_index, start_page, len(subresults), \
+        return Result(count, start_index, start_page, len(set_subresults), \
                       subresult = subresults, title = title) 
 
 '''            
