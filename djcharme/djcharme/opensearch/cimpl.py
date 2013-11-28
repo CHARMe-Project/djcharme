@@ -40,11 +40,10 @@ from ceda_markup.opensearch.template.osresponse import OSEngineResponse, Result
 from ceda_markup.opensearch.os_request import OS_NAMESPACE
 from ceda_markup.opensearch.os_param import OSParam
 from djcharme.node.search import search_title, search_annotationByTarget,\
-    search_annotationsByStatus
+    search_annotationsByStatus, annotation_resource
 from ceda_markup.opensearch.template.atom import OSAtomResponse
 from djcharme.node.actions import CH_NODE, ANNO_STABLE
 import datetime
-from rdflib.graph import Graph
 from ceda_markup.atom.atom import createID, createUpdated, createPublished,\
     createEntry
 from ceda_markup.atom.info import createContent, createTitle, TEXT_TYPE
@@ -168,26 +167,22 @@ class COSAtomResponse(OSAtomResponse):
         title = "CHARMe results"
         count, start_index, start_page = import_count_and_page(context)
         
-        set_subresults = set(results.subjects())
-        subjects = [subj for subj in set_subresults]
-        subject_subresults = filter_results(subjects, 
+        #set_subresults = set(results.subjects())
+        #subjects = [subj for subj in set_subresults]
+        annotation_subresults = filter_results(results, 
                                             count, start_index, start_page)
         
         subresults = []
         iformat = context.get('format', 'json-ld')
         if iformat == None:
             iformat = 'json-ld'
-        iformat = checkMimeFormat(iformat)                   
-        for subj in subject_subresults:
-            tmp_g = Graph() 
-            for triples in results.triples((subj, None, None)): 
-                tmp_g.add(triples)
-            
+        iformat = checkMimeFormat(iformat)
+        for annotation_graph in annotation_subresults:               
+            subj = annotation_graph.triples(annotation_resource())
+        
             subresults.append({'subject': str(subj), 
-                               'triple': tmp_g.serialize(format = iformat)})
-
-
-        return Result(count, start_index, start_page, len(set_subresults), \
+                               'triple': annotation_graph.serialize(format = iformat)})
+        return Result(count, start_index, start_page, len(annotation_subresults), \
                       subresult = subresults, title = title) 
 
 '''            
@@ -305,6 +300,7 @@ class COSQuery(OSQuery):
         params.append(OSParam("stop", "end", 
                 namespace = "http://a9.com/-/opensearch/extensions/time/1.0/"))
         '''        
+        self._query_signature = self._querySignature(params)
         super(COSQuery, self).__init__(params)
         
     def do_search(self, query, context):        
@@ -326,10 +322,21 @@ class COSQuery(OSQuery):
             results.append(search_annotationsByStatus( 
                             graph=str(query.attrib['status']),
                             depth=int(query.attrib['depth'])))
-            
-        # "AND"s all the extracted graphs     
-        ret = results[0]
-        if len(results) > 1:
-            for res in results[1:]:
-                ret = ret and res
-        return ret            
+         
+        return results[0]
+
+
+    def _querySignature(self, params_model):
+        _params = []        
+        for params in params_model:
+            if params.par_name not in ['count', 'startPage', 'startIndex']:
+                _params.append(params.par_name)                
+        return _params
+
+class SearchProxy(object):
+    def __init__(self, query):
+        _query = query        
+        self.query_signature = None
+        super(SearchProxy, self).__init__(self)
+        
+                

@@ -35,6 +35,8 @@ from djcharme.node import _extractSubject
 from rdflib.graph import Graph
 from djcharme.charme_middleware import CharmeMiddleware
 from rdflib.term import URIRef
+from rdflib.namespace import RDF
+from rdflib.plugins.stores import sparqlstore
 
 SEARCH_TITLE = """
 PREFIX text: <http://jena.apache.org/text#>
@@ -48,6 +50,15 @@ WHERE {
     ?paper text:query (dcterm:title '%s' 10) .
 }
 """
+
+def annotation_resource(anno_uri = None):
+    anno_ref = None
+    if anno_uri:
+        anno_ref = URIRef(anno_uri)
+    return (anno_ref, RDF.type, URIRef('http://www.w3.org/ns/oa#Annotation'))
+
+def annotation_target(target_uri):
+    return (None, URIRef('http://www.w3.org/ns/oa#hasTarget'), URIRef(target_uri))
 
 def search_title(title, graph=ANNO_STABLE, depth=3):
     '''
@@ -66,7 +77,16 @@ def search_title(title, graph=ANNO_STABLE, depth=3):
             tmp_g.add(subj)
     return tmp_g
 
-def search_annotationsByStatus(graph=ANNO_STABLE, depth=3):
+def _populate_annotations(g, triples, depth=3):
+    ret = []    
+    for row in triples:
+        tmp_g = Graph()
+        for subj in _extractSubject(g, row[0], depth): 
+            tmp_g.add(subj)
+        ret.append(tmp_g)
+    return ret
+
+def search_annotationsByStatus(graph=ANNO_STABLE, depth=3, limit = None):
     '''
         Returns annotations which refer to a given dcterm:title
         - string **graph**
@@ -74,12 +94,11 @@ def search_annotationsByStatus(graph=ANNO_STABLE, depth=3):
         - integer **depth**
             how deep should the subject's properties be described            
     ''' 
-    g = generate_graph(CharmeMiddleware.get_store(), graph)
-    tmp_g = Graph()
-    for row in g.triples((None, None, None)):
-        for subj in _extractSubject(g, row[0], depth): 
-            tmp_g.add(subj)
-    return tmp_g
+    g = generate_graph(CharmeMiddleware.get_store(), graph)    
+    #g.LIMIT = 5
+    triples = g.triples(annotation_resource())
+    #del g.LIMIT
+    return _populate_annotations(g, triples, depth=3)
 
 def search_annotationByTarget(predicate, graph=ANNO_STABLE, depth=3):
     '''
@@ -91,10 +110,8 @@ def search_annotationByTarget(predicate, graph=ANNO_STABLE, depth=3):
         - integer **depth**
             how deep should the subject's properties be described
     '''
-    g = generate_graph(CharmeMiddleware.get_store(), graph)
-    tmp_g = Graph() 
-    for row in g.subjects(object=URIRef(predicate)):
-        for subj in _extractSubject(g, row, depth): 
-            tmp_g.add(subj)
-    return tmp_g
-    
+    g = generate_graph(CharmeMiddleware.get_store(), graph)    
+    #g.LIMIT = 5
+    triples = g.triples(annotation_target(predicate))
+    #del g.LIMIT
+    return _populate_annotations(g, triples, depth=3)
