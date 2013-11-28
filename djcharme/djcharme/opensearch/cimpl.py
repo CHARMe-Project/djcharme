@@ -48,6 +48,7 @@ from ceda_markup.atom.atom import createID, createUpdated, createPublished,\
     createEntry
 from ceda_markup.atom.info import createContent, createTitle, TEXT_TYPE
 from djcharme.views import checkMimeFormat
+import logging
 
 
 
@@ -69,6 +70,7 @@ PROXY_URL = 'http://wwwcache.rl.ac.uk:8080'
 
 CEDA_TITLE = 'ceda_title'
 
+LOGGING = logging.getLogger(__name__)
    
 def append_valid_time(subresult, entry, atomroot, 
                        begin_position, end_position):
@@ -177,11 +179,16 @@ class COSAtomResponse(OSAtomResponse):
         if iformat == None:
             iformat = 'json-ld'
         iformat = checkMimeFormat(iformat)
-        for annotation_graph in annotation_subresults:               
-            subj = annotation_graph.triples(annotation_resource())
-        
-            subresults.append({'subject': str(subj), 
-                               'triple': annotation_graph.serialize(format = iformat)})
+        for annotation_graph in annotation_subresults: 
+            try:                       
+                subject = [subj for subj 
+                        in annotation_graph.triples(annotation_resource())][0][0]        
+                subresults.append({'subject': str(subject), 
+                        'triple': annotation_graph.serialize(format = iformat)})
+            except (IndexError):
+                LOGGING.warn("No Annotation resource for graph %s" 
+                             % annotation_graph.serialize())
+                continue
         return Result(count, start_index, start_page, len(annotation_subresults), \
                       subresult = subresults, title = title) 
 
@@ -309,19 +316,22 @@ class COSQuery(OSQuery):
                 and len(query.attrib.get('title')) > 0:
             results.append(search_title(title=query.attrib['title'], 
                             graph=str(query.attrib['status']),
-                            depth=int(query.attrib['depth'])))
+                            depth=int(query.attrib['depth']),
+                            limit=int(query.attrib['count'])))
             
         elif query.attrib.get('target', None) \
                 and len(query.attrib.get('target')) > 0:
             results.append(search_annotationByTarget(query.attrib['target'], 
                             graph=str(query.attrib['status']),
-                            depth=int(query.attrib['depth'])))
+                            depth=int(query.attrib['depth']),
+                            limit=int(query.attrib['count'])))
             
         elif query.attrib.get('status', None) \
                 and len(query.attrib.get('status')) > 0:
             results.append(search_annotationsByStatus( 
                             graph=str(query.attrib['status']),
-                            depth=int(query.attrib['depth'])))
+                            depth=int(query.attrib['depth']),
+                            limit=int(query.attrib['count'])))
          
         return results[0]
 

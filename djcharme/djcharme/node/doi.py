@@ -4,7 +4,7 @@ Created on 18 Nov 2013
 @author: mnagni
 '''
 from httplib import HTTPConnection
-from djcharme.node.actions import ANNO_STABLE, insert_rdf
+from djcharme.node.actions import ANNO_STABLE, insert_rdf, ANNO_SUBMITTED
 from djcharme import settings, HTTP_PROXY, HTTP_PROXY_PORT
 
 def get_document(source, headers = {}, host = 'data.datacite.org', proxy = None, proxy_port = None, params = None):
@@ -42,7 +42,7 @@ def load_doi(doi, graph):
                                 proxy = getattr(settings, HTTP_PROXY),
                                 proxy_port = getattr(settings, HTTP_PROXY_PORT))
 
-        insert_rdf(response, 'xml', graph=ANNO_STABLE).serialize(format='turtle')
+        insert_rdf(response, 'xml', graph=ANNO_SUBMITTED).serialize(format='turtle')
     except Exception as e:
         #pass                                                             
         print e
