@@ -34,9 +34,8 @@ from djcharme.node.actions import generate_graph, ANNO_STABLE
 from djcharme.node import _extractSubject
 from rdflib.graph import Graph
 from djcharme.charme_middleware import CharmeMiddleware
-from rdflib.term import URIRef
+from rdflib.term import URIRef, Variable
 from rdflib.namespace import RDF
-from rdflib.plugins.stores import sparqlstore
 
 SEARCH_TITLE = """
 PREFIX text: <http://jena.apache.org/text#>
@@ -51,11 +50,45 @@ WHERE {
 }
 """
 
+COUNT_TITLE = """
+PREFIX text: <http://jena.apache.org/text#>
+PREFIX dcterm:  <http://purl.org/dc/terms/>
+PREFIX oa: <http://www.w3.org/ns/oa#>
+PREFIX cito: <http://purl.org/spar/cito/>
+SELECT Distinct count(?anno) 
+WHERE {
+    ?anno oa:hasBody ?cit .
+    ?cit cito:hasCitedEntity ?paper .
+    ?paper text:query (dcterm:title '%s' 10) .
+}
+"""
+
+COUNT_TRIPLE = """
+SELECT count(%s) 
+WHERE {
+    %s
+}
+"""
+
 def annotation_resource(anno_uri = None):
     anno_ref = None
     if anno_uri:
         anno_ref = URIRef(anno_uri)
     return (anno_ref, RDF.type, URIRef('http://www.w3.org/ns/oa#Annotation'))
+
+def sparqlize_triple(triple):
+    template = '<%s>'
+    s = Variable('s').n3()
+    p = Variable('p').n3()
+    o = Variable('o').n3()
+    if triple[0] != None:
+        s = template % str(triple[0]) 
+    if triple[1] != None:
+        p = template % str(triple[1])        
+    if triple[2] != None:
+        o = template % str(triple[2])
+    return '%s %s %s' % (s, p, o)  
+        
 
 def annotation_target(target_uri):
     return (None, URIRef('http://www.w3.org/ns/oa#hasTarget'), URIRef(target_uri))
@@ -117,8 +150,13 @@ def search_title(title, query_attr):
     ''' 
     graph=str(query_attr.get('status', ANNO_STABLE))
     g = generate_graph(CharmeMiddleware.get_store(), graph)
-    triples = g.query(SEARCH_TITLE % (title))
-    return _do__open_search(query_attr, g, triples)    
+    triples = g.query(SEARCH_TITLE % (title))    
+    results = _do__open_search(query_attr, g, triples)
+    enc_count = g.query(COUNT_TITLE % (title))
+    count = str(enc_count.bindings[0].values()[0])
+    if count == 'None':
+        count = 0
+    return results, int(count)   
 
 def search_annotationsByStatus(query_attr):
     '''
@@ -129,7 +167,12 @@ def search_annotationsByStatus(query_attr):
     graph=str(query_attr.get('status', ANNO_STABLE))
     g = generate_graph(CharmeMiddleware.get_store(), graph)
     triples = g.triples(annotation_resource())    
-    return _do__open_search(query_attr, g, triples)    
+    results = _do__open_search(query_attr, g, triples)
+    enc_count = g.query(COUNT_TRIPLE % ('?s', sparqlize_triple(annotation_resource())))    
+    count = str(enc_count.bindings[0].values()[0])
+    if count == 'None':
+        count = 0
+    return results, int(count)
 
 
 def search_annotationByTarget(predicate, query_attr):
@@ -142,5 +185,12 @@ def search_annotationByTarget(predicate, query_attr):
     '''
     graph=str(query_attr.get('status', ANNO_STABLE))
     g = generate_graph(CharmeMiddleware.get_store(), graph)
-    triples = g.triples(annotation_target(predicate))
-    return _do__open_search(query_attr, g, triples)
+    look_for = annotation_target(predicate)
+    triples = g.triples(look_for)
+    results = _do__open_search(query_attr, g, triples)
+    s = '?s'
+    enc_count = g.query(COUNT_TRIPLE % ('?s', sparqlize_triple(look_for)))    
+    count = str(enc_count.bindings[0].values()[0])
+    if count == 'None':
+        count = 0
+    return results, int(count)  

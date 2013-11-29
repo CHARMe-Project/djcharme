@@ -179,7 +179,7 @@ class COSAtomResponse(OSAtomResponse):
         if iformat == None:
             iformat = 'json-ld'
         iformat = checkMimeFormat(iformat)
-        for annotation_graph in results: 
+        for annotation_graph in results['results']: 
             try:                        
                 subject = [subj for subj 
                         in annotation_graph.triples(annotation_resource())][0][0]        
@@ -189,7 +189,7 @@ class COSAtomResponse(OSAtomResponse):
                 LOGGING.warn("No Annotation resource for graph %s" 
                              % annotation_graph.serialize())
                 continue
-        return Result(count, start_index, start_page, len(results), \
+        return Result(count, start_index, start_page, results['count'], \
                       subresult = subresults, title = title) 
 
 '''            
@@ -310,20 +310,21 @@ class COSQuery(OSQuery):
         self._query_signature = self._querySignature(params)
         super(COSQuery, self).__init__(params)
         
-    def do_search(self, query, context):        
-        results = []
+    def do_search(self, query, context):
+        results = None
+        count = 0         
         if query.attrib.get('title', None) != None \
                 and len(query.attrib.get('title')) > 0:
-            results.append(search_title(query.attrib['title'], query.attrib))
+            results = search_title(query.attrib['title'], query.attrib)
             
         elif query.attrib.get('target', None) \
                 and len(query.attrib.get('target')) > 0:            
-            results.append(search_annotationByTarget(query.attrib['target'], 
-                                                     query.attrib))            
+            results = search_annotationByTarget(query.attrib['target'], 
+                                                     query.attrib)            
         elif query.attrib.get('status', None) \
                 and len(query.attrib.get('status')) > 0:
-            results.append(search_annotationsByStatus(query.attrib))        
-        return results[0]
+            results, count = search_annotationsByStatus(query.attrib)        
+        return {'results': results, 'count': count}
 
 
     def _querySignature(self, params_model):
