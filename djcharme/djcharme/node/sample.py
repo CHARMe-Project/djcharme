@@ -8,6 +8,10 @@ from djcharme.node.actions import insert_rdf, ANNO_SUBMITTED
 from rdflib.term import URIRef
 from djcharme.node.doi import load_doi
 from djcharme import get_resource
+import logging
+from rdflib.plugins.parsers.notation3 import BadSyntax
+
+LOGGING = logging.getLogger(__name__)
 
 citation_template = '''
 
@@ -37,6 +41,7 @@ cito:hasCitedEntity <load_target> .
 <load_body> a fabio:load_classes . 
 <load_target> a fabio:MetadataDocument .
 '''
+
 
 def __loadDatasets():
     
@@ -103,7 +108,12 @@ def load_sample():
                 print "other"
                 continue
             
-            tmp_g = insert_rdf(annotation, 'turtle', graph=ANNO_SUBMITTED)
+            try:
+                tmp_g = insert_rdf(annotation, 'turtle', graph=ANNO_SUBMITTED)
+            except BadSyntax as e:
+                LOGGING.warn(e)
+                continue
+            
             #print tmp_g.serialize(format='turtle')
             for item in tmp_g.triples((None, None, URIRef('http://purl.org/spar/fabio/Article'))):
                 if 'doi' in str(item[0]):

@@ -41,6 +41,7 @@ from urllib2 import URLError
 from djcharme.exception import StoreConnectionError
 from djcharme.node import _extractSubject
 from django.conf import settings
+from rdflib.plugins.parsers.notation3 import BadSyntax
 
 LOGGING = logging.getLogger(__name__)
 '''
@@ -158,8 +159,9 @@ def insert_rdf(data, mimetype, graph = None, store=None):
         store = CharmeMiddleware.get_store()
     tmp_g = Graph()
     #Necessary as RDFlib does not contain the json-ld lib
-
     tmp_g.parse(data = data, format = mimetype)
+
+        
     _formatSubmittedAnnotation(tmp_g)
     final_g = generate_graph(store, graph)
     

@@ -25,4 +25,4 @@ def _extractSubject(graph, subject, depth):
         tmp_g.add(res)
         if depth is None or depth > 0:        
             _collect_all(graph, tmp_g, res[2], depth)
-    return tmp_g
+    return tmp_g    

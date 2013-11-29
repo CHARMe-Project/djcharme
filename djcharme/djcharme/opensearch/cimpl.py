@@ -342,11 +342,4 @@ class COSQuery(OSQuery):
             if params.par_name not in ['count', 'startPage', 'startIndex']:
                 _params.append(params.par_name)                
         return _params
-
-class SearchProxy(object):
-    def __init__(self, query):
-        _query = query        
-        self.query_signature = None
-        super(SearchProxy, self).__init__(self)
-        
                 

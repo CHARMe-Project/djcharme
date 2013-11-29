@@ -69,6 +69,12 @@ def _populate_annotations(g, triples, depth=3):
         ret.append(tmp_g)
     return ret
 
+class SearchProxy(object):
+    def __init__(self, query):
+        _query = query        
+        self.query_signature = None
+        super(SearchProxy, self).__init__(self)
+
 def search_title(title, graph=ANNO_STABLE, depth=3, limit = None):
     '''
         Returns annotations which refer to a given dcterm:title
