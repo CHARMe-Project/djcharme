@@ -171,16 +171,16 @@ class COSAtomResponse(OSAtomResponse):
         
         #set_subresults = set(results.subjects())
         #subjects = [subj for subj in set_subresults]
-        annotation_subresults = filter_results(results, 
-                                            count, start_index, start_page)
+        #annotation_subresults = filter_results(results, 
+        #                                    count, start_index, start_page)
         
         subresults = []
         iformat = context.get('format', 'json-ld')
         if iformat == None:
             iformat = 'json-ld'
         iformat = checkMimeFormat(iformat)
-        for annotation_graph in annotation_subresults: 
-            try:                       
+        for annotation_graph in results: 
+            try:                        
                 subject = [subj for subj 
                         in annotation_graph.triples(annotation_resource())][0][0]        
                 subresults.append({'subject': str(subject), 
@@ -189,7 +189,7 @@ class COSAtomResponse(OSAtomResponse):
                 LOGGING.warn("No Annotation resource for graph %s" 
                              % annotation_graph.serialize())
                 continue
-        return Result(count, start_index, start_page, len(annotation_subresults), \
+        return Result(count, start_index, start_page, len(results), \
                       subresult = subresults, title = title) 
 
 '''            
@@ -314,25 +314,15 @@ class COSQuery(OSQuery):
         results = []
         if query.attrib.get('title', None) != None \
                 and len(query.attrib.get('title')) > 0:
-            results.append(search_title(title=query.attrib['title'], 
-                            graph=str(query.attrib['status']),
-                            depth=int(query.attrib['depth']),
-                            limit=int(query.attrib['count'])))
+            results.append(search_title(query.attrib['title'], query.attrib))
             
         elif query.attrib.get('target', None) \
-                and len(query.attrib.get('target')) > 0:
+                and len(query.attrib.get('target')) > 0:            
             results.append(search_annotationByTarget(query.attrib['target'], 
-                            graph=str(query.attrib['status']),
-                            depth=int(query.attrib['depth']),
-                            limit=int(query.attrib['count'])))
-            
+                                                     query.attrib))            
         elif query.attrib.get('status', None) \
                 and len(query.attrib.get('status')) > 0:
-            results.append(search_annotationsByStatus( 
-                            graph=str(query.attrib['status']),
-                            depth=int(query.attrib['depth']),
-                            limit=int(query.attrib['count'])))
-         
+            results.append(search_annotationsByStatus(query.attrib))        
         return results[0]
 
 

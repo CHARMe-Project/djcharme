@@ -60,14 +60,46 @@ def annotation_resource(anno_uri = None):
 def annotation_target(target_uri):
     return (None, URIRef('http://www.w3.org/ns/oa#hasTarget'), URIRef(target_uri))
 
+def _del_limit_offset(graph): 
+    old_limit = None
+    old_offset = None
+    if hasattr(graph, 'LIMIT'):
+        old_limit = getattr(graph, 'LIMIT')
+        del graph.LIMIT
+    if hasattr(graph, 'OFFSET'):
+        old_offset = getattr(graph, 'OFFSET')
+        del graph.OFFSET
+    return (old_limit, old_offset)        
+
+def _set_limit_offset(graph, limit_offset):
+    if limit_offset[0] != None:
+        graph.LIMIT = limit_offset[0] 
+    if limit_offset[1] != None:
+        graph.OFFSET = limit_offset[1]             
+
 def _populate_annotations(g, triples, depth=3):
     ret = []    
     for row in triples:
         tmp_g = Graph()
+        limit_offset = _del_limit_offset(g)          
         for subj in _extractSubject(g, row[0], depth): 
             tmp_g.add(subj)
         ret.append(tmp_g)
+        _set_limit_offset(g, limit_offset)        
     return ret
+
+def _do__open_search(query_attr, g, triples):
+    depth  = int(query_attr.get('depth', 3))
+    limit  = int(query_attr.get('count', 10)) 
+    offset = (int(query_attr.get('startPage', 1)) - 1)* limit
+    offset = offset + int(query_attr.get('startIndex', 1)) - 1
+    g.LIMIT = limit
+    g.OFFSET = offset
+    ret = _populate_annotations(g, triples, depth)
+    del g.LIMIT
+    del g.OFFSET
+    return ret
+
 
 class SearchProxy(object):
     def __init__(self, query):
@@ -75,48 +107,40 @@ class SearchProxy(object):
         self.query_signature = None
         super(SearchProxy, self).__init__(self)
 
-def search_title(title, graph=ANNO_STABLE, depth=3, limit = None):
+def search_title(title, query_attr):
     '''
         Returns annotations which refer to a given dcterm:title
         - string **title**
             the title to search
-        - string **graph**
-            the triplestore repository where to look into
-        - integer **depth**
-            how deep should the subject's properties be described            
+        - dict **query_attr**
+            dictionary of paramenters            
     ''' 
-    g = generate_graph(CharmeMiddleware.get_store(), graph)    
-    g.LIMIT = limit
+    graph=str(query_attr.get('status', ANNO_STABLE))
+    g = generate_graph(CharmeMiddleware.get_store(), graph)
     triples = g.query(SEARCH_TITLE % (title))
-    del g.LIMIT
-    return _populate_annotations(g, triples, depth=3)
+    return _do__open_search(query_attr, g, triples)    
 
-def search_annotationsByStatus(graph=ANNO_STABLE, depth=3, limit = None):
+def search_annotationsByStatus(query_attr):
     '''
         Returns annotations which refer to a given dcterm:title
-        - string **graph**
-            the triplestore repository where to look into
-        - integer **depth**
-            how deep should the subject's properties be described            
+        - dict **query_attr**
+            dictionary of paramenters            
     ''' 
-    g = generate_graph(CharmeMiddleware.get_store(), graph)    
-    g.LIMIT = limit
-    triples = g.triples(annotation_resource())
-    del g.LIMIT
-    return _populate_annotations(g, triples, depth=3)
+    graph=str(query_attr.get('status', ANNO_STABLE))
+    g = generate_graph(CharmeMiddleware.get_store(), graph)
+    triples = g.triples(annotation_resource())    
+    return _do__open_search(query_attr, g, triples)    
 
-def search_annotationByTarget(predicate, graph=ANNO_STABLE, depth=3, limit = None):
+
+def search_annotationByTarget(predicate, query_attr):
     '''
         Returns annotations which have hasTarget the given predicate
         - string **predicate**
             the annotation predicate
-        - string **graph**
-            the triplestore repository where to look into
-        - integer **depth**
-            how deep should the subject's properties be described
+        - dict **query_attr**
+            dictionary of paramenters
     '''
-    g = generate_graph(CharmeMiddleware.get_store(), graph)    
-    g.LIMIT = limit
+    graph=str(query_attr.get('status', ANNO_STABLE))
+    g = generate_graph(CharmeMiddleware.get_store(), graph)
     triples = g.triples(annotation_target(predicate))
-    del g.LIMIT
-    return _populate_annotations(g, triples, depth=3)
+    return _do__open_search(query_attr, g, triples)
