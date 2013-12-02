@@ -36,6 +36,9 @@ from rdflib.graph import Graph
 from djcharme.charme_middleware import CharmeMiddleware
 from rdflib.term import URIRef, Variable
 from rdflib.namespace import RDF
+import logging
+
+LOGGING = logging.getLogger(__name__)
 
 SEARCH_TITLE = """
 PREFIX text: <http://jena.apache.org/text#>
@@ -124,13 +127,21 @@ def _populate_annotations(g, triples, depth=3):
 def _do__open_search(query_attr, g, triples):
     depth  = int(query_attr.get('depth', 3))
     limit  = int(query_attr.get('count', 10)) 
-    offset = (int(query_attr.get('startPage', 1)) - 1)* limit
+    offset = (int(query_attr.get('startPage', 1)) - 1) * limit
     offset = offset + int(query_attr.get('startIndex', 1)) - 1
-    g.LIMIT = limit
-    g.OFFSET = offset
+    if limit > 0:
+        g.LIMIT = limit
+        LOGGING.warning("Canceled LIMIT parameter as less than zero: %s" 
+                        % limit)
+    if offset > 0:    
+        g.OFFSET = offset
+        LOGGING.warning("Canceled OFFSET parameter as less than zero: %s" 
+                        % offset)
     ret = _populate_annotations(g, triples, depth)
-    del g.LIMIT
-    del g.OFFSET
+    if hasattr(g, 'LIMIT'):
+        del g.LIMIT
+    if hasattr(g, 'OFFSET'):        
+        del g.OFFSET
     return ret
 
 
