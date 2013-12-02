@@ -315,11 +315,11 @@ class COSQuery(OSQuery):
         count = 0         
         if query.attrib.get('title', None) != None \
                 and len(query.attrib.get('title')) > 0:
-            results = search_title(query.attrib['title'], query.attrib)
+            results, count = search_title(query.attrib['title'], query.attrib)
             
         elif query.attrib.get('target', None) \
                 and len(query.attrib.get('target')) > 0:            
-            results = search_annotationByTarget(query.attrib['target'], 
+            results, count = search_annotationByTarget(query.attrib['target'], 
                                                      query.attrib)            
         elif query.attrib.get('status', None) \
                 and len(query.attrib.get('status')) > 0:
