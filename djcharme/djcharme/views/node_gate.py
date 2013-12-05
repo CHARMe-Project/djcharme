@@ -140,7 +140,7 @@ def process_resource(request, resource_id):
         
 def process_data(request, resource_id):
     if get_format(request) is None and 'text/html' in http_accept(request):
-        return process_resource(request, resource_id = None)
+        return process_resource(request, resource_id = resource_id)
     
     req_format = validateMimeFormat(request)
     if req_format is None:

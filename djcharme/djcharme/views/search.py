@@ -42,9 +42,12 @@ from django.contrib import messages
 from djcharme import mm_render_to_response_error
 from rdflib.plugin import PluginException
 from django.contrib.messages.api import MessageFailure
+import logging
 
 
 hostURL = 'http://localhost:8000'
+
+LOGGING = logging.getLogger(__name__)
 
 def _build_host_url(request):
     hostname = socket.getfqdn()
@@ -98,9 +101,9 @@ def do_search(request, iformat):
         try:
             messages.add_message(request, messages.ERROR, e)
         except PluginException as e:
-            print e
+            LOGGING.error(str(e))
         except MessageFailure as e:
-            print e            
+            LOGGING.error(str(e))            
         return mm_render_to_response_error(request, '503.html', 503)
 
 def _build_description_ospath(hostURL, collection_guid = None, observation_guid = None, result_guid = None):

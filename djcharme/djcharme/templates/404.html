@@ -1,7 +1,9 @@
+{% extends "charme_base.html" %} 
 {% load i18n %}
 
 {% block meta_title %}404 - {% trans "Not Found" %}{% endblock %}
 
+{% block main %}
 {% if messages %}
 <ul class="messages">
     {% for message in messages %}
@@ -9,6 +11,4 @@
     {% endfor %}
 </ul>
 {% endif %}
-
-{% block main %}
 {% endblock %}

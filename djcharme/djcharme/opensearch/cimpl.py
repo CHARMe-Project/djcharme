@@ -146,9 +146,10 @@ class COSAtomResponse(OSAtomResponse):
             atom_content = createContent(root = atomroot, 
                                         body = subresult['triple'], 
                                         itype = TEXT_TYPE)
-            atom_updated = createUpdated(datetime.datetime.now().isoformat(), 
+            time_doc = datetime.datetime.now().isoformat()
+            atom_updated = createUpdated(time_doc, 
                                          root = atomroot)
-            atom_published = createPublished('TO_BE_DONE_2011-01-21T11:05:29.511Z', 
+            atom_published = createPublished(time_doc, 
                                             root = atomroot)            
             entry = createEntry(atom_id, ititle, atom_updated,
                                 published=atom_published,
