@@ -158,6 +158,7 @@ MIDDLEWARE_CLASSES = (
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
+    "djcharme.security_middleware.SecurityMiddleware",    
     "djcharme.charme_middleware.CharmeMiddleware",
 )
 
@@ -223,6 +224,18 @@ LOGGING = {
 
 #Default cedasite configuration parameters. May be overridden in the local_settings.py
 ALLOWED_HOSTS = ['*']
+
+PASSWORD_HASHERS = (
+    'django.contrib.auth.hashers.BCryptSHA256PasswordHasher',
+    'django.contrib.auth.hashers.BCryptPasswordHasher',
+    'django.contrib.auth.hashers.PBKDF2PasswordHasher',
+    'django.contrib.auth.hashers.PBKDF2SHA1PasswordHasher',
+    'django.contrib.auth.hashers.SHA1PasswordHasher',
+    'django.contrib.auth.hashers.MD5PasswordHasher',
+    'django.contrib.auth.hashers.CryptPasswordHasher',
+)
+
+AUTHENTICATION_BACKENDS = ('djcharme.charme_security_model.CharmeAuthenticationBackend',)
 ##################
 # LOCAL SETTINGS #
 ##################

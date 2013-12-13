@@ -1,0 +1,38 @@
+{% extends "charme_base.html" %}
+
+{% load i18n %}
+
+{% block main %}
+
+{% if user.errors %}
+<p>Your username and password didn't match. Please try again.</p>
+{% endif %}
+
+<form method="post" action="{% url 'registration' %}">
+{% csrf_token %}
+
+ 	<div class="fieldWrapper">
+        {{ user_form.email.errors }}
+        <label for="id_subject">{% trans "Email" noop %}</label>
+        {{ user_form.email }}
+    </div>
+ 	<div class="fieldWrapper">
+        {{ user_form.confirm_email.errors }}
+        <label for="id_confirm_email">{% trans "Confirm email" noop %}</label>
+        {{ user_form.confirm_email }}
+    </div>    
+ 	<div class="fieldWrapper">
+        {{ user_form.password.errors }}
+        <label for="id_password">{% trans "Password" noop %}</label>
+        {{ user_form.password }}
+    </div>
+ 	<div class="fieldWrapper">
+        {{ user_form.confirm_password.errors }}
+        <label for="id_confirm_password">{% trans "Confirm password" noop %}</label>
+        {{ user_form.confirm_password }}
+    </div>        
+
+<input type="submit" value="login" />
+</form>
+
+{% endblock %}

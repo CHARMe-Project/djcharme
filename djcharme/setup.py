@@ -35,6 +35,7 @@ setup(
                         'cedatheme_mf54',
                         'rdflib==4.1-dev',
                         'rdflib-jsonld',
-                        'ceda-markup'],
+                        'ceda-markup',
+                        'py-bcrypt'],
 )
 
