@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html >
+<head>
+	<head>
+		<meta charset="utf-8">
+	<link rel="stylesheet" href="http://ajax.googleapis.com/ajax/libs/dojo/1.9.1/dijit/themes/claro/claro.css" media="screen">
+	<script type="text/javascript">
+
+	var token = null;
+	
+	//main function
+	function request_token() {
+		oa_domain='http://localhost:8000'
+		oa_path='/oauth2/authorize'
+		client_id='1-2-3-4-5-6'
+		response_type='token'
+		redirect_uri='http://localhost:8000/'
+		polling_time=500 //in ms
+		
+		//requires token
+		get_token(oa_domain, oa_path, client_id, response_type, redirect_uri, polling_time)	
+	}	
+
+	
+function get_token(oa_domain, oa_path, client_id, response_type, redirect_uri, polling_time){
+	var token;		
+	
+	//Open remote URL
+	new_win_url = oa_domain + oa_path + '/?client_id=' + client_id + '&response_type=' + response_type + '&redirect_uri=' + redirect_uri;
+	new_window = window.open(new_win_url);
+	
+	//listen the response from the oaServer
+	window.addEventListener('message', function(event) {
+		if (event.data.search('get_token:') == 0) {			
+			new_window.close();
+			return event.data;
+		}			
+	}, false);
+
+	//polls on the new_window
+	var timer;	
+	function polling(new_window, polling_time) {
+		if (!new_window.closed) {
+			timer = setTimeout(polling, polling_time, new_window, polling_time)
+			new_window.postMessage("get_token", oa_domain);	
+		}
+	}
+	
+	polling(new_window, polling_time);
+}
+	
+function validate_token(token, expire) {
+	var is_valid = false	
+	require(["dojo/_base/xhr"], function(xhr){
+		// Post the form information
+		xhr.get({
+			sync: true,
+			// The URL of the request
+			url: "http://localhost:8000/token/validate/"+ token + "/" + expire,
+			// The success callback with result from server
+			load: function(res) {
+			    // do something with handled data
+				is_valid = true;
+			},
+			// The error handler
+			error: function(error) {
+				if (error.response.status == 404) {
+					is_valid = false;
+			    }
+			}
+		});
+	});
+	return is_valid;
+}
+ 
+
+</script>
+
+</head>
+<body >
+	<script src="http://ajax.googleapis.com/ajax/libs/dojo/1.9.1/dojo/dojo.js" data-dojo-config="async:true"></script>
+    <a href="javascript:request_token()">Get Token</a>    
+</body>    
+</html>

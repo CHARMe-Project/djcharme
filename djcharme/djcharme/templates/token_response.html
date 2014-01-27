@@ -1,0 +1,21 @@
+{% extends "charme_base.html" %}
+
+{% load i18n %}
+
+{% block main %}
+		<script type="text/javascript">
+		window.addEventListener('message', function(event) {
+			if (event.data === 'get_token') {
+				event.source.postMessage("get_token:{{ token | safe }}", event.origin);
+			}
+		}, false);
+		
+		</script>
+		
+		Thanks
+		<!-- 
+		<div>			
+			<input type="button" id="close" onclick="close()" value="Thanks"/>
+		</div>
+		 -->
+{% endblock %}

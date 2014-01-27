@@ -74,7 +74,28 @@ def index(request, graph = 'stable'):
     messages.add_message(request, messages.ERROR, "Format not accepted")
     return mm_render_to_response_error(request, '400.html', 400)
 
+def __get_ret_format(request, req_format):
+    '''
+        Extracts the return format otherwise return the req_format
+    '''    
+    ret_format = http_accept(request)
+    if type(ret_format) == list:
+        ret_format = ret_format[0]
 
+    if ret_format is None:
+        ret_format = req_format
+    else:            
+        ret_format = checkMimeFormat(ret_format)
+
+    if ret_format is None:
+        ret_format = req_format    
+    return ret_format
+
+def __get_req_format(request):
+    '''
+        Extracts the request format otherwise return the req_format
+    '''     
+    return checkMimeFormat(content_type(request))
 
 # Temporary solution as long identify a solution for csrf
 #@csrf_protect
@@ -90,9 +111,8 @@ def insert(request):
     kwargs['redirect_uri'] = 'http://localhost:8000/index/submitted'
     return HttpResponseRedirect(reverse('oauth2:authorize'), kwargs=kwargs)
     '''
-    
-    req_format = content_type(request)
-    req_format = checkMimeFormat(req_format)
+    req_format = __get_req_format(request)
+    ret_format = __get_ret_format(request, req_format)
     
     if req_format is None:        
         messages.add_message(request, messages.ERROR, "Cannot ingest the posted format")
@@ -101,18 +121,6 @@ def insert(request):
     if isPOST(request) or isOPTIONS(request):
         triples = request.body
         tmp_g = insert_rdf(triples, req_format, graph=ANNO_SUBMITTED)        
-        ret_format = http_accept(request)
-        if type(ret_format) == list:
-            ret_format = ret_format[0]
-
-        if ret_format is None:
-            ret_format = req_format
-        else:            
-            ret_format = checkMimeFormat(ret_format)
-
-        if ret_format is None:
-            ret_format = req_format
-
         return HttpResponse(__serialize(tmp_g, req_format = ret_format), content_type=FORMAT_MAP.get(ret_format))
 
 

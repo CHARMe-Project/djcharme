@@ -180,13 +180,8 @@ Cannot initialize OpenSearch Engine')
                 if request.session.has_key('_auth_user_id'):
                     del request.session['_auth_user_id']                    
                 response.delete_cookie("sessionid")
-                att_token = {'token': json.loads(response.content)}
-                #att_token = json.loads(response.content)
-                #expires = datetime.datetime.now() + datetime.timedelta(milliseconds=int(att_token['expires_in']))
-                #response.set_cookie('oauth_token', 
-                #                    value=att_token, 
-                #                    expires=expires)                
-                return mm_render_to_response(request, att_token, "token_response.html")                             
+                #att_token = {'token': json.loads(response.content)}                
+                #return mm_render_to_response(request, att_token, "token_response.html")                             
             except Exception as e:
                 print e            
         return response
