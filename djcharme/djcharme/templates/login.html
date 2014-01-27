@@ -19,6 +19,7 @@
     </div>
 
 <input type="hidden" name="logged_in" value="{% url 'index' %}" />
+<input type="hidden" name="next" value="{{ request.GET.next }}" />
 <input type="submit" value="login" />
 </form>
 

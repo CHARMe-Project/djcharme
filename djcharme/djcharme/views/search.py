@@ -44,7 +44,6 @@ from rdflib.plugin import PluginException
 from django.contrib.messages.api import MessageFailure
 import logging
 
-
 hostURL = 'http://localhost:8000'
 
 LOGGING = logging.getLogger(__name__)

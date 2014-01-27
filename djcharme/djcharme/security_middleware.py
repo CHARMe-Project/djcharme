@@ -30,16 +30,18 @@ Created on 2 Nov 2012
 
 @author: mnagni
 ''' 
-from django.conf import settings
-
-from django.utils.http import urlencode
-from django.http import HttpResponseRedirect
-
 import socket
 import logging
 import re
 import urllib
 from djcharme.exception import SecurityError, MissingCookieError
+from django.core.urlresolvers import reverse
+from django.http.response import HttpResponseRedirect, HttpResponseForbidden
+from urllib import urlencode
+from django.contrib.auth.models import AnonymousUser
+from django.conf import settings
+from provider.oauth2.models import AccessToken
+from datetime import datetime, timedelta
 
 DJ_SECURITY_SHAREDSECRET_ERROR = 'No SECURITY_SHAREDSECRET parameter \
 is defined in the application settings.py file. \
@@ -61,6 +63,9 @@ LOGIN = 'login'
 
 LOGGER = logging.getLogger(__name__)
 
+def get_login_service_url():
+    return reverse('login')
+
 def auth_tkt_name():
     return getattr(settings, 'AUTH_TKT_NAME', 'auth_tkt')
 
@@ -68,7 +73,7 @@ def token_field_name():
     return getattr(settings, 'TOKEN_FIELD_NAME', 't')
 
 def security_filter():
-    return getattr(settings, 'DJ_SECURITY_FILTER', [])
+    return getattr(settings, 'SECURITY_FILTER', [])
 
 def redirect_field_name():
     return getattr(settings, 'REDIRECT_FIELD_NAME', 'r')
@@ -92,17 +97,28 @@ def filter_url(string, filters):
             return True
 
 def is_public_url(request):
-    url_fiters = getattr(settings, 'DJ_SECURITY_FILTER', [])
+    url_fiters = security_filter()
     
     #adds a default filter for reset password request
     reset_regexpr = '%s=[a-f0-9-]*$' % (token_field_name())
-    if reset_regexpr not in security_filter(): 
+    if reset_regexpr not in url_fiters: 
         url_fiters.append(reset_regexpr)
         
     if url_fiters \
-        and filter_url(_build_url(request), url_fiters):
+        and filter_url(request.path, url_fiters):
         return True
     return False    
+
+def is_valid_token(token):
+    if token:
+        try:
+            access_t = AccessToken.objects.get(token=token)
+            if datetime.now(access_t.expires.tzinfo) - access_t.expires \
+                    < timedelta(seconds=0):
+                return True
+        except AccessToken.DoesNotExist:
+            return False        
+    return False
 
 class SecurityMiddleware(object):
     """
@@ -113,8 +129,56 @@ class SecurityMiddleware(object):
         or not of a valid paste cookie in the request.
     """
 
-    def process_request(self, request): 
-        pass
+    def process_request(self, request):
+        #The required URL is public
+        if is_public_url(request):                    
+            return                     
+
+        #The request has an Access Token
+        if is_valid_token(request.GET.get('access_token', None)):                    
+            return
+
+        login_service_url = get_login_service_url()        
+        
+        #An anonymous user want to access restricted resources
+        if request.path != login_service_url \
+            and isinstance(request.user, AnonymousUser):
+            return HttpResponseForbidden()
+        
+        #An anonymous user wants to login        
+        if request.path == get_login_service_url():
+            return
+
+        #The user is authenticated
+        return
+        '''        
+        #Has to process the submitted login form
+        if (request.method == 'POST' \
+                and request.path == get_login_service_url()):
+            return
+
+        #Some other middleware may have already started a login process
+        if (request.method == 'GET' \
+                and request.path == get_login_service_url() 
+                and len(request.GET) > 0):
+            return
+
+
+        
+    
+        #Has to redirect to the login page
+        if request.path == get_login_service_url() \
+                and request.GET.has_key(redirect_field_name()):
+            return
+        
+        #qs = {redirect_field_name(): 
+        #      urllib.quote_plus((_build_url(request)))}             
+        qs = {redirect_field_name(): _build_url(request)}
+        url = '%s?%s' % (get_login_service_url(), 
+                         urlencode(qs))
+
+        return HttpResponseRedirect(url)
+        '''
         '''
         #Has to process a reset password request? 
         if len(request.REQUEST.get(LOGOUT, '')) > 0:

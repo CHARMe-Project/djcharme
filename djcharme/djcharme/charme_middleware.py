@@ -36,26 +36,45 @@ import logging
 from rdflib.plugins.stores.sparqlstore import SPARQLUpdateStore
 from django.conf import settings
 from django.contrib import messages
-from djcharme import mm_render_to_response_error, LOAD_SAMPLE
+from djcharme import mm_render_to_response_error, LOAD_SAMPLE,\
+    mm_render_to_response
 from django.contrib.auth.models import User
 from django.db.utils import DatabaseError
 from django.http.response import HttpResponse
 from multiprocessing.process import Process
+from django.shortcuts import render_to_response, render
+from django.template.context import RequestContext
+import json
+import datetime
 
-formatter = logging.Formatter(fmt='%(name)s %(levelname)s %(asctime)s \
-%(module)s %(message)s')
-handler = logging.StreamHandler()
-handler.setFormatter(formatter)
-handler.setLevel(logging.DEBUG)
-logging.getLogger().addHandler(handler)
-#Temporary solution!!!
-loggers = ('djcharme',)
-for log_name in loggers:
-    log = logging.getLogger(log_name)
-    log.addHandler(handler)
-    log.setLevel(logging.DEBUG)
+def webusage(request):
+    TEMPLATE = '\nMETHOD:%s\nIP:%s\nREMOTE_HOST:%s\nPATH_INFO:%s\nHTTP_USER_AGENT:%s\n'
+    return TEMPLATE % (request.META.get('REQUEST_METHOD', 'Unknown'),
+                       request.META.get('REMOTE_ADDR', 'Unknown'),
+                       request.META.get('REMOTE_HOST', 'Unknown'),
+                       request.META.get('PATH_INFO', 'Unknown'),
+                       request.META.get('HTTP_USER_AGENT', 'Unknown'))
+
 
 LOGGING = logging.getLogger(__name__)
+
+USAGE_LOG = logging.getLogger('webusage')
+USAGE_LOG.setLevel(logging.DEBUG)
+# create console handler with a higher log level
+handler = logging.StreamHandler()
+handler.setLevel(logging.INFO)
+
+# create file handler which logs even debug messages
+#ch = logging.FileHandler('spam.log')
+#ch.setLevel(logging.INFO)
+
+# create formatter and add it to the handlers
+formatter = logging.Formatter(fmt='%(name)s %(asctime)s \
+%(message)s')
+handler.setFormatter(formatter)
+USAGE_LOG.addHandler(handler)
+
+#USAGE_LOG.basicConfig(format='%(name)s:%(levelname)s:%(message)s',level=logging.INFO,datefmt='%d/%m/%y %I:%M:%S')
 
 import mimetypes
 if not mimetypes.inited:
@@ -114,6 +133,7 @@ class CharmeMiddleware(object):
         return CharmeMiddleware.__osEngine
       
     def process_request(self, request):
+        USAGE_LOG.info(webusage(request))
         if request.method == 'OPTIONS':
             return HttpResponse(status=200)             
          
@@ -155,6 +175,20 @@ Cannot initialize OpenSearch Engine')
             response['Access-Control-Max-Age'] = 10
             response['Content-Type'] = "text/plain"
             return response
+        if "access_token" in response.content:
+            try:
+                if request.session.has_key('_auth_user_id'):
+                    del request.session['_auth_user_id']                    
+                response.delete_cookie("sessionid")
+                att_token = {'token': json.loads(response.content)}
+                #att_token = json.loads(response.content)
+                #expires = datetime.datetime.now() + datetime.timedelta(milliseconds=int(att_token['expires_in']))
+                #response.set_cookie('oauth_token', 
+                #                    value=att_token, 
+                #                    expires=expires)                
+                return mm_render_to_response(request, att_token, "token_response.html")                             
+            except Exception as e:
+                print e            
         return response
     
     def process_exception(self, request, exception):

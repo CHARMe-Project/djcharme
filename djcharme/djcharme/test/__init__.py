@@ -151,7 +151,7 @@ rdf_usecase1 = '''
 '''
 
 turtle_general = '''
-@prefix oa: <http://www.openannotation.org/spec/core/> . 
+@prefix oa: <http://www.w3.org/ns/oa#> . 
 @prefix fabio: <http://purl.org/spar/fabio/> .
 @prefix cito: <http://purl.org/spar/cito/> .
 @prefix chnode: <http://localhost/> .
@@ -173,7 +173,7 @@ cito:hasCitedEntity <http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__ACTIVITY
 
 turtle_citation = '''
 
-@prefix oa: <http://www.openannotation.org/spec/core/> . 
+@prefix oa: <http://www.w3.org/ns/oa#> . 
 @prefix fabio: <http://purl.org/spar/fabio/> .
 @prefix cito: <http://purl.org/spar/cito/> .
 @prefix foaf: <http://xmlns.com/foaf/0.1/> .
@@ -202,7 +202,7 @@ cito:hasCitedEntity <http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__ACTIVITY
 '''
 
 turtle_semantic = '''
-@prefix oa: <http://www.openannotation.org/spec/core/> . 
+@prefix oa: <http://www.w3.org/ns/oa#> . 
 @prefix fabio: <http://purl.org/spar/fabio/> .
 @prefix foaf: <http://xmlns.com/foaf/0.1/> .
 @prefix chnode: <http://localhost/> .

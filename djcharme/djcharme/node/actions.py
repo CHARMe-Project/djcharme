@@ -277,15 +277,6 @@ def _collect_annotations(graph):
     g = generate_graph(CharmeMiddleware.get_store(), graph)
     tmp_g = Graph()
 
-    # This code is a workaround until FUSEKI fixes this bug
-    # https://issues.apache.org/jira/browse/JENA-592
-    '''
-    anno   = __query_annotations(g, format_graphIRI(graph), obj = OA['Annotation'])
-    target = __query_annotations(g, format_graphIRI(graph), pred = OA['hasTarget'])
-    body   = __query_annotations(g, format_graphIRI(graph), pred = OA['hasBody'])
-    '''
-    
-    #To activate when the FUSEKI bug is closed
     anno   = g.triples((None, None, OA['Annotation']))
     target = g.triples((None, OA['hasTarget'], None))
     body   = g.triples((None, OA['hasBody'], None))

@@ -12,12 +12,14 @@ from djcharme.exception import SerializeError, StoreConnectionError
 from djcharme.views import isGET, isPOST, content_type, validateMimeFormat,\
     isOPTIONS, http_accept, get_format, checkMimeFormat, get_depth
 
-from django.http.response import HttpResponseRedirectBase, Http404, HttpResponse
+from django.http.response import HttpResponseRedirectBase, Http404, HttpResponse,\
+    HttpResponseRedirect
 from django.contrib import messages
 from django.views.decorators.csrf import csrf_exempt, csrf_protect
 
 import logging
 import json
+from django.core.urlresolvers import reverse
 
 LOGGING = logging.getLogger(__name__)
 
@@ -81,6 +83,14 @@ def insert(request):
     '''
         Inserts in the triplestore a new annotation under the "ANNO_SUBMITTED" graph
     '''
+    '''
+    kwargs = {}
+    kwargs['client_id'] = '1-2-3-4-5-6'
+    kwargs['response_type'] = 'token'
+    kwargs['redirect_uri'] = 'http://localhost:8000/index/submitted'
+    return HttpResponseRedirect(reverse('oauth2:authorize'), kwargs=kwargs)
+    '''
+    
     req_format = content_type(request)
     req_format = checkMimeFormat(req_format)
     

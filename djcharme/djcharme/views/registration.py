@@ -8,8 +8,10 @@ from django.contrib.auth.models import User
 from django.db.utils import IntegrityError
 import logging
 from django.core.urlresolvers import reverse
-from django.http.response import HttpResponseRedirect
+from django.http.response import HttpResponseRedirect, HttpResponse,\
+    HttpResponseNotFound
 from djcharme.charme_security_model import UserForm
+from djcharme.security_middleware import is_valid_token
 
 
 LOGGING = logging.getLogger(__name__)
@@ -39,6 +41,12 @@ def registration(request):
     else: #GET
         context['user_form'] = UserForm()       
         return mm_render_to_response(request, context, 'registration.html')          
-    
-    
+
+def validate_token(request, token=None, expire=None):
+    if is_valid_token(token):
+        return HttpResponse(status=200)
+    return HttpResponseNotFound()
+
+def test_token(request):
+    return mm_render_to_response(request, {}, 'oauth_test2.html')
         

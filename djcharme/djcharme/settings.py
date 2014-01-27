@@ -127,6 +127,8 @@ INSTALLED_APPS = (
     "django.contrib.staticfiles",
     "djcharme",
     "cookielaw",
+    'provider',
+    'provider.oauth2',
 )
 
 
@@ -158,7 +160,7 @@ MIDDLEWARE_CLASSES = (
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
-    "djcharme.security_middleware.SecurityMiddleware",    
+    #"djcharme.security_middleware.SecurityMiddleware",    
     "djcharme.charme_middleware.CharmeMiddleware",
 )
 
@@ -185,6 +187,11 @@ LOGGING = {
         }
     },
     'loggers': {
+        'django': {
+            'handlers': ['console'],
+            'level': 'DEBUG',
+            'propagate': True,
+        },
         'django.request': {
             'handlers': ['mail_admins'],
             'level': 'ERROR',
@@ -194,7 +201,7 @@ LOGGING = {
             'handlers': ['console'],
             'level': 'DEBUG',
             'propagate': True,
-        }
+        }                             
     }
 }
 
@@ -236,6 +243,8 @@ PASSWORD_HASHERS = (
 )
 
 AUTHENTICATION_BACKENDS = ('djcharme.charme_security_model.CharmeAuthenticationBackend',)
+#SESSION_COOKIE_SECURE = True
+#CSRF_COOKIE_SECURE = True
 ##################
 # LOCAL SETTINGS #
 ##################
