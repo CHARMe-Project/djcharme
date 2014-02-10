@@ -160,7 +160,7 @@ MIDDLEWARE_CLASSES = (
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
-    #"djcharme.security_middleware.SecurityMiddleware",    
+    "djcharme.security_middleware.SecurityMiddleware",    
     "djcharme.charme_middleware.CharmeMiddleware",
 )
 

@@ -4,22 +4,20 @@ Created on 14 May 2013
 @author: mnagni
 '''
 from djcharme.node.actions import OA, FORMAT_MAP, \
-ANNO_SUBMITTED, insert_rdf, find_resource_by_id, RESOURCE, \
+ANNO_SUBMITTED, insert_rdf, find_resource_by_id, \
 _collect_annotations, change_annotation_state, find_annotation_graph    , DATA,\
     PAGE
 from djcharme import mm_render_to_response, mm_render_to_response_error
-from djcharme.exception import SerializeError, StoreConnectionError
-from djcharme.views import isGET, isPOST, content_type, validateMimeFormat,\
+from djcharme.exception import StoreConnectionError
+from djcharme.views import isPOST, content_type, validateMimeFormat,\
     isOPTIONS, http_accept, get_format, checkMimeFormat, get_depth
 
-from django.http.response import HttpResponseRedirectBase, Http404, HttpResponse,\
-    HttpResponseRedirect
+from django.http.response import HttpResponseRedirectBase, Http404, HttpResponse
 from django.contrib import messages
-from django.views.decorators.csrf import csrf_exempt, csrf_protect
+from django.views.decorators.csrf import csrf_exempt
 
 import logging
 import json
-from django.core.urlresolvers import reverse
 
 LOGGING = logging.getLogger(__name__)
 
@@ -39,7 +37,6 @@ def __serialize(graph, req_format = 'application/rdf+xml'):
     if req_format == FORMAT_MAP['json-ld']:
         req_format = 'json-ld'
     return graph.serialize(format=req_format)
-
 
 
 def index(request, graph = 'stable'):

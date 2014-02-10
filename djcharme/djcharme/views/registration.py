@@ -47,6 +47,9 @@ def validate_token(request, token=None, expire=None):
         return HttpResponse(status=200)
     return HttpResponseNotFound()
 
+def token_response(request):
+    return mm_render_to_response(request, {}, 'token_response.html')
+
 def test_token(request):
     return mm_render_to_response(request, {}, 'oauth_test2.html')
         

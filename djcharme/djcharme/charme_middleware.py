@@ -36,16 +36,11 @@ import logging
 from rdflib.plugins.stores.sparqlstore import SPARQLUpdateStore
 from django.conf import settings
 from django.contrib import messages
-from djcharme import mm_render_to_response_error, LOAD_SAMPLE,\
-    mm_render_to_response
+from djcharme import mm_render_to_response_error, LOAD_SAMPLE
 from django.contrib.auth.models import User
 from django.db.utils import DatabaseError
 from django.http.response import HttpResponse
 from multiprocessing.process import Process
-from django.shortcuts import render_to_response, render
-from django.template.context import RequestContext
-import json
-import datetime
 
 def webusage(request):
     TEMPLATE = '\nMETHOD:%s\nIP:%s\nREMOTE_HOST:%s\nPATH_INFO:%s\nHTTP_USER_AGENT:%s\n'
@@ -174,16 +169,7 @@ Cannot initialize OpenSearch Engine')
             #response['Access-Control-Allow-Origin'] = request.META.get('HTTP_ORIGIN', 'http://localhost:8000')
             response['Access-Control-Max-Age'] = 10
             response['Content-Type'] = "text/plain"
-            return response
-        if "access_token" in response.content:
-            try:
-                if request.session.has_key('_auth_user_id'):
-                    del request.session['_auth_user_id']                    
-                response.delete_cookie("sessionid")
-                #att_token = {'token': json.loads(response.content)}                
-                #return mm_render_to_response(request, att_token, "token_response.html")                             
-            except Exception as e:
-                print e            
+            return response     
         return response
     
     def process_exception(self, request, exception):

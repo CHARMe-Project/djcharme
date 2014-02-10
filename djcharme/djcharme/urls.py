@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.conf.urls import patterns, include, url
 from djcharme.views import node_gate, compose, endpoint, main_gui, search, \
-    registration
+    registration, facets
 from django.contrib.auth.views import login
 from djcharme.charme_security_model import LoginForm
 
@@ -58,7 +58,11 @@ urlpatterns = patterns('',
      url(r'^search/' + iformats_re, search.do_search, name='os_search'),
      url(r'^token/validate/(?P<token>\w+)/(?P<expire>\w+)', registration.validate_token, name='validate_token'),
      url(r'^token/validate', registration.validate_token, name='validate_token'),
-     url(r'^token/test', registration.test_token, name='test_token'),     
+     url(r'^token/test', registration.test_token, name='test_token'),   
+     url(r'^token/response', registration.token_response, name='token_response'),    
+     
+     #Facets
+     url(r'^facets/test', facets.test_facets, name='test_facets'),
      
      #Index pages
      url(r'^index/(\w+)', node_gate.index, name='charme.index.id'),

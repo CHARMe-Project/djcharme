@@ -1,0 +1,47 @@
+{% load staticfiles %}
+<!DOCTYPE html>
+<html >
+<head>
+	<head>
+		<meta charset="utf-8">
+	<link rel="stylesheet" href="{% static 'js/dojo/1.9.2/dijit/themes/claro/claro.css' %}"
+	 media="screen">
+	<script type="text/javascript">
+
+function load_schemas() {
+	//var schema_url = "http://vocab.nerc.ac.uk/scheme/";
+	var schema_url = "http://google.com";
+	var xml_doc = load_xml(schema_url);
+	require(["dojox/xml/parser"], function(parser){
+		var jsdom = dojox.xml.parser.parse(xml_doc);
+		if (jsdom == "") {
+			alert('done!');	
+		}
+		
+	});	
+}
+
+function load_xml(xml_url) {
+	var xml_doc = ""	
+	require(["dojo/request"], function(request){
+		// Get the form information
+		request.get(xml_url).then(
+			function(response) {
+				xml_doc = response;
+			},
+			function(error) {
+				alert("error on ajax call");
+			}
+		)});
+		return xml_doc;		
+}
+ 
+
+</script>
+
+</head>
+<body >
+	<script src="{% static 'js/dojo/1.9.2/dojo/dojo.js' %}" data-dojo-config="async:true"></script>
+    <a href="javascript:load_schemas()">Load Schemas</a>    
+</body>    
+</html>

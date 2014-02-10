@@ -14,19 +14,19 @@
 		oa_path='/oauth2/authorize'
 		client_id='1-2-3-4-5-6'
 		response_type='token'
-		redirect_uri='http://localhost:8000/'
-		polling_time=500 //in ms
+		polling_time=5000 //in ms
 		
 		//requires token
-		get_token(oa_domain, oa_path, client_id, response_type, redirect_uri, polling_time)	
+		get_token(oa_domain, oa_path, client_id, response_type, polling_time)	
 	}	
 
 	
-function get_token(oa_domain, oa_path, client_id, response_type, redirect_uri, polling_time){
+function get_token(oa_domain, oa_path, client_id, response_type, polling_time){
 	var token;		
 	
 	//Open remote URL
-	new_win_url = oa_domain + oa_path + '/?client_id=' + client_id + '&response_type=' + response_type + '&redirect_uri=' + redirect_uri;
+	//new_win_url = oa_domain + oa_path + '/?client_id=' + client_id + '&response_type=' + response_type + '&redirect_uri=' + redirect_uri;
+	new_win_url = oa_domain + oa_path + '/?client_id=' + client_id + '&response_type=' + response_type;	
 	new_window = window.open(new_win_url);
 	
 	//listen the response from the oaServer
@@ -42,13 +42,40 @@ function get_token(oa_domain, oa_path, client_id, response_type, redirect_uri, p
 	function polling(new_window, polling_time) {
 		if (!new_window.closed) {
 			timer = setTimeout(polling, polling_time, new_window, polling_time)
-			new_window.postMessage("get_token", oa_domain);	
+			if (new_window.location.hash) {				
+				alert(new_window.location.hash);
+				var parts = new_window.location.hash.substring(1).split('&');
+				new_window.close();
+				var token = null;
+				var expires = null;
+				for (var i = 0; i < parts.length; i++) {
+					var param = parts[i].split('=');
+					if (param[0] == 'access_token') {
+						token = param[1];
+					}
+					
+					if (param[0] == 'expires_in') {
+						expires = param[1];
+					}
+					
+					if (token != null && expires != null) {
+						if (validate_token(token, expires)) {
+							call_restricted_resource(token);
+							return;	
+						}
+					}
+				} 
+			}				
 		}
 	}
 	
 	polling(new_window, polling_time);
 }
-	
+
+function call_restricted_resource(token) {
+	alert(token)
+}
+
 function validate_token(token, expire) {
 	var is_valid = false	
 	require(["dojo/_base/xhr"], function(xhr){
