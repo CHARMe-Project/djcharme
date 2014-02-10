@@ -37,6 +37,6 @@ setup(
                         'rdflib-jsonld',
                         'ceda-markup',
                         'py-bcrypt',
-                        'django-oauth2-provider=0.2.7-dev'],
+                        'django-oauth2-provider==0.2.7-dev'],
 )
 
