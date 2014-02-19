@@ -10,27 +10,62 @@
 
 <form method="post" action="{% url 'registration' %}">
 {% csrf_token %}
-
- 	<div class="fieldWrapper">
-        {{ user_form.email.errors }}
-        <label for="id_subject">{% trans "Email" noop %}</label>
-        {{ user_form.email }}
-    </div>
- 	<div class="fieldWrapper">
-        {{ user_form.confirm_email.errors }}
-        <label for="id_confirm_email">{% trans "Confirm email" noop %}</label>
-        {{ user_form.confirm_email }}
-    </div>    
- 	<div class="fieldWrapper">
-        {{ user_form.password.errors }}
-        <label for="id_password">{% trans "Password" noop %}</label>
-        {{ user_form.password }}
-    </div>
- 	<div class="fieldWrapper">
-        {{ user_form.confirm_password.errors }}
-        <label for="id_confirm_password">{% trans "Confirm password" noop %}</label>
-        {{ user_form.confirm_password }}
-    </div>        
+	<table>
+       <tr>
+	   		<td class="fieldWrapper">
+				{{ user_form.first_name.errors }}
+			    <label for="id_first_name">{% trans "First name" noop %}</label>
+			</td>
+	       	<td>			        
+			    {{ user_form.first_name }}
+	       </td>
+       </tr>	
+	   <tr>
+	   		<td class="fieldWrapper">
+				{{ user_form.last_name.errors }}
+			    <label for="id_last_name">{% trans "Last name" noop %}</label>
+			</td>
+	       	<td>			        
+			    {{ user_form.last_name }}
+	       </td>
+       </tr>
+       <tr>
+	   		<td class="fieldWrapper">
+				{{ user_form.email.errors }}
+			    <label for="id_email">{% trans "Email" noop %}</label>
+			</td>
+	       	<td>			        
+			    {{ user_form.email }}
+	       </td>
+       </tr>
+       <tr>
+       		<td class="fieldWrapper">
+				{{ user_form.confirm_email.errors }}
+			    <label for="id_confirm_email">{% trans "Confirm email" noop %}</label>
+			</td>
+	       	<td>			        
+			    {{ user_form.confirm_email }}
+	       </td>
+       </tr>
+       <tr>
+       		<td class="fieldWrapper">
+			    {{ user_form.password.errors }}
+			    <label for="id_password">{% trans "Password" noop %}</label>
+			</td>
+	       	<td>			        
+			    {{ user_form.password }}
+	       </td>
+       </tr>
+       <tr>
+       		<td class="fieldWrapper">
+				{{ user_form.confirm_password.errors }}
+			    <label for="id_confirm_password">{% trans "Confirm password" noop %}</label>
+			</td>
+	       	<td>			    
+			    {{ user_form.confirm_password }}
+	       </td>
+       </tr>
+	</table>        
 
 <input type="submit" value="login" />
 </form>

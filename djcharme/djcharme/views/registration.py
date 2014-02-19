@@ -12,6 +12,8 @@ from django.http.response import HttpResponseRedirect, HttpResponse,\
     HttpResponseNotFound
 from djcharme.charme_security_model import UserForm
 from djcharme.security_middleware import is_valid_token
+from provider.oauth2.models import AccessToken
+from json import dumps
 
 
 LOGGING = logging.getLogger(__name__)
@@ -23,7 +25,9 @@ def _register_user(request):
         try:
             user = User.objects.create_user(user_form.cleaned_data.get('email'), 
                         user_form.cleaned_data.get('email'), 
-                        password = user_form.cleaned_data.get('password'))
+                        password = user_form.cleaned_data.get('password'),
+                        first_name = user_form.cleaned_data.get('first_name'),
+                        last_name = user_form.cleaned_data.get('last_name'))
             user.save()
             return HttpResponseRedirect(reverse('login'))
         except IntegrityError:
@@ -47,9 +51,26 @@ def validate_token(request, token=None, expire=None):
         return HttpResponse(status=200)
     return HttpResponseNotFound()
 
+def userinfo(request):
+    #The request has an Access Token
+    if request.environ.get('HTTP_AUTHORIZATION', None):  
+        for term in request.environ.get('HTTP_AUTHORIZATION').split():
+            try: 
+                access_t = AccessToken.objects.get(token=term)
+                ret = {}
+                ret['email'] = access_t.user.email
+                ret['first_name'] = access_t.user.first_name
+                ret['last_name'] = access_t.user.last_name
+                return HttpResponse(dumps(ret), 
+                        content_type="application/json")  
+            except AccessToken.DoesNotExist:
+                continue 
+    return HttpResponseNotFound()
+
 def token_response(request):
     return mm_render_to_response(request, {}, 'token_response.html')
 
 def test_token(request):
     return mm_render_to_response(request, {}, 'oauth_test2.html')
-        
+
+User        

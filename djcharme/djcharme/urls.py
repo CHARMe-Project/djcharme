@@ -59,7 +59,8 @@ urlpatterns = patterns('',
      url(r'^token/validate/(?P<token>\w+)/(?P<expire>\w+)', registration.validate_token, name='validate_token'),
      url(r'^token/validate', registration.validate_token, name='validate_token'),
      url(r'^token/test', registration.test_token, name='test_token'),   
-     url(r'^token/response', registration.token_response, name='token_response'),    
+     url(r'^token/response', registration.token_response, name='token_response'),   
+     url(r'^token/userinfo', registration.userinfo, name='userinfo'), 
      
      #Facets
      url(r'^facets/test', facets.test_facets, name='test_facets'),
