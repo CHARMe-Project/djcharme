@@ -82,31 +82,43 @@ def preapare_user_for_session(request, timestamp, userid, tokens, user_data):
                                      'userid': userid, \
                                      'tokens': tokens, \
                                      'user_data': user_data}
-    LOGGER.debug("stored in request - userid:%s, user_data:%s" % (userid, user_data))
+    LOGGER.debug("stored in request - userid:%s, user_data:%s", userid, 
+                                                                user_data)
     request.session['accountid'] = userid
 
-def filter_url(string, filters):
+def filter_request(request, filters):
     """
         Checks a given strings against a list of strings.
         ** string ** string a url
         ** filters ** a list of strings
     """
+    if filters is None:
+        return False
+    
     for ifilter in filters:
-        if re.search(ifilter, string):
+        if re.search(ifilter[0], request.path) and request.method in ifilter[1]:
             return True
+        
+    return False
 
 def is_public_url(request):
-    url_fiters = security_filter()
+    '''Test a given is public or secured - True if public'''
+    url_filters = security_filter()
     
     #adds a default filter for reset password request
     reset_regexpr = '%s=[a-f0-9-]*$' % (token_field_name())
-    if reset_regexpr not in url_fiters: 
-        url_fiters.append(reset_regexpr)
+    if reset_regexpr not in url_filters: 
+        url_filters.append(reset_regexpr)
         
-    if url_fiters \
-        and filter_url(request.path, url_fiters):
+    if filter_request(request, url_filters):
+        LOGGER.debug('Public path and method %r / %r', request.path, 
+                                                       request.method)
         return True
+    
+    LOGGER.debug('Secured path and method %r / %r', request.path, 
+                                                    request.method)
     return False    
+
 
 def is_valid_token(token):
     if token:
