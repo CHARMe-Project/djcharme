@@ -243,6 +243,19 @@ PASSWORD_HASHERS = (
 )
 
 AUTHENTICATION_BACKENDS = ('djcharme.charme_security_model.CharmeAuthenticationBackend',)
+
+# Set header fields for HTTP OPTIONS method response.  If omitted, the code
+# will default to the setting in charme_middleware.CharmeMiddleware
+if "djcharme.charme_middleware.CharmeMiddleware" in MIDDLEWARE_CLASSES:
+    OPTIONS_HDR_RESPONSE = {
+        'Access-Control-Allow-Methods': 'GET, OPTIONS, POST',             
+        'Access-Control-Allow-Headers': (
+            'X-CSRFToken, X-Requested-With, x-requested-with, ',
+            'Content-Type, Content-Length, Authorization'),
+        'Access-Control-Max-Age': 10,
+        'Content-Type': "text/plain"
+    }
+
 #SESSION_COOKIE_SECURE = True
 #CSRF_COOKIE_SECURE = True
 ##################

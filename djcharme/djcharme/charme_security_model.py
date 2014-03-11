@@ -16,15 +16,15 @@ from django.utils.text import capfirst
 
 LOGGING = logging.getLogger(__name__)
 
+
 class UserForm(Form):
-    first_name  = CharField(max_length=30, required=False)
-    last_name   = CharField(max_length=30, required=False)    
-    password    = CharField(max_length=30,widget=PasswordInput(), 
-                                required=True)
-    confirm_password= CharField(max_length=30,widget=PasswordInput(), 
-                                required=True)
-    email           = EmailField(required=True)
-    confirm_email   = EmailField(required=True)
+    first_name = CharField(max_length=30, required=False)
+    last_name = CharField(max_length=30, required=False)    
+    password = CharField(max_length=30, widget=PasswordInput(), required=True)
+    confirm_password = CharField(max_length=30, widget=PasswordInput(), 
+                                 required=True)
+    email  = EmailField(required=True)
+    confirm_email = EmailField(required=True)
     
     def clean(self):
         if (self.cleaned_data.get('email') !=
@@ -124,8 +124,8 @@ class CharmeAuthenticationBackend(ModelBackend):
             if username:
                 try:
                     backend = ModelBackend()
-                    return  backend.authenticate(username=username, 
-                                                 password=password)
-                except:
+                    return backend.authenticate(username=username, 
+                                                password=password)
+                except Exception:
                     LOGGING.error("Wrong password for username: %s" % username)
                     raise SecurityError()

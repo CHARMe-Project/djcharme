@@ -91,11 +91,11 @@ class CharmeMiddleware(object):
 
     @classmethod   
     def __initStore(self): 
-        store = SPARQLUpdateStore(queryEndpoint = getattr(settings,
-                                                              'SPARQL_QUERY'),
-                                update_endpoint = getattr(settings,
+        store = SPARQLUpdateStore(queryEndpoint=getattr(settings,
+                                                        'SPARQL_QUERY'),
+                                  update_endpoint=getattr(settings,
                                                           'SPARQL_UPDATE'), 
-                                postAsEncoded=False)
+                                 postAsEncoded=False)
         store.bind("rdf", "http://www.w3.org/1999/02/22-rdf-syntax-ns#")
         store.bind("oa", "http://www.w3.org/ns/oa#")
         store.bind("chnode", getattr(settings, 'NODE_URI', 'http://localhost'))
@@ -147,8 +147,8 @@ class CharmeMiddleware(object):
             except Exception, e:
                 messages.add_message(request, messages.ERROR, e)
                 messages.add_message(request, messages.INFO, 
-                                     'Missing configuration. \
-Cannot initialize OpenSearch Engine')
+                                     'Missing configuration. '
+                                     'Cannot initialize OpenSearch Engine')
                 return mm_render_to_response_error(request, '503.html', 503)
 
 

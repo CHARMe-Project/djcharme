@@ -3,6 +3,9 @@ Created on 14 May 2013
 
 @author: mnagni
 '''
+from os import path
+
+THIS_DIR = path.dirname(__file__)
 
 #############
 # DATABASES #
@@ -11,7 +14,7 @@ Created on 14 May 2013
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3', # Add 'postgresql_psycopg2', 'mysql', 'sqlite3' or 'oracle'.
-        'NAME': 'sqlite.db',                    # Or path to database file if using sqlite3.
+        'NAME': path.join(THIS_DIR, 'sqlite.db'), # Or path to database file if using sqlite3.
         # The following settings are not used with sqlite3:
         'USER': '',
         'PASSWORD': '',
@@ -70,8 +73,8 @@ HTTP_PROXY_PORT = 8080
 
 STATIC_URL = SITE_PREFIX + "/static/"
 
-def _format_fuseki_url(service):
-    return 'http://%s:%s/%s/%s' % (FUSEKI_URL, FUSEKI_PORT, NODE_ROOT_URL, service)
+_format_fuseki_url = lambda service: 'http://%s:%s/%s/%s' % (
+                                FUSEKI_URL, FUSEKI_PORT, NODE_ROOT_URL, service)
 
 FUSEKI_URL = 'localhost'
 FUSEKI_PORT = '3333'
@@ -92,10 +95,14 @@ OAUTH_SCOPES = (
     (2, 'update_annotation'),    
 )
 
+# Sets URIs that are *NOT* secured.  Entries are URIs and HTTP method tuples
 SECURITY_FILTER = [
-    "/oauth2\/?", ("GET", "OPTIONS"),
-    "admin", ("GET", "OPTIONS"),
-    "/token/validate/", ("GET", "OPTIONS"),
-    "/token/test", ("GET", "OPTIONS")
+    ("/.*", ("OPTIONS", )), # Allpw all OPTIONS requests
+    ("/accounts/login", ("GET", "POST")),
+    ("/accounts/registration", ("GET", "POST")),
+    ("/oauth2\/?", ("GET", "POST")),
+    ("admin", ("GET", "POST")),
+    ("/token/validate/", ("GET", )),
+    ("/token/test", ("GET", ))
 ]
 REDIRECT_FIELD_NAME = 'next'
