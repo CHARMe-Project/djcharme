@@ -69,7 +69,8 @@ formatter = logging.Formatter(fmt='%(name)s %(asctime)s \
 handler.setFormatter(formatter)
 USAGE_LOG.addHandler(handler)
 
-#USAGE_LOG.basicConfig(format='%(name)s:%(levelname)s:%(message)s',level=logging.INFO,datefmt='%d/%m/%y %I:%M:%S')
+#USAGE_LOG.basicConfig(format='%(name)s:%(levelname)s:%(message)s',
+#level=logging.INFO,datefmt='%d/%m/%y %I:%M:%S')
 
 import mimetypes
 if not mimetypes.inited:
@@ -83,6 +84,15 @@ class CharmeMiddleware(object):
     __store = None  
     __osEngine = None
 
+    DEFAULT_OPTIONS_HDR_RESPONSE = {
+        'Access-Control-Allow-Methods': 'GET, OPTIONS, POST',             
+        'Access-Control-Allow-Headers': (
+            'X-CSRFToken, X-Requested-With, x-requested-with, ',
+            'Content-Type, Content-Length, Authorization'),
+        'Access-Control-Max-Age': 10,
+        'Content-Type': "text/plain"
+    }
+    
     @classmethod   
     def __initOsEngine(self):
         from djcharme.opensearch.os_conf import setUp
@@ -156,21 +166,26 @@ class CharmeMiddleware(object):
         self._validate_request(request)
 
     def process_response(self, request, response):
-        response['Access-Control-Allow-Origin'] = \
-            request.META.get('HTTP_ORIGIN', 
-                             'http://localhost:8000')
+        response['Access-Control-Allow-Origin'
+            ] = request.META.get('HTTP_ORIGIN', request.build_absolute_uri())
+            
         response['Access-Control-Allow-Credentials'] = 'true'
-        response['Access-Control-Expose-Headers'] = 'Location, Content-Type, \
-        Content-Length';        
+        
+        response['Access-Control-Expose-Headers'] = (
+            'Location, Content-Type, Content-Length');
+                
         if request.method == 'OPTIONS':
-            response['Access-Control-Allow-Methods'] = 'GET, OPTIONS'               
-            response['Access-Control-Allow-Headers'] = 'X-CSRFToken, \
-            X-Requested-With, x-requested-with, Content-Type, Content-Length'
-            #response['Access-Control-Allow-Origin'] = request.META.get('HTTP_ORIGIN', 'http://localhost:8000')
-            response['Access-Control-Max-Age'] = 10
-            response['Content-Type'] = "text/plain"
-            return response     
-        return response
+            # Take default settings from class variable if no settings
+            if getattr(settings, 'OPTIONS_HDR_RESPONSE'):
+                for k, v in settings.OPTIONS_HDR_RESPONSE.items():
+                    response[k] = v
+            else:
+                for k, v in self.__class__.DEFAULT_OPTIONS_HDR_RESPONSE.items():
+                    response[k] = v
+            
+            return response
+        else: 
+            return response
     
     def process_exception(self, request, exception):
         print 'ERROR!'

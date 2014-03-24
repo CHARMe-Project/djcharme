@@ -62,29 +62,28 @@ LOGIN = 'login'
 
 LOGGER = logging.getLogger(__name__)
 
+
 def get_login_service_url():
     return reverse('login')
 
-def auth_tkt_name():
-    return getattr(settings, 'AUTH_TKT_NAME', 'auth_tkt')
 
-def token_field_name():
-    return getattr(settings, 'TOKEN_FIELD_NAME', 't')
+auth_tkt_name = lambda: getattr(settings, 'AUTH_TKT_NAME', 'auth_tkt')
+token_field_name = lambda: getattr(settings, 'TOKEN_FIELD_NAME', 't')
+security_filter = lambda: getattr(settings, 'SECURITY_FILTER', [])
+redirect_field_name = lambda: getattr(settings, 'REDIRECT_FIELD_NAME', 'r')
 
-def security_filter():
-    return getattr(settings, 'SECURITY_FILTER', [])
-
-def redirect_field_name():
-    return getattr(settings, 'REDIRECT_FIELD_NAME', 'r')
 
 def preapare_user_for_session(request, timestamp, userid, tokens, user_data):
-    request.authenticated_user = {'timestamp': timestamp, \
-                                     'userid': userid, \
-                                     'tokens': tokens, \
-                                     'user_data': user_data}
+    request.authenticated_user = {
+        'timestamp': timestamp, 
+        'userid': userid, 
+        'tokens': tokens, 
+        'user_data': user_data
+    }
     LOGGER.debug("stored in request - userid:%s, user_data:%s", userid, 
                                                                 user_data)
     request.session['accountid'] = userid
+
 
 def filter_request(request, filters):
     """
@@ -100,6 +99,7 @@ def filter_request(request, filters):
             return True
         
     return False
+
 
 def is_public_url(request):
     '''Test a given is public or secured - True if public'''
@@ -131,6 +131,7 @@ def is_valid_token(token):
             return False        
     return False
 
+
 class SecurityMiddleware(object):
     """
         Validates if the actual user is authenticated agains a 
@@ -140,7 +141,10 @@ class SecurityMiddleware(object):
         or not of a valid paste cookie in the request.
     """
 
-    def process_request(self, request):        
+    def process_request(self, request):   
+        LOGGER.debug('SecurityMiddleware.process_request for %r',
+                     request.build_absolute_uri())
+          
         #The required URL is public
         if is_public_url(request):                    
             return                     
@@ -161,7 +165,6 @@ class SecurityMiddleware(object):
         #An anonymous user wants to login        
         if request.path == get_login_service_url():
             return
-        return
             
     def process_response(self, request, response):
         if hasattr(response, 'url') and "access_token=" in response.url \
