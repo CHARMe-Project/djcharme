@@ -36,16 +36,11 @@ import logging
 from rdflib.plugins.stores.sparqlstore import SPARQLUpdateStore
 from django.conf import settings
 from django.contrib import messages
-from djcharme import mm_render_to_response_error, LOAD_SAMPLE,\
-    mm_render_to_response
+from djcharme import mm_render_to_response_error, LOAD_SAMPLE
 from django.contrib.auth.models import User
 from django.db.utils import DatabaseError
 from django.http.response import HttpResponse
 from multiprocessing.process import Process
-from django.shortcuts import render_to_response, render
-from django.template.context import RequestContext
-import json
-import datetime
 
 def webusage(request):
     TEMPLATE = '\nMETHOD:%s\nIP:%s\nREMOTE_HOST:%s\nPATH_INFO:%s\nHTTP_USER_AGENT:%s\n'
@@ -74,7 +69,8 @@ formatter = logging.Formatter(fmt='%(name)s %(asctime)s \
 handler.setFormatter(formatter)
 USAGE_LOG.addHandler(handler)
 
-#USAGE_LOG.basicConfig(format='%(name)s:%(levelname)s:%(message)s',level=logging.INFO,datefmt='%d/%m/%y %I:%M:%S')
+#USAGE_LOG.basicConfig(format='%(name)s:%(levelname)s:%(message)s',
+#level=logging.INFO,datefmt='%d/%m/%y %I:%M:%S')
 
 import mimetypes
 if not mimetypes.inited:
@@ -88,6 +84,15 @@ class CharmeMiddleware(object):
     __store = None  
     __osEngine = None
 
+    DEFAULT_OPTIONS_HDR_RESPONSE = {
+        'Access-Control-Allow-Methods': 'GET, OPTIONS, POST',             
+        'Access-Control-Allow-Headers': (
+            'X-CSRFToken, X-Requested-With, x-requested-with, ',
+            'Content-Type, Content-Length, Authorization'),
+        'Access-Control-Max-Age': 10,
+        'Content-Type': "text/plain"
+    }
+    
     @classmethod   
     def __initOsEngine(self):
         from djcharme.opensearch.os_conf import setUp
@@ -96,11 +101,11 @@ class CharmeMiddleware(object):
 
     @classmethod   
     def __initStore(self): 
-        store = SPARQLUpdateStore(queryEndpoint = getattr(settings,
-                                                              'SPARQL_QUERY'),
-                                update_endpoint = getattr(settings,
+        store = SPARQLUpdateStore(queryEndpoint=getattr(settings,
+                                                        'SPARQL_QUERY'),
+                                  update_endpoint=getattr(settings,
                                                           'SPARQL_UPDATE'), 
-                                postAsEncoded=False)
+                                 postAsEncoded=False)
         store.bind("rdf", "http://www.w3.org/1999/02/22-rdf-syntax-ns#")
         store.bind("oa", "http://www.w3.org/ns/oa#")
         store.bind("chnode", getattr(settings, 'NODE_URI', 'http://localhost'))
@@ -152,8 +157,8 @@ class CharmeMiddleware(object):
             except Exception, e:
                 messages.add_message(request, messages.ERROR, e)
                 messages.add_message(request, messages.INFO, 
-                                     'Missing configuration. \
-Cannot initialize OpenSearch Engine')
+                                     'Missing configuration. '
+                                     'Cannot initialize OpenSearch Engine')
                 return mm_render_to_response_error(request, '503.html', 503)
 
 
@@ -161,30 +166,26 @@ Cannot initialize OpenSearch Engine')
         self._validate_request(request)
 
     def process_response(self, request, response):
-        response['Access-Control-Allow-Origin'] = \
-            request.META.get('HTTP_ORIGIN', 
-                             'http://localhost:8000')
+        response['Access-Control-Allow-Origin'
+            ] = request.META.get('HTTP_ORIGIN', request.build_absolute_uri())
+            
         response['Access-Control-Allow-Credentials'] = 'true'
-        response['Access-Control-Expose-Headers'] = 'Location, Content-Type, \
-        Content-Length';        
+        
+        response['Access-Control-Expose-Headers'] = (
+            'Location, Content-Type, Content-Length');
+                
         if request.method == 'OPTIONS':
-            response['Access-Control-Allow-Methods'] = 'GET, OPTIONS'               
-            response['Access-Control-Allow-Headers'] = 'X-CSRFToken, \
-            X-Requested-With, x-requested-with, Content-Type, Content-Length'
-            #response['Access-Control-Allow-Origin'] = request.META.get('HTTP_ORIGIN', 'http://localhost:8000')
-            response['Access-Control-Max-Age'] = 10
-            response['Content-Type'] = "text/plain"
+            # Take default settings from class variable if no settings
+            if getattr(settings, 'OPTIONS_HDR_RESPONSE'):
+                for k, v in settings.OPTIONS_HDR_RESPONSE.items():
+                    response[k] = v
+            else:
+                for k, v in self.__class__.DEFAULT_OPTIONS_HDR_RESPONSE.items():
+                    response[k] = v
+            
             return response
-        if "access_token" in response.content:
-            try:
-                if request.session.has_key('_auth_user_id'):
-                    del request.session['_auth_user_id']                    
-                response.delete_cookie("sessionid")
-                #att_token = {'token': json.loads(response.content)}                
-                #return mm_render_to_response(request, att_token, "token_response.html")                             
-            except Exception as e:
-                print e            
-        return response
+        else: 
+            return response
     
     def process_exception(self, request, exception):
         print 'ERROR!'

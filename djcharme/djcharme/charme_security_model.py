@@ -11,21 +11,20 @@ from django import forms
 from django.contrib.auth import authenticate, get_user_model
 import logging
 from django.contrib.auth.backends import ModelBackend
-import bcrypt
-from django.contrib.auth.models import User
-from djcharme.exception import UserNotFoundError, PasswordNotMachesError,\
-    SecurityError
+from djcharme.exception import SecurityError
 from django.utils.text import capfirst
 
 LOGGING = logging.getLogger(__name__)
 
+
 class UserForm(Form):
-    password        = CharField(max_length=30,widget=PasswordInput(), 
-                                required=True)
-    confirm_password= CharField(max_length=30,widget=PasswordInput(), 
-                                required=True)
-    email           = EmailField(required=True)
-    confirm_email   = EmailField(required=True)
+    first_name = CharField(max_length=30, required=False)
+    last_name = CharField(max_length=30, required=False)    
+    password = CharField(max_length=30, widget=PasswordInput(), required=True)
+    confirm_password = CharField(max_length=30, widget=PasswordInput(), 
+                                 required=True)
+    email  = EmailField(required=True)
+    confirm_email = EmailField(required=True)
     
     def clean(self):
         if (self.cleaned_data.get('email') !=
@@ -125,8 +124,8 @@ class CharmeAuthenticationBackend(ModelBackend):
             if username:
                 try:
                     backend = ModelBackend()
-                    return  backend.authenticate(username=username, 
-                                                 password=password)
-                except:
+                    return backend.authenticate(username=username, 
+                                                password=password)
+                except Exception:
                     LOGGING.error("Wrong password for username: %s" % username)
                     raise SecurityError()

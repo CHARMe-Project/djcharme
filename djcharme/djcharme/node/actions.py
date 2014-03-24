@@ -41,7 +41,6 @@ from urllib2 import URLError
 from djcharme.exception import StoreConnectionError
 from djcharme.node import _extractSubject
 from django.conf import settings
-from rdflib.plugins.parsers.notation3 import BadSyntax
 
 LOGGING = logging.getLogger(__name__)
 '''

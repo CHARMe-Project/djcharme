@@ -25,7 +25,11 @@ def isPATCH(request):
     return request.method == 'PATCH'
 
 def content_type(request):
-    return request.environ.get('CONTENT_TYPE', None).split(';')[0]
+    content_type = request.environ.get('CONTENT_TYPE', None)
+    if content_type is None:
+        return None
+    else:
+        return content_type.split(';')[0]
 
 def get_format(request):
     try:
@@ -49,12 +53,19 @@ def http_accept(request):
     return accept.split(';')[0].split(',')
 
 def checkMimeFormat(mimeformat):
+    '''Map input MIME format to one of the accepted formats available
+    '''
+    
+    # Set a default MIME format if none was set
+    if mimeformat is None:
+        mimeformat = 'application/ld+json'
+        
     if '/' in mimeformat:
-        for k,v in FORMAT_MAP.iteritems():
+        for k, v in FORMAT_MAP.iteritems():
             if v in mimeformat:
                 return k
     else:
-        for k,v in FORMAT_MAP.iteritems():
+        for k, v in FORMAT_MAP.iteritems():
             if k in mimeformat:
                 return k
 

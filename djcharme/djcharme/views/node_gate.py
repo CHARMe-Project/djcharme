@@ -3,25 +3,26 @@ Created on 14 May 2013
 
 @author: mnagni
 '''
-from djcharme.node.actions import OA, FORMAT_MAP, \
-ANNO_SUBMITTED, insert_rdf, find_resource_by_id, RESOURCE, \
-_collect_annotations, change_annotation_state, find_annotation_graph    , DATA,\
-    PAGE
+from djcharme.node.actions import (OA, FORMAT_MAP, find_annotation_graph,
+                                   insert_rdf, ANNO_SUBMITTED, DATA,
+                                   _collect_annotations, find_resource_by_id,
+                                   change_annotation_state, PAGE)
 from djcharme import mm_render_to_response, mm_render_to_response_error
-from djcharme.exception import SerializeError, StoreConnectionError
-from djcharme.views import isGET, isPOST, content_type, validateMimeFormat,\
-    isOPTIONS, http_accept, get_format, checkMimeFormat, get_depth
+from djcharme.exception import StoreConnectionError
+from djcharme.views import (isPOST, content_type, validateMimeFormat,
+                            isOPTIONS, http_accept, get_format, checkMimeFormat, 
+                            get_depth)
 
-from django.http.response import HttpResponseRedirectBase, Http404, HttpResponse,\
-    HttpResponseRedirect
+from django.http.response import HttpResponseRedirectBase, Http404, HttpResponse
+
 from django.contrib import messages
-from django.views.decorators.csrf import csrf_exempt, csrf_protect
+from django.views.decorators.csrf import csrf_exempt
 
 import logging
 import json
-from django.core.urlresolvers import reverse
 
 LOGGING = logging.getLogger(__name__)
+
 
 class HttpResponseSeeOther(HttpResponseRedirectBase):
     '''
@@ -29,7 +30,8 @@ class HttpResponseSeeOther(HttpResponseRedirectBase):
     '''
     status_code = 303
 
-def __serialize(graph, req_format = 'application/rdf+xml'):
+
+def __serialize(graph, req_format='application/rdf+xml'):
     '''
         Serializes a graph according to the required format
         - rdflib:Graph **graph** the graph to serialize
@@ -38,16 +40,18 @@ def __serialize(graph, req_format = 'application/rdf+xml'):
     '''         
     if req_format == FORMAT_MAP['json-ld']:
         req_format = 'json-ld'
+        
     return graph.serialize(format=req_format)
 
 
 
-def index(request, graph = 'stable'):
+def index(request, graph='stable'):
     '''
         Returns a tabular view of the stored annotations.
         - HTTPRequest **request** the client request
         - string **graph**  the required named graph
-        TDB - In a future implemenation this actions should be supported by an OpenSearch implementation
+        TODO: In a future implementation this actions should be supported by an 
+        OpenSearch implementation
     '''
     tmp_g = None
     try:
@@ -60,8 +64,9 @@ def index(request, graph = 'stable'):
     req_format = validateMimeFormat(request)
     
     if req_format is not None:
-        LOGGING.debug("Annotations %s" % __serialize(tmp_g, req_format = req_format))
-        return HttpResponse(__serialize(tmp_g, req_format = req_format))
+        LOGGING.debug("Annotations %s" % 
+                      __serialize(tmp_g, req_format=req_format))
+        return HttpResponse(__serialize(tmp_g, req_format=req_format))
     elif 'text/html' in http_accept(request):
         states = {}
         LOGGING.debug("Annotations %s" % tmp_g.serialize())
@@ -73,6 +78,7 @@ def index(request, graph = 'stable'):
     
     messages.add_message(request, messages.ERROR, "Format not accepted")
     return mm_render_to_response_error(request, '400.html', 400)
+
 
 def __get_ret_format(request, req_format):
     '''
@@ -91,6 +97,7 @@ def __get_ret_format(request, req_format):
         ret_format = req_format    
     return ret_format
 
+
 def __get_req_format(request):
     '''
         Extracts the request format otherwise return the req_format
@@ -102,7 +109,8 @@ def __get_req_format(request):
 @csrf_exempt  
 def insert(request):
     '''
-        Inserts in the triplestore a new annotation under the "ANNO_SUBMITTED" graph
+        Inserts in the triplestore a new annotation under the "ANNO_SUBMITTED" 
+        graph
     '''
     '''
     kwargs = {}
@@ -115,13 +123,15 @@ def insert(request):
     ret_format = __get_ret_format(request, req_format)
     
     if req_format is None:        
-        messages.add_message(request, messages.ERROR, "Cannot ingest the posted format")
+        messages.add_message(request, messages.ERROR, 
+                             "Cannot ingest the posted format")
         return mm_render_to_response_error(request, '400.html', 400)
     
     if isPOST(request) or isOPTIONS(request):
         triples = request.body
         tmp_g = insert_rdf(triples, req_format, graph=ANNO_SUBMITTED)        
-        return HttpResponse(__serialize(tmp_g, req_format = ret_format), content_type=FORMAT_MAP.get(ret_format))
+        return HttpResponse(__serialize(tmp_g, req_format = ret_format), 
+                            content_type=FORMAT_MAP.get(ret_format))
 
 
 # Temporary solution as long identify a solution for csrf

@@ -36,8 +36,7 @@ import re
 import urllib
 from djcharme.exception import SecurityError, MissingCookieError
 from django.core.urlresolvers import reverse
-from django.http.response import HttpResponseRedirect, HttpResponseForbidden
-from urllib import urlencode
+from django.http.response import HttpResponse
 from django.contrib.auth.models import AnonymousUser
 from django.conf import settings
 from provider.oauth2.models import AccessToken
@@ -63,51 +62,63 @@ LOGIN = 'login'
 
 LOGGER = logging.getLogger(__name__)
 
+
 def get_login_service_url():
     return reverse('login')
 
-def auth_tkt_name():
-    return getattr(settings, 'AUTH_TKT_NAME', 'auth_tkt')
 
-def token_field_name():
-    return getattr(settings, 'TOKEN_FIELD_NAME', 't')
+auth_tkt_name = lambda: getattr(settings, 'AUTH_TKT_NAME', 'auth_tkt')
+token_field_name = lambda: getattr(settings, 'TOKEN_FIELD_NAME', 't')
+security_filter = lambda: getattr(settings, 'SECURITY_FILTER', [])
+redirect_field_name = lambda: getattr(settings, 'REDIRECT_FIELD_NAME', 'r')
 
-def security_filter():
-    return getattr(settings, 'SECURITY_FILTER', [])
-
-def redirect_field_name():
-    return getattr(settings, 'REDIRECT_FIELD_NAME', 'r')
 
 def preapare_user_for_session(request, timestamp, userid, tokens, user_data):
-    request.authenticated_user = {'timestamp': timestamp, \
-                                     'userid': userid, \
-                                     'tokens': tokens, \
-                                     'user_data': user_data}
-    LOGGER.debug("stored in request - userid:%s, user_data:%s" % (userid, user_data))
+    request.authenticated_user = {
+        'timestamp': timestamp, 
+        'userid': userid, 
+        'tokens': tokens, 
+        'user_data': user_data
+    }
+    LOGGER.debug("stored in request - userid:%s, user_data:%s", userid, 
+                                                                user_data)
     request.session['accountid'] = userid
 
-def filter_url(string, filters):
+
+def filter_request(request, filters):
     """
         Checks a given strings against a list of strings.
         ** string ** string a url
         ** filters ** a list of strings
     """
+    if filters is None:
+        return False
+    
     for ifilter in filters:
-        if re.search(ifilter, string):
+        if re.search(ifilter[0], request.path) and request.method in ifilter[1]:
             return True
+        
+    return False
+
 
 def is_public_url(request):
-    url_fiters = security_filter()
+    '''Test a given is public or secured - True if public'''
+    url_filters = security_filter()
     
     #adds a default filter for reset password request
     reset_regexpr = '%s=[a-f0-9-]*$' % (token_field_name())
-    if reset_regexpr not in url_fiters: 
-        url_fiters.append(reset_regexpr)
+    if reset_regexpr not in url_filters: 
+        url_filters.append(reset_regexpr)
         
-    if url_fiters \
-        and filter_url(request.path, url_fiters):
+    if filter_request(request, url_filters):
+        LOGGER.debug('Public path and method %r / %r', request.path, 
+                                                       request.method)
         return True
+    
+    LOGGER.debug('Secured path and method %r / %r', request.path, 
+                                                    request.method)
     return False    
+
 
 def is_valid_token(token):
     if token:
@@ -120,6 +131,7 @@ def is_valid_token(token):
             return False        
     return False
 
+
 class SecurityMiddleware(object):
     """
         Validates if the actual user is authenticated agains a 
@@ -129,104 +141,42 @@ class SecurityMiddleware(object):
         or not of a valid paste cookie in the request.
     """
 
-    def process_request(self, request):
+    def process_request(self, request):   
+        LOGGER.debug('SecurityMiddleware.process_request for %r',
+                     request.build_absolute_uri())
+          
         #The required URL is public
         if is_public_url(request):                    
             return                     
 
         #The request has an Access Token
-        if is_valid_token(request.GET.get('access_token', None)):                    
-            return
+        if request.environ.get('HTTP_AUTHORIZATION', None):  
+            for term in request.environ.get('HTTP_AUTHORIZATION').split():
+                if is_valid_token(term):
+                    return
 
         login_service_url = get_login_service_url()        
         
         #An anonymous user want to access restricted resources
         if request.path != login_service_url \
             and isinstance(request.user, AnonymousUser):
-            return HttpResponseForbidden()
+            return HttpResponse(login_service_url, status=401)
         
         #An anonymous user wants to login        
         if request.path == get_login_service_url():
             return
-
-        #The user is authenticated
         return
-        '''        
-        #Has to process the submitted login form
-        if (request.method == 'POST' \
-                and request.path == get_login_service_url()):
-            return
-
-        #Some other middleware may have already started a login process
-        if (request.method == 'GET' \
-                and request.path == get_login_service_url() 
-                and len(request.GET) > 0):
-            return
-
-
-        
-    
-        #Has to redirect to the login page
-        if request.path == get_login_service_url() \
-                and request.GET.has_key(redirect_field_name()):
-            return
-        
-        #qs = {redirect_field_name(): 
-        #      urllib.quote_plus((_build_url(request)))}             
-        qs = {redirect_field_name(): _build_url(request)}
-        url = '%s?%s' % (get_login_service_url(), 
-                         urlencode(qs))
-
-        return HttpResponseRedirect(url)
-        '''
-        '''
-        #Has to process a reset password request? 
-        if len(request.REQUEST.get(LOGOUT, '')) > 0:
-            response = HttpResponseRedirect(_build_url(request))            
-            response.delete_cookie(auth_tkt_name())
-            request.session['accountid'] = None
-            return response
-
-        custom_auth = getattr(settings, 'DJ_SECURITY_AUTH_CHECK', None)
-        if custom_auth:
-            try:
-                if custom_auth(request):
-                    return
-            #Cannot specify the Exception type as don't know the
-            # exceptions type raised by custom_auth                  
-            except Exception:
-                pass
-        
-        #if not settings.DJ_MIDDLEWARE_IP:
-        #    raise DJMiddlewareException(DJ_MIDDLEWARE_IP_ERROR)        
-         
-        try:
-            qs = {redirect_field_name(): 
-                  urllib.quote_plus((_build_url(request)))}             
-            url = '%s?%s' % (login_service(), 
-                             urlencode(qs))
-            timestamp, userid, tokens, user_data = _is_authenticated(request)
-            preapare_user_for_session(request, 
-                                      timestamp, 
-                                      userid, 
-                                      tokens, 
-                                      user_data)
-            log_msg = ''
-        except MissingCookieError:
-            log_msg = "Missing cookie '%s'. Redirecting to %s" % (auth_tkt_name(), url)
-        except SecurityError:                  
-            log_msg = "Error in authentication. Redirecting to %s" % (url)
-        finally: 
-            if (len(log_msg) == 0 or is_public_url(request)) \
-                and request.GET.get(LOGIN, None) == None:                    
-                    return                     
-            elif len(log_msg) > 0:
-                LOGGER.info(log_msg)
-                return HttpResponseRedirect(url)                           
-        '''
-
             
     def process_response(self, request, response):
+        if hasattr(response, 'url') and "access_token=" in response.url \
+        and "token_type" in response.url:
+            try:                          
+                response.delete_cookie("sessionid")
+                response.delete_cookie("csrftoken")
+                #att_token = {'token': json.loads(response.content)}                
+                #return mm_render_to_response(request, att_token, "token_response.html")                             
+            except Exception as e:
+                print e           
         return response 
 
 def _build_url(request):
