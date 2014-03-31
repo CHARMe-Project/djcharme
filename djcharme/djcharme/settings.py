@@ -153,14 +153,14 @@ TEMPLATE_CONTEXT_PROCESSORS = (
 # List of middleware classes to use. Order is important; in the request phase,
 # these middleware classes will be applied in the order given, and in the
 # response phase the middleware will be applied in reverse order.
-MIDDLEWARE_CLASSES = (    
+MIDDLEWARE_CLASSES = (
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.redirects.middleware.RedirectFallbackMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
-    "djcharme.security_middleware.SecurityMiddleware",    
+    "djcharme.security_middleware.SecurityMiddleware",
     "djcharme.charme_middleware.CharmeMiddleware",
 )
 
@@ -169,12 +169,13 @@ LOGGING = {
     'disable_existing_loggers': False,
     'formatters': {
         'verbose': {
-            'format': '%(levelname)s %(asctime)s %(module)s %(process)d %(thread)d %(message)s'
+            'format':
+            '%(levelname)s %(asctime)s %(module)s %(process)d %(thread)d %(message)s'
         },
         'simple': {
             'format': '%(levelname)s %(message)s'
         },
-    },    
+    },
     'handlers': {
         'mail_admins': {
             'level': 'ERROR',
@@ -201,7 +202,7 @@ LOGGING = {
             'handlers': ['console'],
             'level': 'DEBUG',
             'propagate': True,
-        }                             
+        }
     }
 }
 
@@ -229,7 +230,8 @@ LOGGING = {
 #     "ADMIN_PASS": "", # Live admin user password
 # }
 
-#Default cedasite configuration parameters. May be overridden in the local_settings.py
+# Default cedasite configuration parameters. May be overridden in the
+# local_settings.py
 ALLOWED_HOSTS = ['*']
 
 PASSWORD_HASHERS = (
@@ -242,13 +244,14 @@ PASSWORD_HASHERS = (
     'django.contrib.auth.hashers.CryptPasswordHasher',
 )
 
-AUTHENTICATION_BACKENDS = ('djcharme.charme_security_model.CharmeAuthenticationBackend',)
+AUTHENTICATION_BACKENDS = (
+    'djcharme.charme_security_model.CharmeAuthenticationBackend',)
 
 # Set header fields for HTTP OPTIONS method response.  If omitted, the code
 # will default to the setting in charme_middleware.CharmeMiddleware
 if "djcharme.charme_middleware.CharmeMiddleware" in MIDDLEWARE_CLASSES:
     OPTIONS_HDR_RESPONSE = {
-        'Access-Control-Allow-Methods': 'GET, OPTIONS, POST',             
+        'Access-Control-Allow-Methods': 'GET, OPTIONS, POST',
         'Access-Control-Allow-Headers': (
             'X-CSRFToken, X-Requested-With, x-requested-with, ',
             'Content-Type, Content-Length, Authorization'),
@@ -256,18 +259,32 @@ if "djcharme.charme_middleware.CharmeMiddleware" in MIDDLEWARE_CLASSES:
         'Content-Type': "text/plain"
     }
 
-#SESSION_COOKIE_SECURE = True
-#CSRF_COOKIE_SECURE = True
+OAUTH_SCOPES = (
+    (1, 'add_annotation'),
+    (2, 'update_annotation'),
+)
+
+# Sets URIs that are *NOT* secured.  Entries are URIs and HTTP method tuples
+SECURITY_FILTER = [
+    ("/.*", ("OPTIONS",)),  # Allow all OPTIONS requests
+    ("/accounts/login", ("GET", "POST")),
+    ("/accounts/registration", ("GET", "POST")),
+    ("/oauth2\/?", ("GET", "POST")),
+    ("admin", ("GET", "POST")),
+    ("/token/validate/", ("GET",)),
+    ("/token/test", ("GET",))
+]
+
+REDIRECT_FIELD_NAME = 'next'
+
+# SESSION_COOKIE_SECURE = True
+# CSRF_COOKIE_SECURE = True
 ##################
 # LOCAL SETTINGS #
 ##################
 # Allow any settings to be defined in local_settings.py which should be
 # ignored in your version control system allowing for settings to be
 # defined per machine.
-
-#LOAD_SAMPLE = True
-#HTTP_PROXY = wwwcache.rl.ac.uk
-#HTTP_PROXY_PORT = 8080
 
 try:
     from local_settings import *

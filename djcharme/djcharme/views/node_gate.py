@@ -50,7 +50,7 @@ def index(request, graph='stable'):
         Returns a tabular view of the stored annotations.
         - HTTPRequest **request** the client request
         - string **graph**  the required named graph
-        TODO: In a future implementation this actions should be supported by an 
+        TODO: In a future implementation this actions should be supported by an
         OpenSearch implementation
     '''
     tmp_g = None
@@ -64,12 +64,12 @@ def index(request, graph='stable'):
     req_format = validateMimeFormat(request)
 
     if req_format is not None:
-        LOGGING.debug("Annotations %s" % 
-                      __serialize(tmp_g, req_format=req_format))
+        LOGGING.debug("Annotations " + 
+                      str(__serialize(tmp_g, req_format=req_format)))
         return HttpResponse(__serialize(tmp_g, req_format=req_format))
     elif 'text/html' in http_accept(request):
         states = {}
-        LOGGING.debug("Annotations %s" % tmp_g.serialize())
+        LOGGING.debug("Annotations " + str(tmp_g.serialize()))
         for subject, pred, obj in tmp_g.triples((None, None, OA['Annotation'])):
             states[subject] = find_annotation_graph(subject)
 
@@ -112,13 +112,6 @@ def insert(request):
         Inserts in the triplestore a new annotation under the "ANNO_SUBMITTED"
         graph
     '''
-    '''
-    kwargs = {}
-    kwargs['client_id'] = '1-2-3-4-5-6'
-    kwargs['response_type'] = 'token'
-    kwargs['redirect_uri'] = 'http://localhost:8000/index/submitted'
-    return HttpResponseRedirect(reverse('oauth2:authorize'), kwargs=kwargs)
-    '''
     req_format = __get_req_format(request)
     ret_format = __get_ret_format(request, req_format)
 
@@ -129,7 +122,7 @@ def insert(request):
 
     if isPOST(request) or isOPTIONS(request):
         triples = request.body
-        insert_rdf(triples, req_format, graph=ANNO_SUBMITTED)        
+        insert_rdf(triples, req_format, graph=ANNO_SUBMITTED)
         return HttpResponse(None, content_type=FORMAT_MAP.get(ret_format))
 
 # Temporary solution as long identify a solution for csrf
@@ -145,8 +138,8 @@ def advance_status(request):
             messages.add_message(request, messages.ERROR,
                                  "Missing annotation/state parameters")
             return mm_render_to_response_error(request, '400.html', 400)
-        LOGGING.info("advancing %s to state:%s" % (params.get('annotation'),
-                                                   params.get('toState')))
+        LOGGING.info("advancing " + str(params.get('annotation'))
+                     + " to state:" + str(params.get('toState')))
         tmp_g = change_annotation_state(params.get('annotation'),
                                         params.get('toState'))
 
@@ -159,11 +152,11 @@ def process_resource(request, resource_id):
         path = "/%s/%s" % (DATA, resource_id)
         if getformat is not None:
             path = "%s/?format=%s" % (path, getformat)
-        LOGGING.info("Redirecting to %s" % path)
+        LOGGING.info("Redirecting to " + str(path))
         return HttpResponseSeeOther(path)
 
     if 'text/html' in http_accept(request):
-        LOGGING.info("Redirecting to /%s/%s" % (PAGE, resource_id))
+        LOGGING.info("Redirecting to " + str(PAGE) + str(resource_id))
         return HttpResponseSeeOther('/%s/%s' % (PAGE, resource_id))
     return Http404()
 
