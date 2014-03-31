@@ -44,7 +44,6 @@ def __serialize(graph, req_format='application/rdf+xml'):
     return graph.serialize(format=req_format)
 
 
-
 def index(request, graph='stable'):
     '''
         Returns a tabular view of the stored annotations.
@@ -64,8 +63,8 @@ def index(request, graph='stable'):
     req_format = validateMimeFormat(request)
 
     if req_format is not None:
-        LOGGING.debug("Annotations " + 
-                      str(__serialize(tmp_g, req_format=req_format)))
+        LOGGING.debug("Annotations "
+                      + str(__serialize(tmp_g, req_format=req_format)))
         return HttpResponse(__serialize(tmp_g, req_format=req_format))
     elif 'text/html' in http_accept(request):
         states = {}
@@ -104,6 +103,7 @@ def __get_req_format(request):
     '''
     return checkMimeFormat(content_type(request))
 
+
 # Temporary solution as long identify a solution for csrf
 # @csrf_protect
 @csrf_exempt
@@ -124,6 +124,7 @@ def insert(request):
         triples = request.body
         insert_rdf(triples, req_format, graph=ANNO_SUBMITTED)
         return HttpResponse(None, content_type=FORMAT_MAP.get(ret_format))
+
 
 # Temporary solution as long identify a solution for csrf
 # @csrf_protect
@@ -147,6 +148,9 @@ def advance_status(request):
 
 
 def process_resource(request, resource_id):
+    """
+        Process the resource dependent on the mime format.
+    """
     if validateMimeFormat(request) is not None:
         getformat = get_format(request)
         path = "/%s/%s" % (DATA, resource_id)
@@ -160,7 +164,11 @@ def process_resource(request, resource_id):
         return HttpResponseSeeOther('/%s/%s' % (PAGE, resource_id))
     return Http404()
 
+
 def process_data(request, resource_id):
+    """
+        Process the data dependent on the mime format.
+    """
     if get_format(request) is None and 'text/html' in http_accept(request):
         return process_resource(request, resource_id=resource_id)
 
@@ -172,7 +180,11 @@ def process_data(request, resource_id):
     return HttpResponse(tmp_g.serialize(format=req_format),
                             mimetype=FORMAT_MAP.get(req_format))
 
+
 def process_page(request, resource_id=None):
+    """
+        Process the page dependent on the mime format.
+    """
     if 'text/html' not in http_accept(request):
         return process_resource(request, resource_id)
 
