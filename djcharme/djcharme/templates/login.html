@@ -4,6 +4,8 @@
 
 {% block main %}
 
+<p/>
+
 <form method="post" action="{% url 'login' %}">
 {% csrf_token %}
 
@@ -22,5 +24,14 @@
 <input type="hidden" name="next" value="{{ request.GET.next }}" />
 <input type="submit" value="login" />
 </form>
+
+<p/>
+
+<form method="post" action="{% url 'registration' %}">
+{% csrf_token %}
+ <input type="submit" value="create account" />
+</form>
+
+<p/>
 
 {% endblock %}
