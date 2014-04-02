@@ -1,6 +1,7 @@
 from django.contrib import admin
 from django.conf.urls import patterns, include, url
-from djcharme.views import node_gate, compose, endpoint, search, \
+from django.views.generic import RedirectView
+from djcharme.views import node_gate, compose, endpoint, main_gui, search, \
     registration, facets
 from django.contrib.auth.views import login
 from djcharme.charme_security_model import LoginForm
@@ -71,8 +72,8 @@ urlpatterns = patterns('',
      #Index pages
      url(r'^index/(\w+)', node_gate.index, name='charme.index.id'),
      url(r'^index', node_gate.index, name='index'),
-     url(r'^', login,
-         kwargs={'template_name': 'login.html',
-                 'authentication_form': LoginForm},
-         name='login'),
+     url(r'^$', RedirectView.as_view(url='/accounts/login/'),
+         name='front_page'),
+     url(r'^', main_gui.welcome, name='charme.welcome'),
+
 )

@@ -1,37 +1,31 @@
-{% extends "charme_base.html" %}
+{% extends "charme_base.html" %} {% load i18n %} {% block main %}
 
-{% load i18n %}
-
-{% block main %}
-
-<p/>
-
+<p />
 <form method="post" action="{% url 'login' %}">
-{% csrf_token %}
+	{% csrf_token %}
 
- 	<div class="fieldWrapper">
-        {{ form.email.errors }}
-        <label for="id_email">{% trans "Username" noop %}</label>
-        {{ form.email }}
-    </div>
- 	<div class="fieldWrapper">
-        {{ form.password.errors }}
-        <label for="id_password">{% trans "Password" noop %}</label>
-        {{ form.password }}
-    </div>
+	<div class="fieldWrapper">
+		{{ form.email.errors }}
+		<label for="id_email">{% trans "Username" noop %}</label>
+		{{ form.email }}
+	</div>
+	<div class="fieldWrapper">
+		{{ form.password.errors }}
+		<label for="id_password">{% trans "Password" noop %}</label>
+		{{ form.password }}
+	</div>
 
-<input type="hidden" name="logged_in" value="{% url 'index' %}" />
-<input type="hidden" name="next" value="{{ request.GET.next }}" />
-<input type="submit" value="login" />
+	<input type="hidden" name="logged_in" value="{% url 'index' %}" />
+	<input type="hidden" name="next" value="{{ request.GET.next }}" />
+	<input type="submit" value="login" />
 </form>
 
-<p/>
+<p />
 
-<form method="post" action="{% url 'registration' %}">
-{% csrf_token %}
- <input type="submit" value="create account" />
-</form>
+<div>
+	<a href="../registration/">create an account</a>
+</div>
 
-<p/>
+<p />
 
 {% endblock %}
