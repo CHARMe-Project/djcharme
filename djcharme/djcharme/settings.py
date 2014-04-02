@@ -267,7 +267,6 @@ OAUTH_SCOPES = (
 # Sets URIs that are *NOT* secured.  Entries are URIs and HTTP method tuples
 SECURITY_FILTER = [
     ("/.*", ("OPTIONS",)),  # Allow all OPTIONS requests
-    ("^$", ("GET", "POST")),  # Allow default page
     ("/accounts/login", ("GET", "POST")),
     ("/accounts/registration", ("GET", "POST")),
     ("/oauth2\/?", ("GET", "POST")),
