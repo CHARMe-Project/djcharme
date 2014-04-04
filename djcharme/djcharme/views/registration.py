@@ -8,7 +8,8 @@ from django.contrib.auth.models import User
 from django.db.utils import IntegrityError
 import logging
 from django.core.urlresolvers import reverse
-from django.http.response import HttpResponseRedirect, HttpResponse,\
+from django.forms.util import ErrorList
+from django.http.response import HttpResponseRedirect, HttpResponse, \
     HttpResponseNotFound
 from djcharme.charme_security_model import UserForm
 from djcharme.security_middleware import is_valid_token
@@ -23,28 +24,30 @@ def _register_user(request):
     user_form = UserForm(request.POST)
     if user_form.is_valid():
         try:
-            user = User.objects.create_user(user_form.cleaned_data.get('email'), 
-                        user_form.cleaned_data.get('email'), 
-                        password = user_form.cleaned_data.get('password'),
-                        first_name = user_form.cleaned_data.get('first_name'),
-                        last_name = user_form.cleaned_data.get('last_name'))
+            user = User.objects.create_user(user_form.cleaned_data.get('email'),
+                        user_form.cleaned_data.get('email'),
+                        password=user_form.cleaned_data.get('password'),
+                        first_name=user_form.cleaned_data.get('first_name'),
+                        last_name=user_form.cleaned_data.get('last_name'))
             user.save()
             return HttpResponseRedirect(reverse('login'))
         except IntegrityError:
-            LOGGING.debug('User registration required an existing username')
+            LOGGING.debug('Email address is already registered')
+            errors = user_form._errors.setdefault('email', ErrorList())
+            errors.append(u'Email address is already registered')
 
     context['user_form'] = user_form
-    return mm_render_to_response(request, context, 'registration.html')        
+    return mm_render_to_response(request, context, 'registration.html')
 
 def registration(request):
     context = {}
-    print 'RECEIVED REQUEST: ' + request.method
-    
+    LOGGING.debug('Registration request received')
+
     if request.method == 'POST':
         return _register_user(request)
-    else: #GET
-        context['user_form'] = UserForm()       
-        return mm_render_to_response(request, context, 'registration.html')          
+    else:  # GET
+        context['user_form'] = UserForm()
+        return mm_render_to_response(request, context, 'registration.html')
 
 def validate_token(request, token=None, expire=None):
     if is_valid_token(token):
@@ -52,19 +55,19 @@ def validate_token(request, token=None, expire=None):
     return HttpResponseNotFound()
 
 def userinfo(request):
-    #The request has an Access Token
-    if request.environ.get('HTTP_AUTHORIZATION', None):  
+    # The request has an Access Token
+    if request.environ.get('HTTP_AUTHORIZATION', None):
         for term in request.environ.get('HTTP_AUTHORIZATION').split():
-            try: 
+            try:
                 access_t = AccessToken.objects.get(token=term)
                 ret = {}
                 ret['email'] = access_t.user.email
                 ret['first_name'] = access_t.user.first_name
                 ret['last_name'] = access_t.user.last_name
-                return HttpResponse(dumps(ret), 
-                        content_type="application/json")  
+                return HttpResponse(dumps(ret),
+                        content_type="application/json")
             except AccessToken.DoesNotExist:
-                continue 
+                continue
     return HttpResponseNotFound()
 
 def token_response(request):

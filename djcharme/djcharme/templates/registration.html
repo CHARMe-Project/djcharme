@@ -2,72 +2,136 @@
 
 {% load i18n %}
 
-{% block main %}
+{% block extra_head %}
+  <link rel="stylesheet" href="http://code.jquery.com/ui/1.10.2/themes/smoothness/jquery-ui.css" />
+  <script src="http://code.jquery.com/ui/1.10.2/jquery-ui.js"></script>
+  <script>
+  $(function() {
+    $( "#registration" ).accordion({ heightStyle: "content" });
+  });
+  </script>
+{% endblock %}
 
-{% if user.errors %}
-<p>Your username and password didn't match. Please try again.</p>
-{% endif %}
+{% block content %}
 
-<form method="post" action="{% url 'registration' %}">
-{% csrf_token %}
-	<table>
-       <tr>
-	   		<td class="fieldWrapper">
-				{{ user_form.first_name.errors }}
-			    <label for="id_first_name">{% trans "First name" noop %}</label>
-			</td>
-	       	<td>			        
-			    {{ user_form.first_name }}
-	       </td>
-       </tr>	
-	   <tr>
-	   		<td class="fieldWrapper">
-				{{ user_form.last_name.errors }}
-			    <label for="id_last_name">{% trans "Last name" noop %}</label>
-			</td>
-	       	<td>			        
-			    {{ user_form.last_name }}
-	       </td>
-       </tr>
-       <tr>
-	   		<td class="fieldWrapper">
-				{{ user_form.email.errors }}
-			    <label for="id_email">{% trans "Email" noop %}</label>
-			</td>
-	       	<td>			        
-			    {{ user_form.email }}
-	       </td>
-       </tr>
-       <tr>
-       		<td class="fieldWrapper">
-				{{ user_form.confirm_email.errors }}
-			    <label for="id_confirm_email">{% trans "Confirm email" noop %}</label>
-			</td>
-	       	<td>			        
-			    {{ user_form.confirm_email }}
-	       </td>
-       </tr>
-       <tr>
-       		<td class="fieldWrapper">
-			    {{ user_form.password.errors }}
-			    <label for="id_password">{% trans "Password" noop %}</label>
-			</td>
-	       	<td>			        
-			    {{ user_form.password }}
-	       </td>
-       </tr>
-       <tr>
-       		<td class="fieldWrapper">
-				{{ user_form.confirm_password.errors }}
-			    <label for="id_confirm_password">{% trans "Confirm password" noop %}</label>
-			</td>
-	       	<td>			    
-			    {{ user_form.confirm_password }}
-	       </td>
-       </tr>
-	</table>        
+{% if user_form.non_field_errors %}
+	<ul class="messages" style="color: #FF0000;">    
+    	<li>{{ user_form.non_field_errors }}</li>
+	</ul>
+{% endif %} 
 
-<input type="submit" value="login" />
-</form>
+<div id="registration">
+	<h4>User registration</h4>
+	<form id="auth_form" name="auth_form" method="post" action="{% url 'registration' %}">
+		{% csrf_token %}
+		<table>
+			<tr>
+				<td class="field_name">
+			    	<label for="id_first_name">{% trans "First name:" noop %}</label>
+				</td>
+	       		<td class="input_value">			        
+			    	{{ user_form.first_name }}
+	       		</td>
+	       		<td style="padding: 0px 0px 0px 5px;">
+	       			{% if user_form.first_name.errors %}
+						<ul class="messages" style="color: #FF0000;">
+							<li{% if message.tags %} class="{{ message.tags }}"{% endif %}>
+								{{ user_form.first_name.errors }}</li>
+						</ul>
+					{% endif %}		
+				</td>
+       		</tr>	
+	   		<tr>
+	   			<td class="field_name">
+			    	<label for="id_last_name">{% trans "Last name:" noop %}</label>
+				</td>
+	       		<td class="input_value">			        
+			    	{{ user_form.last_name }}
+	       		</td>
+	       		<td style="padding: 0px 0px 0px 5px;">
+	       			{% if user_form.last_name.errors %}
+						<ul class="messages" style="color: #FF0000;">
+						<li{% if message.tags %} class="{{ message.tags }}"{% endif %}>
+							{{ user_form.last_name.errors }}</li>
+						</ul>
+					{% endif %}		
+				</td>
+       		</tr>
+       		<tr>
+	   			<td class="field_name">
+			    	<label for="id_email">{% trans "Email:" noop %}</label>
+				</td>
+	       		<td class="input_value">			        
+			    	{{ user_form.email }}
+	       		</td>
+	       		<td style="padding: 0px 0px 0px 5px;">
+	       			{% if user_form.email.errors %}
+						<ul class="messages" style="color: #FF0000;">
+							<li{% if message.tags %} class="{{ message.tags }}"{% endif %}>
+								{{ user_form.email.errors }}</li>
+						</ul>
+					{% endif %}		
+				</td>
+       		</tr>
+       		<tr>
+       			<td class="field_name">
+				    <label for="id_confirm_email">{% trans "Confirm email:" noop %}</label>
+				</td>
+	       		<td class="input_value">			        
+			    	{{ user_form.confirm_email }}
+	       		</td>
+	       		<td style="padding: 0px 0px 0px 5px;">
+	       			{% if user_form.confirm_email.errors %}
+						<ul class="messages" style="color: #FF0000;">
+							<li{% if message.tags %} class="{{ message.tags }}"{% endif %}>
+								{{ user_form.confirm_email.errors }}</li>
+						</ul>
+					{% endif %}		
+				</td>
+       		</tr>
+       		<tr>
+       			<td class="field_name">
+			    	<label for="id_password">{% trans "Password:" noop %}</label>
+				</td>
+	       		<td class="input_value">			        
+			    	{{ user_form.password }}
+	       		</td>
+	       		<td style="padding: 0px 0px 0px 5px;">
+	       			{% if user_form.password.errors %}
+						<ul class="messages" style="color: #FF0000;">
+							<li{% if message.tags %} class="{{ message.tags }}"{% endif %}>
+								{{ user_form.password.errors }}</li>
+						</ul>
+					{% endif %}		
+				</td>
+       		</tr>
+       		<tr>
+       			<td class="field_name">
+			    	<label for="id_confirm_password">{% trans "Confirm password:" noop %}</label>
+				</td>
+	       		<td class="input_value">			    
+			    	{{ user_form.confirm_password }}
+	       		</td>
+	       		<td style="padding: 0px 0px 0px 5px;">
+	       			{% if user_form.confirm_password.errors %}
+						<ul class="messages" style="color: #FF0000;">
+							<li{% if message.tags %} class="{{ message.tags }}"{% endif %}>
+								{{ user_form.confirm_password.errors }}</li>
+						</ul>
+					{% endif %}		
+				</td>
+       		</tr>
+       		<tr>
+       			<td></td>
+   				<td style="text-align: right; padding: 10px 0px 0px 0px;">
+   					<div class="submit-row">
+   				   		<input type="submit" name="bregistration" value="{% trans "Create account" %}">
+   				    </div>
+       			</td>
+       			<td></td>
+       		</tr>
+		</table>        		
+	</form>
+</div>
 
 {% endblock %}

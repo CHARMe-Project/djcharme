@@ -160,7 +160,7 @@ class SecurityMiddleware(object):
         #An anonymous user want to access restricted resources
         if request.path != login_service_url \
             and isinstance(request.user, AnonymousUser):
-            return HttpResponse(login_service_url, status=401)
+            return HttpResponse('<meta http-equiv="refresh" content="0; url=' + login_service_url +'" />', status=401)
         
         #An anonymous user wants to login        
         if request.path == get_login_service_url():

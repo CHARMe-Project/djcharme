@@ -19,40 +19,40 @@ LOGGING = logging.getLogger(__name__)
 
 class UserForm(Form):
     first_name = CharField(max_length=30, required=False)
-    last_name = CharField(max_length=30, required=False)    
+    last_name = CharField(max_length=30, required=False)
     password = CharField(max_length=30, widget=PasswordInput(), required=True)
-    confirm_password = CharField(max_length=30, widget=PasswordInput(), 
+    confirm_password = CharField(max_length=30, widget=PasswordInput(),
                                  required=True)
-    email  = EmailField(required=True)
+    email = EmailField(required=True)
     confirm_email = EmailField(required=True)
-    
+
     def clean(self):
-        if (self.cleaned_data.get('email') !=
-            self.cleaned_data.get('confirm_email')):            
+        if (self.cleaned_data.get('email')
+            != self.cleaned_data.get('confirm_email')):
             raise ValidationError(
                 "Email addresses must match."
             )
 
-        if (self.cleaned_data.get('password') !=
-            self.cleaned_data.get('confirm_password')):            
+        if (self.cleaned_data.get('password')
+            != self.cleaned_data.get('confirm_password')):
             raise ValidationError(
-                "Password must match."
+                "Passwords must match."
             )
         return self.cleaned_data
-            
-            
-class LoginForm(Form):            
-    email           = EmailField(required=True)
-    password        = CharField(max_length=30, 
-                                widget=PasswordInput(), 
+
+
+class LoginForm(Form):
+    email = EmailField(required=True)
+    password = CharField(max_length=30,
+                                widget=PasswordInput(),
                                 required=True)
-    
+
     error_messages = {
         'invalid_login': "Please enter a correct %(username)s and password. "
                            "Note that both fields may be case-sensitive.",
         'inactive': "This account is inactive."
-    }    
-    
+    }
+
     def __init__(self, request=None, *args, **kwargs):
         """
         The 'request' parameter is set for custom auth use by subclasses.
@@ -64,14 +64,16 @@ class LoginForm(Form):
 
         # Set the label for the "username" field.
         UserModel = get_user_model()
-        self.username_field = UserModel._meta.get_field(UserModel.USERNAME_FIELD)
+        self.username_field = (UserModel._meta.get_field
+                               (UserModel.USERNAME_FIELD))
         if self.fields['email'].label is None:
-            self.fields['email'].label = capfirst(self.username_field.verbose_name)
-    
+            self.fields['email'].label = (capfirst
+                                          (self.username_field.verbose_name))
+
     def clean(self):
         username = self.cleaned_data.get('email')
         password = self.cleaned_data.get('password')
-    
+
         if username and password:
             self.user_cache = authenticate(username=username,
                                            password=password)
@@ -99,7 +101,8 @@ class LoginForm(Form):
 
     def get_user(self):
         return self.user_cache
-        
+
+
 class CharmeAuthenticationBackend(ModelBackend):
     """
     Extends Django's ``ModelBackend`` to allow login via username, 
@@ -124,7 +127,7 @@ class CharmeAuthenticationBackend(ModelBackend):
             if username:
                 try:
                     backend = ModelBackend()
-                    return backend.authenticate(username=username, 
+                    return backend.authenticate(username=username,
                                                 password=password)
                 except Exception:
                     LOGGING.error("Wrong password for username: %s" % username)
