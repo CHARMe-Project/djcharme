@@ -31,30 +31,59 @@ width: 1em;
 #pointer-events: none;
 }
 
-
-.dojoxGridCell{
+.dojoxGridCell {
 	border-width: 0px !important;
 	padding: 0px !important;
 }
 
-.dojoxGridCellFocus{
+.dojoxGridCellFocus {
 	border: 0px !important;
 }
 
-.dojoxGridHeader.dojoxGridCellFocus{
+.dojoxGridHeader.dojoxGridCellFocus {
 	border-bottom-color: transparent !important;
 }
 
-.content * div div.dojoxGridRowSelected{
+.content * div div.dojoxGridRowSelected {
 	background-color: #FEBE47 !important;
 }
 
-.content table.dojoxGridRowTable{
+.content table.dojoxGridRowTable {
 	#opacity:0.52;
 	background-color: transparent !important;
 }
 
-.content table td.dojoxGridCell{
+.content table td.dojoxGridCell {
 	#opacity:0.52;
 	background-color: transparent !important;
+}
+
+.content .accounts ul li {
+	line-height: 0.0em;
+}
+
+.content .accounts table {
+	width: auto;
+	margin: 2.0em 0 0.2em 0px;
+}
+
+.content .accounts table td {
+	height: 3.0em;
+	padding: 0px 3px 0px 0px;
+	border: solid 0px rgb(255, 255, 255);
+	background-color: rgb(255, 255, 255);
+}
+
+.content .error ul {
+	padding: 0px;
+}
+
+.content .error ul li {
+	background: rgb(255, 255, 255);
+	color: #FF0000;
+}
+
+.links {
+		padding: 5px 5px 5px 5px;
+		text-align: right;
 }

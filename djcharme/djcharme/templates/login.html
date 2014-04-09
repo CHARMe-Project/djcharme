@@ -1,91 +1,49 @@
-{% extends "charme_base.html" %} 
+{% extends "charme_base.html" %}
+
 {% load i18n %}
 
 {% block extra_head %}
-  <link rel="stylesheet" href="http://code.jquery.com/ui/1.10.2/themes/smoothness/jquery-ui.css" />
-  <script src="http://code.jquery.com/ui/1.10.2/jquery-ui.js"></script>
-  <script>
-  $(function() {
-    $( "#login" ).accordion({ heightStyle: "content" });
-  });
-  </script>
+<link rel="stylesheet" href="{{ STATIC_URL }}/charme/css/charme.css" />
 {% endblock %}
 
-{% block content %}
+{% block main %}
 
-<div class="corner-content-1col-top"></div>  
-<div class="content-1col-nobox">
-	<h1 style="font-size:22px;padding:5px 0px 5px 20px;color:#555555;">
-	<b>This is a BETA service</b></h1>
-</div>
+<h2>Site Login</h2>
 
 {% if form.non_field_errors %}
-	<ul class="messages" style="color: #FF0000;">    
-    	<li>{{ form.non_field_errors }}</li>
+<div class=error>
+	<ul>
+		<li>{{ form.non_field_errors }}</li>
 	</ul>
-{% endif %} 
+</div>
+{% endif %}
 
-<div id="login">
-	<h4>Site login</h4>
-    <div>
-    	<form id="auth_form" name="auth_form" action="{% url 'login' %}" method="post">
-    		{% csrf_token %}
-    		<table>
-    			<tr>
-      				<td class="field_name">
-           				<span class="required label">
-         					{% trans "Username:" %}
-         				</span>
-      				</td>
-      				<td class="input_value">
-      					<label for="id_email">
-         				{{ form.email }}
-         				</label>
-      				</td>
-      				<td style="padding: 0px 0px 0px 5px;">
-      					{% if form.email.errors %}
-							<ul class="messages" style="color: #FF0000;">
-    						<li{% if message.tags %} class="{{ message.tags }}"{% endif %}>
-    							{{ form.email.errors }}</li>
-							</ul>
-						{% endif %}		
-					</td>
-   				</tr>
-    			<tr>
-      				<td class="field_name">
-         				<span class="required label">
-         					{% trans "Password:" %}
-         				</span>
-      				</td>
-      				<td class="input_value">
-      					<label for="id_password">
-         				{{ form.password }}
-         				</label>
-      				</td>
-      				<td style="padding: 0px 0px 0px 5px;">
-      					{% if form.password.errors %}
-							<ul class="messages" style="color: #FF0000;">
-    						<li{% if message.tags %} class="{{ message.tags }}"{% endif %}>
-    							{{ form.password.errors }}</li>
-							</ul>
-						{% endif %}		
-					</td>
-   				</tr>
-   				<tr>
-   				    <td></td>
-   				    <td style="text-align: right; padding: 10px 0px 0px 0px;">
-   				    	<div class="submit-row">
-   				    		<input type="submit" name="blogin" value="{% trans "Sign in" %}">
-   				    	</div>
-   				    </td>
-   				    <td></td>
-   				</tr>
-    		</table>
-    		<a href="../registration/">create an account</a>
-    		<input type="hidden" name="logged_in" value="{% url 'index' %}" />
-			<input type="hidden" name="next" value="{{ request.GET.next }}" />  					    	
+<div class=loginform id="login">
+	<div class=accounts>
+		<form method="post" action="{% url 'login' %}">
+			{% csrf_token %}
+			<table>
+				<tr>
+					<td><label> {% trans "Username:" noop %} </label></td>
+					<td>{{ form.email }}</td>
+					<td class=error>{{ form.email.errors }}</td>
+				</tr>
+				<tr>
+					<td><label> {% trans "Password:" noop %} </label></td>
+					<td>{{ form.password }}</td>
+					<td class=error>{{ form.password.errors }}</td>
+				</tr>
+				<tr>
+					<td></td>
+					<td style="text-align: right;"><input type="submit"
+						value="Sign in"></td>
+					<td></td>
+				</tr>
+			</table>
+			<input type="hidden" name="logged_in" value="{% url 'index' %}" />
+			<input type="hidden" name="next" value="{{ request.GET.next }}" />
 		</form>
 	</div>
-</div>	
+</div>
 
 {% endblock %}

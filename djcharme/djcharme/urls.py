@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.conf.urls import patterns, include, url
 from djcharme.views import node_gate, compose, endpoint, main_gui, search, \
-    registration, facets
+    registration, facets, views
 from django.contrib.auth.views import login
 from djcharme.charme_security_model import LoginForm
 
@@ -31,6 +31,8 @@ urlpatterns = patterns('',
          kwargs={'template_name': 'login.html',
                  'authentication_form': LoginForm},
          name='login'),
+     # Logout
+     url(r'^accounts/logout/$', views.logout_view,),
 
      # Accepts external new annotation
      url(r'^insert/annotation', node_gate.insert, name='node_gate.insert'),

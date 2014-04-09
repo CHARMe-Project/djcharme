@@ -3,3 +3,7 @@
 /settings.pyc
 /urls.pyc
 /wsgi.pyc
+/charme_middleware.pyc
+/charme_security_model.pyc
+/exception.pyc
+/security_middleware.pyc

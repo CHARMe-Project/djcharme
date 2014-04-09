@@ -1,6 +1,20 @@
-{% extends "base_no_sidebar.html" %} 
+{% extends "base_no_sidebar.html" %}
 
+{% block title %}
 
-<h1>{% block extra_head %}This is a BETA service ex{% endblock %}</h1>
+This is a BETA service
 
-{% block title %}This is a BETA service{% endblock %}
+{% endblock %}
+
+{% block navbar %}
+
+<div class=links>
+	{% if user.is_authenticated %}
+		Hello {{ user.username }} [<a href="/accounts/logout/">Logout</a>]
+	{% else %}
+		[<a href="/accounts/login/">Login</a> or 
+		<a href="/accounts/registration/">Register</a>]
+	{% endif %}
+</div>
+
+{% endblock %}
