@@ -252,9 +252,8 @@ AUTHENTICATION_BACKENDS = (
 if "djcharme.charme_middleware.CharmeMiddleware" in MIDDLEWARE_CLASSES:
     OPTIONS_HDR_RESPONSE = {
         'Access-Control-Allow-Methods': 'GET, OPTIONS, POST',
-        'Access-Control-Allow-Headers': (
-            'X-CSRFToken, X-Requested-With, x-requested-with, ',
-            'Content-Type, Content-Length, Authorization'),
+        'Access-Control-Allow-Headers': 'X-CSRFToken, X-Requested-With, ' \
+            'x-requested-with, Content-Type, Content-Length, Authorization',
         'Access-Control-Max-Age': 10,
         'Content-Type': "text/plain"
     }
