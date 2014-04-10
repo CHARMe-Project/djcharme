@@ -170,7 +170,8 @@ LOGGING = {
     'formatters': {
         'verbose': {
             'format':
-            '%(levelname)s %(asctime)s %(module)s %(process)d %(thread)d %(message)s'
+            '%(levelname)s %(asctime)s %(module)s %(process)d %(thread)d ' \
+            '%(message)s'
         },
         'simple': {
             'format': '%(levelname)s %(message)s'
@@ -269,6 +270,7 @@ SECURITY_FILTER = [
     ("/search", ("GET", "OPTIONS")),
     ("/accounts/login", ("GET", "POST")),
     ("/accounts/registration", ("GET", "POST")),
+    ("/data", ("GET")),
     ("/oauth2\/?", ("GET", "POST")),
     ("admin", ("GET", "POST")),
     ("/token/validate/", ("GET",)),

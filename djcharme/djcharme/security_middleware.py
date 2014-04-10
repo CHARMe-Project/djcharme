@@ -30,7 +30,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 Created on 2 Nov 2012
 
 @author: mnagni
-''' 
+'''
 import socket
 import logging
 import re
@@ -81,8 +81,8 @@ def preapare_user_for_session(request, timestamp, userid, tokens, user_data):
         'tokens': tokens,
         'user_data': user_data
     }
-    LOGGER.debug("stored in request - userid:%s, user_data:%s", userid,
-                                                                user_data)
+    LOGGER.debug("preapare_user_for_session - Stored in request - " \
+                 "userid:%s, user_data:%s", userid, user_data)
     request.session['accountid'] = userid
 
 
@@ -108,16 +108,16 @@ def is_public_url(request):
 
     # adds a default filter for reset password request
     reset_regexpr = '%s=[a-f0-9-]*$' % (token_field_name())
-    if reset_regexpr not in url_filters: 
+    if reset_regexpr not in url_filters:
         url_filters.append(reset_regexpr)
 
     if filter_request(request, url_filters):
-        LOGGER.debug('Public path and method %r / %r', request.path,
-                                                       request.method)
+        LOGGER.debug('is_public_url  -Public path and method %r / %r',
+                     request.path, request.method)
         return True
 
-    LOGGER.debug('Secured path and method %r / %r', request.path,
-                                                    request.method)
+    LOGGER.debug('is_public_url - Secured path and method %r / %r',
+                 request.path, request.method)
     return False
 
 
@@ -143,20 +143,20 @@ class SecurityMiddleware(object):
     """
 
     def process_request(self, request):
-        LOGGER.info('SecurityMiddleware.process_request for %r',
-                     request.build_absolute_uri())
+        LOGGER.info('process_request - Request: %r',
+                    request.build_absolute_uri())
 
         # The required URL is public
         if is_public_url(request):
-            LOGGER.debug('SecurityMiddleware.process_request URL is public')
+            LOGGER.debug('process_request - URL is public')
             return
 
         # The request has an Access Token
         if request.environ.get('HTTP_AUTHORIZATION', None):
             for term in request.environ.get('HTTP_AUTHORIZATION').split():
                 if is_valid_token(term):
-                    LOGGER.debug('SecurityMiddleware.process_request Request \
-                    has an access token')
+                    LOGGER.debug('process_request - ' \
+                    'Request has an access token')
                     return
 
         login_service_url = get_login_service_url()
@@ -164,18 +164,16 @@ class SecurityMiddleware(object):
         # An anonymous user want to access restricted resources
         if request.path != login_service_url \
             and isinstance(request.user, AnonymousUser):
-            LOGGER.debug('SecurityMiddleware.process_request Redirect to \
-            login page')
+            LOGGER.debug('process_request - Redirect to login page')
             return HttpResponse('<meta http-equiv="refresh" content="0; url='
                                 + login_service_url + '" />', status=401)
 
         # An anonymous user wants to login
         if request.path == get_login_service_url():
-            LOGGER.debug('SecurityMiddleware.process_request Request for \
-            login page')
+            LOGGER.debug('process_request - Request is for login page')
             return
 
-        LOGGER.debug('SecurityMiddleware.process_request end of method')
+        LOGGER.debug('process_request - End of method')
 
     def process_response(self, request, response):
         if hasattr(response, 'url') and "access_token=" in response.url \
@@ -184,10 +182,10 @@ class SecurityMiddleware(object):
                 response.delete_cookie("sessionid")
                 response.delete_cookie("csrftoken")
                 # att_token = {'token': json.loads(response.content)}
-                # return mm_render_to_response(request, att_token, 
+                # return mm_render_to_response(request, att_token,
                 # "token_response.html")
             except Exception as ex:
-                LOGGER.warn('SecurityMiddleware.process_response: ' + ex)
+                LOGGER.warn('process_response - Caught: ' + ex)
         return response
 
 def _build_url(request):
@@ -215,8 +213,8 @@ def _is_authenticated(request):
         ** raise ** a DJ_SecurityException if the ticket is not valid
     """
     if auth_tkt_name() in request.COOKIES:
-        message = ("Found cookie '%s': %s in cookies" % (auth_tkt_name(),
-                   request.COOKIES.get(auth_tkt_name())))
+        message = ("_is_authenticated - Found cookie '%s': %s in cookies" % 
+                   (auth_tkt_name(), request.COOKIES.get(auth_tkt_name())))
         LOGGER.debug(message)
         try:
             return 'Something'
