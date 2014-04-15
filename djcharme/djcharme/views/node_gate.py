@@ -13,7 +13,8 @@ from djcharme.views import (isPOST, content_type, validateMimeFormat,
                             isOPTIONS, http_accept, get_format, checkMimeFormat,
                             get_depth)
 
-from django.http.response import HttpResponseRedirectBase, Http404, HttpResponse
+from django.http.response import (HttpResponseRedirectBase, HttpResponse,
+                                  HttpResponseNotFound)
 
 from django.contrib import messages
 from django.views.decorators.csrf import csrf_exempt
@@ -162,7 +163,7 @@ def process_resource(request, resource_id):
     if 'text/html' in http_accept(request):
         LOGGING.info("Redirecting to " + str(PAGE) + str(resource_id))
         return HttpResponseSeeOther('/%s/%s' % (PAGE, resource_id))
-    return Http404()
+    return HttpResponseNotFound()
 
 
 def process_data(request, resource_id):
