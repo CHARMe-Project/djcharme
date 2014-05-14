@@ -50,7 +50,7 @@ from ceda_markup.opensearch.template.osresponse import OSEngineResponse, Result
 from djcharme.node.actions import CH_NODE, ANNO_STABLE
 from djcharme.node.search import search_title, search_annotations_by_target, \
     search_annotations_by_status, annotation_resource
-from djcharme.views import checkMimeFormat
+from djcharme.views import check_mime_format
 
 
 GUID = 'guid'
@@ -69,12 +69,13 @@ CEDA_TITLE = 'ceda_title'
 
 LOGGING = logging.getLogger(__name__)
 
+
 def append_valid_time(subresult, entry, atomroot,
                       begin_position, end_position):
     # xmlentry = entry.buildElement()
     if begin_position is not None:
         begin_position = createBeginPosition(root=atomroot,
-                                            body=subresult.beginPosition)
+                                             body=subresult.beginPosition)
     if end_position is not None:
         end_position = createEndPosition(root=atomroot,
                                          body=subresult.endPosition)
@@ -84,11 +85,13 @@ def append_valid_time(subresult, entry, atomroot,
     if begin_position is not None or end_position is not None:
         entry.append(valid_time)
 
+
 def extract_title(ceda_obj):
     if hasattr(ceda_obj, 'identifier'):
         for ident in ceda_obj.identifier:
             if ident.authority.title == CEDA_TITLE:
                 return ident.code
+
 
 def generate_url_id(url, iid=None):
     if iid is None:
@@ -116,6 +119,7 @@ def import_count_and_page(context):
         ret.append(START_PAGE_DEFAULT)
 
     return tuple(ret)
+
 
 class COSAtomResponse(OSAtomResponse):
     '''
@@ -176,15 +180,16 @@ class COSAtomResponse(OSAtomResponse):
         iformat = context.get('format', 'json-ld')
         if iformat == None:
             iformat = 'json-ld'
-        iformat = checkMimeFormat(iformat)
+        iformat = check_mime_format(iformat)
         for annotation_graph in results['results']:
             try:
-                subject = [subj for subj in annotation_graph.triples(annotation_resource())][0][0]
+                subject = ([subj for subj in
+                            annotation_graph.triples(annotation_resource())][0][0])
                 subresults.append({'subject': str(subject),
                                    'triple': annotation_graph.serialize(format=iformat)})
-            except (IndexError):
-                LOGGING.warn("No Annotation resource for graph %s"
-                             % annotation_graph.serialize())
+            except IndexError:
+                LOGGING.warn("No Annotation resource for graph %s",
+                             annotation_graph.serialize())
                 continue
         return Result(count, start_index, start_page, results['count'], \
                       subresult=subresults, title=title)
@@ -194,6 +199,7 @@ class COSAtomResponse(OSAtomResponse):
                           ospath, params_model, context):
         return results
 '''
+
 
 class COSRDFResponse(OSEngineResponse):
     '''
@@ -214,9 +220,9 @@ class COSRDFResponse(OSEngineResponse):
                       subresult=subresults, title=title)
         # return results.serialize(format='xml')
 
-    def generate_response(self, results, query, \
-                          ospath, params_model, context):
+    def generate_response(self, results, query, ospath, params_model, context):
         return results
+
 
 class COSJsonLDResponse(OSEngineResponse):
     '''
@@ -232,9 +238,9 @@ class COSJsonLDResponse(OSEngineResponse):
     def digest_search_results(self, results, context):
         return results.serialize(format='json-ld')
 
-    def generate_response(self, results, query, \
-                          ospath, params_model, context):
+    def generate_response(self, results, query, ospath, params_model, context):
         return results
+
 
 class COSTurtleResponse(OSEngineResponse):
     '''
@@ -250,9 +256,9 @@ class COSTurtleResponse(OSEngineResponse):
     def digest_search_results(self, results, context):
         return results.serialize(format='turtle')
 
-    def generate_response(self, results, query, \
-                          ospath, params_model, context):
+    def generate_response(self, results, query, ospath, params_model, context):
         return results
+
 
 class COSHTMLResponse(OSAtomResponse):
     '''
@@ -267,6 +273,7 @@ class COSHTMLResponse(OSAtomResponse):
 
     def generateResponse(self, result, queries, ospath, **kwargs):
         return result + " HTML!"
+
 
 class COSQuery(OSQuery):
     '''
@@ -318,7 +325,7 @@ class COSQuery(OSQuery):
         elif query.attrib.get('target', None) \
                 and len(query.attrib.get('target')) > 0:
             results, count = search_annotations_by_target(query.attrib['target'],
-                                                       query.attrib)
+                                                          query.attrib)
         elif query.attrib.get('status', None) \
                 and len(query.attrib.get('status')) > 0:
             results, count = search_annotations_by_status(query.attrib)

@@ -5,6 +5,7 @@ Created on 19 Aug 2013
 '''
 from djcharme import mm_render_to_response
 
-def welcome(request):                
+
+def welcome(request):
     context = {}
     return mm_render_to_response(request, context, 'welcome.html')

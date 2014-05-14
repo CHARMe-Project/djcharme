@@ -11,7 +11,7 @@ from djcharme.test import turtle_usecase1
 
 import unittest
 import logging
-from djcharme.node.actions import format_graphIRI
+from djcharme.node.actions import format_graph_iri
 from djcharme.views.endpoint import endpoint
 from djcharme import settings
 
@@ -38,7 +38,7 @@ class Test(unittest.TestCase):
     def test_PUT(self): 
         #self.test_insert_anotation()
 
-        graph = format_graphIRI('submitted')
+        graph = format_graph_iri('submitted')
         request = self.factory.put('/endpoint?graph=%s' % graph, 
                                    data = turtle_usecase1,
                                    content_type = 'text/turtle')

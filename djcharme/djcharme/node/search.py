@@ -38,7 +38,7 @@ from rdflib.namespace import RDF
 from rdflib.term import URIRef, Variable
 
 from djcharme.charme_middleware import CharmeMiddleware
-from djcharme.node import _extractSubject
+from djcharme.node import _extract_subject
 from djcharme.node.actions import generate_graph, ANNO_STABLE
 
 
@@ -77,11 +77,13 @@ WHERE {
 }
 """
 
+
 def annotation_resource(anno_uri=None):
     anno_ref = None
     if anno_uri:
         anno_ref = URIRef(anno_uri)
     return (anno_ref, RDF.type, URIRef('http://www.w3.org/ns/oa#Annotation'))
+
 
 def sparqlize_triple(triple):
     template = '<%s>'
@@ -101,6 +103,7 @@ def annotation_target(target_uri):
     return (None, URIRef('http://www.w3.org/ns/oa#hasTarget'),
             URIRef(target_uri))
 
+
 def _del_limit_offset(graph):
     old_limit = None
     old_offset = None
@@ -112,22 +115,25 @@ def _del_limit_offset(graph):
         del graph.OFFSET
     return (old_limit, old_offset)
 
+
 def _set_limit_offset(graph, limit_offset):
     if limit_offset[0] != None:
         graph.LIMIT = limit_offset[0]
     if limit_offset[1] != None:
         graph.OFFSET = limit_offset[1]
 
+
 def _populate_annotations(graph, triples, depth=3):
     ret = []
     for row in triples:
         tmp_g = Graph()
         limit_offset = _del_limit_offset(graph)
-        for subj in _extractSubject(graph, row[0], depth):
+        for subj in _extract_subject(graph, row[0], depth):
             tmp_g.add(subj)
         ret.append(tmp_g)
         _set_limit_offset(graph, limit_offset)
     return ret
+
 
 def _do__open_search(query_attr, graph, triples):
     depth = int(query_attr.get('depth', 3))
@@ -136,12 +142,12 @@ def _do__open_search(query_attr, graph, triples):
     offset = offset + int(query_attr.get('startIndex', 1)) - 1
     if limit > 0:
         graph.LIMIT = limit
-        LOGGING.warning("Cancelled LIMIT parameter as less than zero: " +
-                        str(limit))
+        LOGGING.warning("Cancelled LIMIT parameter as less than zero: %s",
+                        limit)
     if offset > 0:
         graph.OFFSET = offset
-        LOGGING.warning("Cancelled OFFSET parameter as less than zero: " +
-                        str(offset))
+        LOGGING.warning("Cancelled OFFSET parameter as less than zero: %s",
+                        offset)
     ret = _populate_annotations(graph, triples, depth)
     if hasattr(graph, 'LIMIT'):
         del graph.LIMIT
@@ -156,6 +162,7 @@ class SearchProxy(object):
         self.query_signature = None
         super(SearchProxy, self).__init__(self)
 
+
 def search_title(title, query_attr):
     '''
         Returns annotations which refer to a given dcterm:title
@@ -164,15 +171,16 @@ def search_title(title, query_attr):
         - dict **query_attr**
             dictionary of parameters
     '''
-    graph = str(query_attr.get('status', ANNO_STABLE))
-    g = generate_graph(CharmeMiddleware.get_store(), graph)
-    triples = g.query(SEARCH_TITLE % (title))
-    results = _do__open_search(query_attr, g, triples)
-    enc_count = g.query(COUNT_TITLE % (title))
+    graph_name = str(query_attr.get('status', ANNO_STABLE))
+    graph = generate_graph(CharmeMiddleware.get_store(), graph_name)
+    triples = graph.query(SEARCH_TITLE % (title))
+    results = _do__open_search(query_attr, graph, triples)
+    enc_count = graph.query(COUNT_TITLE % (title))
     count = str(enc_count.bindings[0].values()[0])
     if count == 'None':
         count = 0
     return results, int(count)
+
 
 def search_annotations_by_status(query_attr):
     '''
@@ -180,11 +188,11 @@ def search_annotations_by_status(query_attr):
         - dict **query_attr**
             dictionary of parameters
     '''
-    graph = str(query_attr.get('status', ANNO_STABLE))
-    g = generate_graph(CharmeMiddleware.get_store(), graph)
-    triples = g.triples(annotation_resource())
-    results = _do__open_search(query_attr, g, triples)
-    enc_count = g.query(COUNT_TRIPLE %
+    graph_name = str(query_attr.get('status', ANNO_STABLE))
+    graph = generate_graph(CharmeMiddleware.get_store(), graph_name)
+    triples = graph.triples(annotation_resource())
+    results = _do__open_search(query_attr, graph, triples)
+    enc_count = graph.query(COUNT_TRIPLE %
                         ('?s', sparqlize_triple(annotation_resource())))
     count = str(enc_count.bindings[0].values()[0])
     if count == 'None':
@@ -200,13 +208,13 @@ def search_annotations_by_target(predicate, query_attr):
         - dict **query_attr**
             dictionary of parameters
     '''
-    graph = str(query_attr.get('status', ANNO_STABLE))
-    g = generate_graph(CharmeMiddleware.get_store(), graph)
+    graph_name = str(query_attr.get('status', ANNO_STABLE))
+    graph = generate_graph(CharmeMiddleware.get_store(), graph_name)
     look_for = annotation_target(predicate)
-    triples = g.triples(look_for)
-    results = _do__open_search(query_attr, g, triples)
+    triples = graph.triples(look_for)
+    results = _do__open_search(query_attr, graph, triples)
     s = '?s'
-    enc_count = g.query(COUNT_TRIPLE % ('?s', sparqlize_triple(look_for)))
+    enc_count = graph.query(COUNT_TRIPLE % ('?s', sparqlize_triple(look_for)))
     count = str(enc_count.bindings[0].values()[0])
     if count == 'None':
         count = 0

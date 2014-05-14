@@ -42,7 +42,7 @@ from rdflib.namespace import Namespace
 
 from djcharme.charme_middleware import CharmeMiddleware
 from djcharme.exception import StoreConnectionError
-from djcharme.node import _extractSubject
+from djcharme.node import _extract_subject
 
 
 LOGGING = logging.getLogger(__name__)
@@ -122,7 +122,7 @@ PAGE = 'page'
 LOGGING = logging.getLogger(__name__)
 
 
-def format_graphIRI(graph, baseurl='http://dummyhost'):
+def format_graph_iri(graph, baseurl='http://dummyhost'):
     '''
         Builds a named graph URIRef using, if exists,
         a settings.SPARQL_QUERY parameter.
@@ -136,14 +136,17 @@ def format_graphIRI(graph, baseurl='http://dummyhost'):
 
     return '%s/%s' % (getattr(settings, 'SPARQL_DATA', baseurl), graph)
 
+
 def generate_graph(store, graph):
     '''
         Generate a new Graph
         - string **graph**
             the graph name
-        * return:rdflib.Graph - Returns an RDFlib graph containing the given data
+        * return:rdflib.Graph - Returns an RDFlib graph containing the given
+                                data
     '''
-    return Graph(store=store, identifier=format_graphIRI(graph))
+    return Graph(store=store, identifier=format_graph_iri(graph))
+
 
 def insert_rdf(data, mimetype, graph=None, store=None):
     '''
@@ -167,13 +170,14 @@ def insert_rdf(data, mimetype, graph=None, store=None):
     _format_submitted_annotation(tmp_g)
     final_g = generate_graph(store, graph)
 
-    for ns in tmp_g.namespaces():
-        final_g.store.bind(str(ns[0]), ns[1])
+    for nspace in tmp_g.namespaces():
+        final_g.store.bind(str(nspace[0]), nspace[1])
 
     for res in tmp_g:
         final_g.add(res)
 
     return final_g
+
 
 def _format_resource_uri_ref(resource_id):
     '''
@@ -185,6 +189,7 @@ def _format_resource_uri_ref(resource_id):
                                 RESOURCE,
                                 resource_id))
 
+
 def _format_node_uri_ref(uriref, anno_uri, body_uri):
     '''
         Rewrite a URIRef according to the node configuration
@@ -194,9 +199,8 @@ def _format_node_uri_ref(uriref, anno_uri, body_uri):
     '''
     if isinstance(uriref, URIRef) and NODE_URI in uriref:
         uriref = URIRef(uriref.replace(NODE_URI,
-                                       getattr(settings,
-                                       'NODE_URI',
-                                       NODE_URI) + '/'))
+                                       getattr(settings, 'NODE_URI', NODE_URI)
+                                       + '/'))
 
     if isinstance(uriref, URIRef) and CH_NODE in uriref:
         uriref = URIRef(uriref.replace(CH_NODE + ':',
@@ -210,6 +214,7 @@ def _format_node_uri_ref(uriref, anno_uri, body_uri):
                                        (RESOURCE, body_uri)))
     return uriref
 
+
 def _format_submitted_annotation(graph):
     '''
         Formats the graph according to the node configuration
@@ -218,11 +223,12 @@ def _format_submitted_annotation(graph):
     body_uri = uuid.uuid4().hex
 
     for subject, pred, obj in graph:
-            graph.remove((subject, pred, obj))
-            subject = _format_node_uri_ref(subject, anno_uri, body_uri)
-            pred = _format_node_uri_ref(pred, anno_uri, body_uri)
-            obj = _format_node_uri_ref(obj, anno_uri, body_uri)
-            graph.add((subject, pred, obj))
+        graph.remove((subject, pred, obj))
+        subject = _format_node_uri_ref(subject, anno_uri, body_uri)
+        pred = _format_node_uri_ref(pred, anno_uri, body_uri)
+        obj = _format_node_uri_ref(obj, anno_uri, body_uri)
+        graph.add((subject, pred, obj))
+
 
 def change_annotation_state(resource_id, new_graph):
     '''
@@ -241,12 +247,14 @@ def change_annotation_state(resource_id, new_graph):
         new_g.add(res)
     return new_g
 
+
 def find_annotation_graph(resource_id):
     triple = (_format_resource_uri_ref(resource_id), None, None)
     for graph in [ANNO_SUBMITTED, ANNO_STABLE, ANNO_RETIRED, ANNO_INVALID]:
         new_g = generate_graph(CharmeMiddleware.get_store(), graph)
         if triple in new_g:
             return graph
+
 
 def find_resource_by_id(resource_id, depth=None):
     '''
@@ -255,9 +263,10 @@ def find_resource_by_id(resource_id, depth=None):
         * return: an rdflib.Graph object
     '''
     graph = ConjunctiveGraph(store=CharmeMiddleware.get_store())
-    uriRef = _format_resource_uri_ref(resource_id)
-    LOGGING.debug("Looking resource %s" % (uriRef))
-    return _extractSubject(graph, uriRef, depth)
+    uri_ref = _format_resource_uri_ref(resource_id)
+    LOGGING.debug("Looking resource %s", uri_ref)
+    return _extract_subject(graph, uri_ref, depth)
+
 
 # This code is a workaround until FUSEKI fixes this bug
 # https://issues.apache.org/jira/browse/JENA-592
@@ -265,27 +274,27 @@ def __query_annotations(graph, default_graph, pred=None, obj=None):
     query = ''
     if obj:
         query = '''
-            SELECT ?subject ?pred ?obj WHERE { GRAPH <%s> {?subject ?pred <%s> }} 
+            SELECT ?subject ?pred ?obj WHERE { GRAPH <%s> {?subject ?pred <%s> }}
         ''' % (default_graph, obj)
     if pred:
         query = '''
-            SELECT ?subject ?pred ?obj WHERE { GRAPH <%s> {?subject <%s> ?obj }} 
+            SELECT ?subject ?pred ?obj WHERE { GRAPH <%s> {?subject <%s> ?obj }}
         ''' % (default_graph, pred)
     return graph.query(query)
 
 
-def _collect_annotations(graph):
+def _collect_annotations(graph_name):
     '''
         Returns a graph containing all the node annotations
-        - string **graph**
+        - string **graph_name**
             the graph name
     '''
-    g = generate_graph(CharmeMiddleware.get_store(), graph)
+    graph = generate_graph(CharmeMiddleware.get_store(), graph_name)
     tmp_g = Graph()
 
-    anno = g.triples((None, None, OA['Annotation']))
-    target = g.triples((None, OA['hasTarget'], None))
-    body = g.triples((None, OA['hasBody'], None))
+    anno = graph.triples((None, None, OA['Annotation']))
+    target = graph.triples((None, OA['hasTarget'], None))
+    body = graph.triples((None, OA['hasBody'], None))
 
     try:
         for res in anno:
@@ -295,7 +304,7 @@ def _collect_annotations(graph):
         for res in body:
             tmp_g.add(res)
     except URLError as ex:
-        raise StoreConnectionError("Cannot open a connection with triple store \n"
-                                   + str(ex))
+        raise StoreConnectionError("Cannot open a connection with triple store"
+                                   " \n" + str(ex))
 
     return tmp_g

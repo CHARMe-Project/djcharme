@@ -12,7 +12,7 @@ from rdflib.graph import Graph
 
 from djcharme.charme_middleware import CharmeMiddleware
 from djcharme.local_settings import SPARQL_DATA
-from djcharme.node.actions import format_graphIRI, FORMAT_MAP
+from djcharme.node.actions import format_graph_iri, FORMAT_MAP
 from djcharme.test import turtle_usecase1
 from djcharme.views.endpoint import endpoint
 from djcharme.views.node_gate import insert
@@ -49,7 +49,7 @@ class Test(unittest.TestCase):
     def test_GET(self):
         self.test_insert_anotation()
 
-        graph = format_graphIRI('submitted')
+        graph = format_graph_iri('submitted')
         for accept in FORMAT_MAP.values():
             request = self.factory.get('/endpoint', data={'graph': graph},
                                        HTTP_ACCEPT=accept)
@@ -61,7 +61,7 @@ class Test(unittest.TestCase):
 
     def test_GET_406(self):
         self.test_insert_anotation()
-        graph = format_graphIRI('submitted')
+        graph = format_graph_iri('submitted')
         request = self.factory.get('/endpoint', data={'graph': graph},
                                    HTTP_ACCEPT='fake')
         response = endpoint(request)
@@ -86,7 +86,7 @@ class Test(unittest.TestCase):
         self.test_insert_anotation()
         for accept in FORMAT_MAP.values():
             request = self.factory.get('/endpoint', data={},
-                                   HTTP_ACCEPT=accept)
+                                       HTTP_ACCEPT=accept)
             response = endpoint(request)
             self.assert_(response.status_code in [200, 204], "HTTPResponse has status: %s"
                          % response.status_code)

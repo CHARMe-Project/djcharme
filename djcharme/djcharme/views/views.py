@@ -1,5 +1,6 @@
-from django.http.response import HttpResponseRedirect
 from django.contrib.auth import logout
+from django.http.response import HttpResponseRedirect
+
 
 def logout_view(request):
     logout(request)

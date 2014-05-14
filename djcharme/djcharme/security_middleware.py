@@ -1,6 +1,6 @@
 '''
 BSD Licence
-Copyright (c) 2012, Science & Technology Facilities Council (STFC)
+Copyright (c) 2014, Science & Technology Facilities Council (STFC)
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification,
@@ -31,17 +31,20 @@ Created on 2 Nov 2012
 
 @author: mnagni
 '''
-import socket
+from datetime import datetime, timedelta
 import logging
 import re
+import socket
 import urllib
-from djcharme.exception import SecurityError, MissingCookieError
+
+from django.conf import settings
+from django.contrib.auth.models import AnonymousUser
 from django.core.urlresolvers import reverse
 from django.http.response import HttpResponse
-from django.contrib.auth.models import AnonymousUser
-from django.conf import settings
 from provider.oauth2.models import AccessToken
-from datetime import datetime, timedelta
+
+from djcharme.exception import SecurityError, MissingCookieError
+
 
 DJ_SECURITY_SHAREDSECRET_ERROR = 'No SECURITY_SHAREDSECRET parameter \
 is defined in the application settings.py file. \
@@ -188,6 +191,7 @@ class SecurityMiddleware(object):
                 LOGGER.warn('process_response - Caught: ' + ex)
         return response
 
+
 def _build_url(request):
     hostname = request.environ.get('HTTP_HOST', socket.getfqdn())
     # hostname = socket.getfqdn()
@@ -204,16 +208,17 @@ def _build_url(request):
                                request.path,
                                urllib.urlencode(new_get))
 
+
 def _is_authenticated(request):
     """
         Verifies the presence and validity of a paste cookie.
-        If the cookie is not present the request is redirected 
+        If the cookie is not present the request is redirected
         to the url specified in LOGIN_SERVICE
         ** Return ** a tuple containing (timestamp, userid, tokens, user_data)
         ** raise ** a DJ_SecurityException if the ticket is not valid
     """
     if auth_tkt_name() in request.COOKIES:
-        message = ("_is_authenticated - Found cookie '%s': %s in cookies" % 
+        message = ("_is_authenticated - Found cookie '%s': %s in cookies" %
                    (auth_tkt_name(), request.COOKIES.get(auth_tkt_name())))
         LOGGER.debug(message)
         try:

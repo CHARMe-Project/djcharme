@@ -24,9 +24,9 @@ setup(
     author_email='maurizio.nagni@stfc.ac.uk',
     include_package_data = True,    
     packages=find_packages(), # include all packages under this directory    
-    #url='http://team.ceda.ac.uk/svn/ceda/ceda_software/cedasite/ceda_services/dj_dataset_registration',  
+    url='https://github.com/cedadev/djcharme',  
     license='BSD licence, see LICENCE',
-    description='to update',
+    description='CHARMe Node',
     long_description=open('README').read(),
     zip_safe=False,
 

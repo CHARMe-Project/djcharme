@@ -1,6 +1,6 @@
 '''
 BSD Licence
-Copyright (c) 2012, Science & Technology Facilities Council (STFC)
+Copyright (c) 2014, Science & Technology Facilities Council (STFC)
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification,
@@ -34,14 +34,18 @@ Created on 9 Jan 2012
 
 
 import logging
-from rdflib.plugins.stores.sparqlstore import SPARQLUpdateStore
+import mimetypes
+from multiprocessing.process import Process
+
 from django.conf import settings
 from django.contrib import messages
-from djcharme import mm_render_to_response_error, LOAD_SAMPLE
 from django.contrib.auth.models import User
 from django.db.utils import DatabaseError
 from django.http.response import HttpResponse
-from multiprocessing.process import Process
+from rdflib.plugins.stores.sparqlstore import SPARQLUpdateStore
+
+from djcharme import mm_render_to_response_error, LOAD_SAMPLE
+
 
 def webusage(request):
     template = ('\nMETHOD:%s\nIP:%s\nREMOTE_HOST:%s\nPATH_INFO:%s\n' \
@@ -74,12 +78,12 @@ USAGE_LOG.addHandler(HANDLER)
 # USAGE_LOG.basicConfig(format='%(name)s:%(levelname)s:%(message)s',
 # level=logging.INFO,datefmt='%d/%m/%y %I:%M:%S')
 
-import mimetypes
 if not mimetypes.inited:
     mimetypes.init()
     mimetypes.add_type('application/rdf+xml', '.rdf')
     mimetypes.add_type('text/turtle', '.ttl')
     mimetypes.add_type('application/ld+json', '.json-ld')
+
 
 class CharmeMiddleware(object):
 
@@ -119,7 +123,7 @@ class CharmeMiddleware(object):
             if len(users) == 0:
                 User.objects.create_superuser('admin', '', 'admin')
         except DatabaseError:
-            LOGGING.error("__init_store - Cannot find or create an " \
+            LOGGING.error("__init_store - Cannot find or create an "
                           "application superuser")
 
     @classmethod
@@ -127,7 +131,7 @@ class CharmeMiddleware(object):
         if debug or CharmeMiddleware.__store is None:
             CharmeMiddleware.__init_store()
             if getattr(settings, LOAD_SAMPLE, False):
-                LOGGING.info("get_store - LOAD_SAMPLE: %s" % True)
+                LOGGING.info("get_store - LOAD_SAMPLE: %s", True)
                 from djcharme.node.sample import load_sample
                 proc = Process(target=load_sample)  # inits thread
                 proc.start()  # starts thread
@@ -172,7 +176,7 @@ class CharmeMiddleware(object):
         response['Access-Control-Allow-Credentials'] = 'true'
 
         response['Access-Control-Expose-Headers'] = (
-            'Location, Content-Type, Content-Length');
+            'Location, Content-Type, Content-Length')
 
         if request.method == 'OPTIONS':
             # Take default settings from class variable if no settings
@@ -189,8 +193,7 @@ class CharmeMiddleware(object):
             return response
 
     def process_exception(self, request, exception):
-        LOGGING.error("process_exception - " + str(exception))
-
+        LOGGING.error("process_exception - %s", exception)
 
     def _get_user_roles(self, user):
         # user.roles = contact_role_server

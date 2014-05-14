@@ -3,21 +3,24 @@ Created on 11 Dec 2013
 
 @author: mnagni
 '''
-from djcharme import mm_render_to_response
-from django.contrib.auth.models import User
-from django.db.utils import IntegrityError
+from json import dumps
 import logging
+
+from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
+from django.db.utils import IntegrityError
 from django.forms.util import ErrorList
 from django.http.response import HttpResponseRedirect, HttpResponse, \
     HttpResponseNotFound
+from provider.oauth2.models import AccessToken
+
+from djcharme import mm_render_to_response
 from djcharme.charme_security_model import UserForm
 from djcharme.security_middleware import is_valid_token
-from provider.oauth2.models import AccessToken
-from json import dumps
 
 
 LOGGING = logging.getLogger(__name__)
+
 
 def _register_user(request):
     context = {}
@@ -40,6 +43,7 @@ def _register_user(request):
     context['user_form'] = user_form
     return mm_render_to_response(request, context, 'registration.html')
 
+
 def registration(request):
     context = {}
     LOGGING.debug('Registration request received')
@@ -50,10 +54,12 @@ def registration(request):
         context['user_form'] = UserForm()
         return mm_render_to_response(request, context, 'registration.html')
 
+
 def validate_token(request, token=None, expire=None):
     if is_valid_token(token):
         return HttpResponse(status=200)
     return HttpResponseNotFound()
+
 
 def userinfo(request):
     # The request has an Access Token
@@ -71,8 +77,10 @@ def userinfo(request):
                 continue
     return HttpResponseNotFound()
 
+
 def token_response(request):
     return mm_render_to_response(request, {}, 'token_response.html')
+
 
 def test_token(request):
     return mm_render_to_response(request, {}, 'oauth_test2.html')

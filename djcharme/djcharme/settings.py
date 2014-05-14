@@ -72,6 +72,7 @@ STATICFILES_FINDERS = (
 
 import os
 
+
 # Full filesystem path to the project.
 PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
 

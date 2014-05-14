@@ -88,8 +88,8 @@ class LoginForm(Form):
         return self.cleaned_data
 
     def check_for_test_cookie(self):
-        LOGGING.warn(("check_for_test_cookie is deprecated; ensure your login "
-                      "view is CSRF-protected."), DeprecationWarning)
+        LOGGING.warn("check_for_test_cookie is deprecated; ensure your login "
+                     "view is CSRF-protected.", DeprecationWarning)
 
     def get_user_id(self):
         if self.user_cache:
@@ -127,6 +127,6 @@ class CharmeAuthenticationBackend(ModelBackend):
                     return backend.authenticate(username=username,
                                                 password=password)
                 except Exception:
-                    LOGGING.error("Wrong password for username: " + 
+                    LOGGING.error("Wrong password for username: " +
                                   str(username))
                     raise SecurityError()

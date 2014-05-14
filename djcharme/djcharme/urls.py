@@ -1,9 +1,10 @@
-from django.contrib import admin
 from django.conf.urls import patterns, include, url
+from django.contrib import admin
+from django.contrib.auth.views import login
+
+from djcharme.charme_security_model import LoginForm
 from djcharme.views import node_gate, compose, endpoint, main_gui, search, \
     registration, facets, views
-from django.contrib.auth.views import login
-from djcharme.charme_security_model import LoginForm
 
 
 admin.autodiscover()

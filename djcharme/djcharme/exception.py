@@ -32,66 +32,87 @@ Created on 26 July 2013
 @author: mnagni
 '''
 
+
 class CharmeError(Exception):
     """
         Raises all the exceptions related to the dj_charme
         class operations
     """
+
     def __init__(self, value):
         self.value = value
+
     def __str__(self):
         return self.value
+
 
 class SerializeError(CharmeError):
     """
         General error during graph serialisation
     """
+
     def __init__(self, value):
         self.value = value
+
     def __str__(self):
         return self.value
+
 
 class StoreConnectionError(CharmeError):
     """
         General connection error to the triplestore
     """
+
     def __init__(self, value):
         self.value = value
+
     def __str__(self):
         return self.value
+
 
 class SecurityError(CharmeError):
     """
         General security error
     """
+
     def __init__(self, value):
         self.value = value
+
     def __str__(self):
         return self.value
+
 
 class PasswordNotMachesError(CharmeError):
     """
         Throw when a user is not authenticated
     """
+
     def __init__(self, value):
         self.value = value
+
     def __str__(self):
         return self.value
+
 
 class UserNotFoundError(CharmeError):
     """
         Throw when a user is not found in db
     """
+
     def __init__(self, value):
         self.value = value
+
     def __str__(self):
         return self.value
+
 
 class MissingCookieError(SecurityError):
     """
         Missing cookie error
     """
+
     def __init__(self, value):
         self.value = value
+
     def __str__(self):
         return self.value

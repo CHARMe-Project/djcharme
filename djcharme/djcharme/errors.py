@@ -5,5 +5,6 @@ Created on 30 Jul 2013
 '''
 from django.http.response import HttpResponse
 
+
 class Http503(HttpResponse):
     status_code = 503

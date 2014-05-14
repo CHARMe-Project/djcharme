@@ -5,6 +5,7 @@ Created on 14 May 2013
 '''
 from os import path
 
+
 THIS_DIR = path.dirname(__file__)
 
 #############

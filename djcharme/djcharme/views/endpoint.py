@@ -3,33 +3,36 @@ Created on 14 May 2013
 
 @author: mnagni
 '''
+import httplib
+import json
+import logging
+import urllib
+
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required
+from django.http.response import (HttpResponseRedirectBase,
+                                  HttpResponseNotFound, HttpResponse)
+from rdflib.graph import ConjunctiveGraph
+from rdflib.term import URIRef
+
+from djcharme import mm_render_to_response, mm_render_to_response_error, \
+    settings
+from djcharme.charme_middleware import CharmeMiddleware
+from djcharme.exception import SerializeError, StoreConnectionError
 from djcharme.node.actions import OA, FORMAT_MAP, \
     ANNO_SUBMITTED, insert_rdf, find_resource_by_id, RESOURCE, \
     _collect_annotations, change_annotation_state, find_annotation_graph, \
     generate_graph, rdf_format_from_mime
-
-from django.http.response import (HttpResponseRedirectBase,
-                                  HttpResponseNotFound, HttpResponse)
-from djcharme import mm_render_to_response, mm_render_to_response_error, \
-    settings
-
-import logging
-from djcharme.exception import SerializeError, StoreConnectionError
 from djcharme.views import isGET, isPOST, isPUT, isDELETE, \
     isHEAD, isPATCH, http_accept, content_type
-from django.contrib import messages
-from django.contrib.auth.decorators import login_required
-import json
-from djcharme.charme_middleware import CharmeMiddleware
-from rdflib.graph import ConjunctiveGraph
-import httplib
-import urllib
-from rdflib.term import URIRef
+
 
 LOGGING = logging.getLogger(__name__)
 
+
 class HttpResponseSeeOther(HttpResponseRedirectBase):
     status_code = 303
+
 
 def endpoint(request):
     if isGET(request):
@@ -45,12 +48,14 @@ def endpoint(request):
     if isPATCH(request):
         return processPATCH(request)
 
+
 def get_graph_from_request(request):
     graph = request.GET.get('graph', 'default')
 
     if graph == 'default':
         graph = None
     return graph
+
 
 def _get_connection():
     '''
@@ -59,6 +64,7 @@ def _get_connection():
     '''
     return httplib.HTTPConnection(getattr(settings, 'FUSEKI_URL'),
                                   port=getattr(settings, 'FUSEKI_PORT'))
+
 
 def _submit_get(graph, accept):
     headers = {"Accept": accept}
@@ -69,57 +75,61 @@ def _submit_get(graph, accept):
     response = conn.getresponse()
     return response
 
+
 def processGET(request):
     '''
         Returns an httplib.HTTPRequest
     '''
     return processHEAD(request, True)
 
+
 def processPUT(request):
     graph = get_graph_from_request(request)
     payload = request.body
 
-    g = None
+    conjunctive_graph = None
     query_object = None
     if graph is None:
-        g = ConjunctiveGraph(store=CharmeMiddleware.get_store())
+        conjunctive_graph = ConjunctiveGraph(store=CharmeMiddleware.get_store())
         query_object = '''
             DROP SILENT DEFAULT;
             '''
         query_object = ''
     else:
-        g = ConjunctiveGraph(store=CharmeMiddleware.get_store())
+        conjunctive_graph = ConjunctiveGraph(store=CharmeMiddleware.get_store())
         query_object = '''
             DROP SILENT GRAPH <%s>;
             '''
         query_object = query_object % (graph)
-    g.update(query_object)
+    conjunctive_graph.update(query_object)
     insert_rdf(payload,
                content_type(request),
                graph)
 
     return HttpResponse(status=204)
 
+
 def processDELETE(request):
     graph = get_graph_from_request(request)
 
-    g = None
+    conjunctive_graph = None
     query_object = None
     if graph is None:
-        g = ConjunctiveGraph(store=CharmeMiddleware.get_store())
+        conjunctive_graph = ConjunctiveGraph(store=CharmeMiddleware.get_store())
         query_object = '''
             DROP DEFAULT;
             '''
         query_object = ''
     else:
-        g = ConjunctiveGraph(store=CharmeMiddleware.get_store())
+        conjunctive_graph = ConjunctiveGraph(store=CharmeMiddleware.get_store())
         query_object = '''
             DROP GRAPH <%s>;
             '''
         query_object = query_object % (graph)
-    g.update(query_object)
+    conjunctive_graph.update(query_object)
 
     return HttpResponse(status=204)
+
 
 def processPOST(request):
     graph = get_graph_from_request(request)
@@ -129,6 +139,7 @@ def processPOST(request):
                graph)
 
     return HttpResponse(status=204)
+
 
 def processHEAD(request, return_content=False):
     '''
@@ -140,20 +151,23 @@ def processHEAD(request, return_content=False):
     if accept not in FORMAT_MAP.values():
         return HttpResponse(status=406)
 
-    g = None
+    conjunctive_graph = None
     if graph is None:
-        g = ConjunctiveGraph(store=CharmeMiddleware.get_store())
+        conjunctive_graph = ConjunctiveGraph(store=CharmeMiddleware.get_store())
     else:
-        g = generate_graph(CharmeMiddleware.get_store(), URIRef(graph))
+        conjunctive_graph = generate_graph(CharmeMiddleware.get_store(),
+                                           URIRef(graph))
 
-    content = g.serialize(format=rdf_format_from_mime(accept))
+    content = conjunctive_graph.serialize(format=rdf_format_from_mime(accept))
 
     if return_content:
         return HttpResponse(content=content)
     return HttpResponse()
 
+
 def processPATCH(request):
     return HttpResponse(status=501)
+
 
 def __serialize(graph, req_format='application/rdf+xml'):
     '''
@@ -163,15 +177,17 @@ def __serialize(graph, req_format='application/rdf+xml'):
         req_format = 'json-ld'
     return graph.serialize(format=req_format)
 
-def _validateMimeFormat(request):
+
+def _validate_mime_format(request):
     req_format = request.META.get('HTTP_ACCEPT', None)
     if req_format:
-        for k, v in FORMAT_MAP.iteritems():
-            if req_format == v:
+        for k, value in FORMAT_MAP.iteritems():
+            if req_format == value:
                 return k
     return None
 
-def _validateFormat(request):
+
+def _validate_format(request):
     '''
         Returns the mimetype of the required format as mapped by rdflib
         return: String - an allowed rdflib mimetype
@@ -187,6 +203,7 @@ def _validateFormat(request):
             raise SerializeError("Cannot generate the required format %s "
                                  % req_format)
     return req_format
+
 
 @login_required
 def index(request, graph='stable'):
@@ -205,15 +222,15 @@ def index(request, graph='stable'):
         return mm_render_to_response_error(request, '503.html', 503)
 
 
-    req_format = _validateFormat(request)
+    req_format = _validate_format(request)
 
     if req_format:
-        LOGGING.debug("Annotations %s" % __serialize(tmp_g,
+        LOGGING.debug("Annotations %s", __serialize(tmp_g,
                                                      req_format=req_format))
         return HttpResponse(__serialize(tmp_g, req_format=req_format))
 
     states = {}
-    LOGGING.debug("Annotations %s" % tmp_g.serialize())
+    LOGGING.debug("Annotations %s", tmp_g.serialize())
     for subject, pred, obj in tmp_g.triples((None, None, OA['Annotation'])):
         states[subject] = find_annotation_graph(subject)
 
@@ -226,12 +243,13 @@ def insert(request):
         Inserts in the triplestore a new annotation under the "ANNO_SUBMITTED"
         graph
     '''
-    req_format = _validateFormat(request)
+    req_format = _validate_format(request)
 
     if request.method == 'POST':
         triples = request.body
         tmp_g = insert_rdf(triples, req_format, graph=ANNO_SUBMITTED)
         return HttpResponse(__serialize(tmp_g, req_format=req_format))
+
 
 def advance_status(request):
     '''
@@ -239,8 +257,8 @@ def advance_status(request):
     '''
     if isPOST(request) and 'application/json' in content_type(request):
         params = json.loads(request.body)
-        LOGGING.info("advancing %s to state:%s" % (params.get('annotation'),
-                                                   params.get('toState')))
+        LOGGING.info("advancing %s to state:%s", params.get('annotation'),
+                     params.get('toState'))
         tmp_g = change_annotation_state(params.get('annotation'),
                                         params.get('toState'))
 
@@ -248,22 +266,24 @@ def advance_status(request):
 
 
 def process_resource(request, resource_id):
-    if _validateMimeFormat(request):
-        LOGGING.info("Redirecting to /%s/%s" % (RESOURCE, resource_id))
+    if _validate_mime_format(request):
+        LOGGING.info("Redirecting to /%s/%s", RESOURCE, resource_id)
         return HttpResponseSeeOther('/%s/%s' % (RESOURCE, resource_id))
     if 'text/html' in request.META.get('HTTP_ACCEPT', None):
-        LOGGING.info("Redirecting to /page/%s" % resource_id)
+        LOGGING.info("Redirecting to /page/%s", resource_id)
         return HttpResponseSeeOther('/page/%s' % resource_id)
     return HttpResponseNotFound()
 
+
 def process_data(request, resource_id):
-    req_format = _validateMimeFormat(request)
+    req_format = _validate_mime_format(request)
     if req_format is None:
         return process_resource(request, resource_id)
 
     tmp_g = find_resource_by_id(resource_id)
     return HttpResponse(tmp_g.serialize(format=req_format),
-                            mimetype=request.META.get('HTTP_ACCEPT'))
+                        mimetype=request.META.get('HTTP_ACCEPT'))
+
 
 def process_page(request, resource_id=None):
     if 'text/html' not in request.META.get('HTTP_ACCEPT', None):

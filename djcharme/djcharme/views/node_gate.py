@@ -3,24 +3,24 @@ Created on 14 May 2013
 
 @author: mnagni
 '''
+import json
+import logging
+
+from django.contrib import messages
+from django.http.response import (HttpResponseRedirectBase, HttpResponse,
+                                  HttpResponseNotFound)
+from django.views.decorators.csrf import csrf_exempt
+
+from djcharme import mm_render_to_response, mm_render_to_response_error
+from djcharme.exception import StoreConnectionError
 from djcharme.node.actions import (OA, FORMAT_MAP, find_annotation_graph,
                                    insert_rdf, ANNO_SUBMITTED, DATA,
                                    _collect_annotations, find_resource_by_id,
                                    change_annotation_state, PAGE)
-from djcharme import mm_render_to_response, mm_render_to_response_error
-from djcharme.exception import StoreConnectionError
-from djcharme.views import (isPOST, content_type, validateMimeFormat,
-                            isOPTIONS, http_accept, get_format, checkMimeFormat,
-                            get_depth)
+from djcharme.views import (isPOST, content_type, validate_mime_format,
+                            isOPTIONS, http_accept, get_format,
+                            check_mime_format, get_depth)
 
-from django.http.response import (HttpResponseRedirectBase, HttpResponse,
-                                  HttpResponseNotFound)
-
-from django.contrib import messages
-from django.views.decorators.csrf import csrf_exempt
-
-import logging
-import json
 
 LOGGING = logging.getLogger(__name__)
 
@@ -61,15 +61,15 @@ def index(request, graph='stable'):
         return mm_render_to_response_error(request, '503.html', 503)
 
 
-    req_format = validateMimeFormat(request)
+    req_format = validate_mime_format(request)
 
     if req_format is not None:
-        LOGGING.debug("Annotations "
-                      + str(__serialize(tmp_g, req_format=req_format)))
+        LOGGING.debug("Annotations %s",
+                      __serialize(tmp_g, req_format=req_format))
         return HttpResponse(__serialize(tmp_g, req_format=req_format))
     elif 'text/html' in http_accept(request):
         states = {}
-        LOGGING.debug("Annotations " + str(tmp_g.serialize()))
+        LOGGING.debug("Annotations %s", tmp_g.serialize())
         for subject, pred, obj in tmp_g.triples((None, None, OA['Annotation'])):
             states[subject] = find_annotation_graph(subject)
 
@@ -91,7 +91,7 @@ def __get_ret_format(request, req_format):
     if ret_format is None:
         ret_format = req_format
     else:
-        ret_format = checkMimeFormat(ret_format)
+        ret_format = check_mime_format(ret_format)
 
     if ret_format is None:
         ret_format = req_format
@@ -102,7 +102,7 @@ def __get_req_format(request):
     '''
         Extracts the request format otherwise return the req_format
     '''
-    return checkMimeFormat(content_type(request))
+    return check_mime_format(content_type(request))
 
 
 # Temporary solution as long identify a solution for csrf
@@ -140,8 +140,8 @@ def advance_status(request):
             messages.add_message(request, messages.ERROR,
                                  "Missing annotation/state parameters")
             return mm_render_to_response_error(request, '400.html', 400)
-        LOGGING.info("advancing " + str(params.get('annotation'))
-                     + " to state:" + str(params.get('toState')))
+        LOGGING.info("advancing %s to state:%s", params.get('annotation'),
+                     params.get('toState'))
         tmp_g = change_annotation_state(params.get('annotation'),
                                         params.get('toState'))
 
@@ -152,16 +152,16 @@ def process_resource(request, resource_id):
     """
         Process the resource dependent on the mime format.
     """
-    if validateMimeFormat(request) is not None:
+    if validate_mime_format(request) is not None:
         getformat = get_format(request)
         path = "/%s/%s" % (DATA, resource_id)
         if getformat is not None:
             path = "%s/?format=%s" % (path, getformat)
-        LOGGING.info("Redirecting to " + str(path))
+        LOGGING.info("Redirecting to %s", path)
         return HttpResponseSeeOther(path)
 
     if 'text/html' in http_accept(request):
-        LOGGING.info("Redirecting to " + str(PAGE) + str(resource_id))
+        LOGGING.info("Redirecting to /%s/%s", PAGE, resource_id)
         return HttpResponseSeeOther('/%s/%s' % (PAGE, resource_id))
     return HttpResponseNotFound()
 
@@ -173,7 +173,7 @@ def process_data(request, resource_id):
     if get_format(request) is None and 'text/html' in http_accept(request):
         return process_resource(request, resource_id=resource_id)
 
-    req_format = validateMimeFormat(request)
+    req_format = validate_mime_format(request)
     if req_format is None:
         return process_resource(request, resource_id)
 
