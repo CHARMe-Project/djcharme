@@ -3,16 +3,19 @@ Created on 11 Dec 2013
 
 @author: mnagni
 '''
-from django.forms.forms import Form
-from django.forms.fields import CharField, EmailField
-from django.forms.widgets import PasswordInput
-from django.core.exceptions import ValidationError
+import logging
+
 from django import forms
 from django.contrib.auth import authenticate, get_user_model
-import logging
 from django.contrib.auth.backends import ModelBackend
-from djcharme.exception import SecurityError
+from django.core.exceptions import ValidationError
+from django.forms.fields import CharField, EmailField
+from django.forms.forms import Form
+from django.forms.widgets import PasswordInput
 from django.utils.text import capfirst
+
+from djcharme.exception import SecurityError
+
 
 LOGGING = logging.getLogger(__name__)
 
