@@ -5,7 +5,7 @@ Created on 31 May 2013
 '''
 import unittest
 from djcharme.node.actions import insert_rdf,\
-    _formatNodeURIRef, ANNO_SUBMITTED
+    _format_node_uri_ref, ANNO_SUBMITTED
 from rdflib.graph import Graph
 from rdflib.term import URIRef
 from djcharme.local_settings import SPARQL_DATA
@@ -69,7 +69,7 @@ class Test(unittest.TestCase):
             
     def test_formatNode(self):
         tmpURIRef = URIRef('http://localhost/annoID')
-        res = _formatNodeURIRef(tmpURIRef, 'abcdef', '123456')
+        res = _format_node_uri_ref(tmpURIRef, 'abcdef', '123456')
         self.assertFalse('annoID' in res, "Error")
 
 

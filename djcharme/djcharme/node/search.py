@@ -85,16 +85,16 @@ def annotation_resource(anno_uri=None):
 
 def sparqlize_triple(triple):
     template = '<%s>'
-    s = Variable('s').n3()
-    p = Variable('p').n3()
-    o = Variable('o').n3()
+    subject = Variable('s').n3()
+    pred = Variable('p').n3()
+    obj = Variable('o').n3()
     if triple[0] != None:
-        s = template % str(triple[0])
+        subject = template % str(triple[0])
     if triple[1] != None:
-        p = template % str(triple[1])
+        pred = template % str(triple[1])
     if triple[2] != None:
-        o = template % str(triple[2])
-    return '%s %s %s' % (s, p, o)
+        obj = template % str(triple[2])
+    return '%s %s %s' % (subject, pred, obj)
 
 
 def annotation_target(target_uri):
@@ -118,35 +118,35 @@ def _set_limit_offset(graph, limit_offset):
     if limit_offset[1] != None:
         graph.OFFSET = limit_offset[1]
 
-def _populate_annotations(g, triples, depth=3):
+def _populate_annotations(graph, triples, depth=3):
     ret = []
     for row in triples:
         tmp_g = Graph()
-        limit_offset = _del_limit_offset(g)
-        for subj in _extractSubject(g, row[0], depth):
+        limit_offset = _del_limit_offset(graph)
+        for subj in _extractSubject(graph, row[0], depth):
             tmp_g.add(subj)
         ret.append(tmp_g)
-        _set_limit_offset(g, limit_offset)
+        _set_limit_offset(graph, limit_offset)
     return ret
 
-def _do__open_search(query_attr, g, triples):
+def _do__open_search(query_attr, graph, triples):
     depth = int(query_attr.get('depth', 3))
     limit = int(query_attr.get('count', 10))
     offset = (int(query_attr.get('startPage', 1)) - 1) * limit
     offset = offset + int(query_attr.get('startIndex', 1)) - 1
     if limit > 0:
-        g.LIMIT = limit
-        LOGGING.warning("Cancelled LIMIT parameter as less than zero: %s"
-                        % limit)
+        graph.LIMIT = limit
+        LOGGING.warning("Cancelled LIMIT parameter as less than zero: " +
+                        str(limit))
     if offset > 0:
-        g.OFFSET = offset
-        LOGGING.warning("Cancelled OFFSET parameter as less than zero: %s"
-                        % offset)
-    ret = _populate_annotations(g, triples, depth)
-    if hasattr(g, 'LIMIT'):
-        del g.LIMIT
-    if hasattr(g, 'OFFSET'):
-        del g.OFFSET
+        graph.OFFSET = offset
+        LOGGING.warning("Cancelled OFFSET parameter as less than zero: " +
+                        str(offset))
+    ret = _populate_annotations(graph, triples, depth)
+    if hasattr(graph, 'LIMIT'):
+        del graph.LIMIT
+    if hasattr(graph, 'OFFSET'):
+        del graph.OFFSET
     return ret
 
 
@@ -172,9 +172,9 @@ def search_title(title, query_attr):
     count = str(enc_count.bindings[0].values()[0])
     if count == 'None':
         count = 0
-    return results, int(count)   
+    return results, int(count)
 
-def search_annotationsByStatus(query_attr):
+def search_annotations_by_status(query_attr):
     '''
         Returns annotations which refer to a given dcterm:title
         - dict **query_attr**
@@ -184,7 +184,7 @@ def search_annotationsByStatus(query_attr):
     g = generate_graph(CharmeMiddleware.get_store(), graph)
     triples = g.triples(annotation_resource())
     results = _do__open_search(query_attr, g, triples)
-    enc_count = g.query(COUNT_TRIPLE % 
+    enc_count = g.query(COUNT_TRIPLE %
                         ('?s', sparqlize_triple(annotation_resource())))
     count = str(enc_count.bindings[0].values()[0])
     if count == 'None':
@@ -192,7 +192,7 @@ def search_annotationsByStatus(query_attr):
     return results, int(count)
 
 
-def search_annotationByTarget(predicate, query_attr):
+def search_annotations_by_target(predicate, query_attr):
     '''
         Returns annotations which have hasTarget the given predicate
         - string **predicate**

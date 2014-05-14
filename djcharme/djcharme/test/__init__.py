@@ -1,7 +1,9 @@
 # coding: utf-8
-from django.test.client import RequestFactory
-from djcharme.views.node_gate import index, insert, process_page, advance_status
 from xml.etree import ElementTree
+
+from django.test.client import RequestFactory
+
+from djcharme.views.node_gate import index, insert, process_page, advance_status
 
 
 charme_turtle_model = '''
@@ -72,7 +74,7 @@ rdf_data = '''
     </rdf:RDF>
 '''
 
-turtle_data = ''' 
+turtle_data = '''
     @prefix anno: <http://localhost/> . 
     @prefix oa: <http://www.w3.org/ns/oa#> . 
     @prefix dc: <http://purl.org/dc/elements/1.1/> . 
@@ -251,9 +253,9 @@ turtle_usecase1 = '''
     <http://dx.doi.org/10.1371/journal.pone.0043294>
         dcterm:creator "John R. Anderson" ;  
         dcterm:title "Lost Letter Measure of Variation in Altruistic Behaviour in 20 Neighbourhoods"@en-us .                 
-'''        
+'''
 
-jsonld_usecase1 = ''' 
+jsonld_usecase1 = '''
 {
   "@graph": [
     {
@@ -298,7 +300,7 @@ jsonld_usecase1 = '''
 }
 '''
 
-turtle_usecase2_data_describing = ''' 
+turtle_usecase2_data_describing = '''
     @prefix chnode: <http://localhost/> . 
     @prefix oa: <http://www.w3.org/ns/oa#> . 
     @prefix dctypes: <http://purl.org/dc/dcmitype/> .
@@ -320,7 +322,7 @@ turtle_usecase2_data_describing = '''
         a dctypes:Dataset .
 '''
 
-turtle_usecase2_data_citing = ''' 
+turtle_usecase2_data_citing = '''
     @prefix chnode: <http://localhost/> . 
     @prefix oa: <http://www.w3.org/ns/oa#> . 
     @prefix dctypes: <http://purl.org/dc/dcmitype/> .
@@ -360,7 +362,7 @@ turtle_usecase3 = '''
         
     <http://rda.ucar.edu/datasets/ds131.1>
         a dctype:Dataset .
-''' 
+'''
 
 json_ld_usecase3 = '''
 { 
@@ -383,7 +385,7 @@ json_ld_usecase3 = '''
 }
 '''
 
-#The %s in the target has to be another Annotation
+# The %s in the target has to be another Annotation
 turtle_usecase4 = '''
     @prefix chnode: <http://localhost/> . 
     @prefix charme: <http://charme.ac.uk/2012/charme#> .    
@@ -393,7 +395,7 @@ turtle_usecase4 = '''
     <chnode:annoID> a oa:Annotation ;    
     oa:hasTarget <%s> ;
     oa:motivatedBy charme:Deprecating .
-''' 
+'''
 
 turtle_usecase4_1 = '''
     @prefix chnode: <http://localhost/> . 
@@ -408,15 +410,15 @@ turtle_usecase4_1 = '''
         
     <http://rda.ucar.edu/datasets/ds131.1>
         a dctype:Dataset .
-''' 
+'''
 
-def _prepare_get(factory, url, user = None):
+def _prepare_get(factory, url, user=None):
     """
         **RequestFactory** - factory
         **String** - url
         **User** - user
     """
-    request = factory.get(url)    
+    request = factory.get(url)
     request.user = user
     return request
 
@@ -425,38 +427,40 @@ def extract_annotation_uri(document):
     RDF = "{http://www.w3.org/1999/02/22-rdf-syntax-ns#}"
     descriptions = xml.findall('%sDescription' % (RDF))
     for desc in descriptions:
-        anno = desc.find('./%stype[@%sresource="http://www.w3.org/ns/oa#Annotation"]' % (RDF, RDF))
+        anno = desc.find('./%stype[@%sresource="http://www.w3.org/ns/oa#Annotation"]'
+                         % (RDF, RDF))
         if anno is not None:
             return desc.get('%sabout' % RDF)
 
-def test_advance_status(test_instance, 
-                   url='/advance_status', 
-                   data=None):
+def test_advance_status(test_instance,
+                        url='/advance_status',
+                        data=None):
     return test_instance.factory.post(url,
-                               content_type='application/json',
-                               data=data)
+                                      content_type='application/json',
+                                      data=data)
 
 def test_insert_anotation(test_instance,
-                          http_accept='application/rdf+xml', 
-                          content_type='text/turtle', 
+                          http_accept='application/rdf+xml',
+                          content_type='text/turtle',
                           data=turtle_usecase1):
     response = insert(test_instance.factory.post('/insert/annotation',
-                                        content_type=content_type,
-                                        data=data,
-                                        HTTP_ACCEPT = http_accept))        
-    
-    test_instance.assert_(response.status_code == 200, "HTTPResponse has status_code: %s" % response.status_code)
-    
+                                                 content_type=content_type,
+                                                 data=data,
+                                                 HTTP_ACCEPT=http_accept))
+
+    test_instance.assert_(response.status_code == 200,
+                          "HTTPResponse has status_code: %s" % response.status_code)
+
     '''
     anno_uri = extract_annotation_uri(response.content)
-    annoid = anno_uri[anno_uri.rfind('/') + 1 : ]    
+    annoid = anno_uri[anno_uri.rfind('/') + 1 : ]
     request = _prepare_get(test_instance.factory, '/resource/%s' % annoid)
     request.META['HTTP_ACCEPT'] = "text/html"
     response = process_page(request, resource_id = annoid)
     '''
     return response
 
-def _dump_store(graph = 'submitted', req_format = 'turtle'):
+def _dump_store(graph='submitted', req_format='turtle'):
     factory = RequestFactory()
     request = factory.get('/index/%s?format=%s' % (graph, req_format))
     index(request, graph)

@@ -1,6 +1,6 @@
 '''
 BSD Licence
-Copyright (c) 2012, Science & Technology Facilities Council (STFC)
+Copyright (c) 2014, Science & Technology Facilities Council (STFC)
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification,
@@ -77,8 +77,8 @@ def get_home(request):
 
 
 def get_description(request, collection_guid=None,
-                   observation_guid=None,
-                   result_guid=None):
+                    observation_guid=None,
+                    result_guid=None):
     host_url = _build_host_url(request)
     ospath = _build_description_ospath(host_url, collection_guid,
                                        observation_guid, result_guid)
@@ -95,17 +95,17 @@ def do_search(request, iformat):
             context[param[0]] = param[1]
 
     context.update(context)
-    try:         
+    try:
         response = CharmeMiddleware.get_osengine().do_search(host_url,
-                                                         iformat, context)
+                                                             iformat, context)
         return HttpResponse(response, mimetype=FORMAT_MAP.get(iformat))
-    except Exception as e:
+    except Exception as ex:
         try:
-            messages.add_message(request, messages.ERROR, e)
-        except PluginException as e:
-            LOGGING.error(str(e))
-        except MessageFailure as e:
-            LOGGING.error(str(e))
+            messages.add_message(request, messages.ERROR, ex)
+        except PluginException as ex:
+            LOGGING.error(str(ex))
+        except MessageFailure as ex:
+            LOGGING.error(str(ex))
         return mm_render_to_response_error(request, '503.html', 503)
 
 def _build_description_ospath(hostURL, collection_guid=None,

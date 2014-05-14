@@ -48,8 +48,8 @@ from ceda_markup.opensearch.template.atom import OSAtomResponse
 from ceda_markup.opensearch.template.osresponse import OSEngineResponse, Result
 
 from djcharme.node.actions import CH_NODE, ANNO_STABLE
-from djcharme.node.search import search_title, search_annotationByTarget, \
-    search_annotationsByStatus, annotation_resource
+from djcharme.node.search import search_title, search_annotations_by_target, \
+    search_annotations_by_status, annotation_resource
 from djcharme.views import checkMimeFormat
 
 
@@ -70,16 +70,16 @@ CEDA_TITLE = 'ceda_title'
 LOGGING = logging.getLogger(__name__)
 
 def append_valid_time(subresult, entry, atomroot,
-                       begin_position, end_position):
+                      begin_position, end_position):
     # xmlentry = entry.buildElement()
     if begin_position is not None:
         begin_position = createBeginPosition(root=atomroot,
                                             body=subresult.beginPosition)
     if end_position is not None:
         end_position = createEndPosition(root=atomroot,
-                                        body=subresult.endPosition)
+                                         body=subresult.endPosition)
     time_period = createTimePeriod(root=atomroot,
-                                  begin=begin_position, end=end_position)
+                                   begin=begin_position, end=end_position)
     valid_time = createValidTime(root=atomroot, body=time_period)
     if begin_position is not None or end_position is not None:
         entry.append(valid_time)
@@ -141,13 +141,13 @@ class COSAtomResponse(OSAtomResponse):
                                  body=subresult['subject'],
                                  itype=TEXT_TYPE)
             atom_content = createContent(root=atomroot,
-                                        body=subresult['triple'],
-                                        itype=TEXT_TYPE)
+                                         body=subresult['triple'],
+                                         itype=TEXT_TYPE)
             time_doc = datetime.datetime.now().isoformat()
             atom_updated = createUpdated(time_doc,
                                          root=atomroot)
             atom_published = createPublished(time_doc,
-                                            root=atomroot)
+                                             root=atomroot)
             entry = createEntry(atom_id, ititle, atom_updated,
                                 published=atom_published,
                                 content=atom_content, root=atomroot)
@@ -179,10 +179,9 @@ class COSAtomResponse(OSAtomResponse):
         iformat = checkMimeFormat(iformat)
         for annotation_graph in results['results']:
             try:
-                subject = [subj for subj
-                        in annotation_graph.triples(annotation_resource())][0][0]
+                subject = [subj for subj in annotation_graph.triples(annotation_resource())][0][0]
                 subresults.append({'subject': str(subject),
-                        'triple': annotation_graph.serialize(format=iformat)})
+                                   'triple': annotation_graph.serialize(format=iformat)})
             except (IndexError):
                 LOGGING.warn("No Annotation resource for graph %s"
                              % annotation_graph.serialize())
@@ -284,17 +283,18 @@ class COSQuery(OSQuery):
         params.append(OSParam("startPage", "startPage",
                               namespace=OS_NAMESPACE, default='1'))
         params.append(OSParam("startIndex", "startIndex",
-                              namespace=OS_NAMESPACE, default='1'))         
+                              namespace=OS_NAMESPACE, default='1'))
         params.append(OSParam("q", "searchTerms",
                               namespace=OS_NAMESPACE, default=''))
         params.append(OSParam("title", "title",
-                namespace="http://purl.org/dc/terms/", default=''))
+                              namespace="http://purl.org/dc/terms/",
+                              default=''))
         params.append(OSParam("target", "target",
-                namespace=CH_NODE, default=''))
+                              namespace=CH_NODE, default=''))
         params.append(OSParam("status", "status",
-                namespace=CH_NODE, default=ANNO_STABLE))
+                              namespace=CH_NODE, default=ANNO_STABLE))
         params.append(OSParam("depth", "depth",
-                namespace=CH_NODE, default='1'))
+                              namespace=CH_NODE, default='1'))
         params.append(OSParam("format", "format",
                               namespace=CH_NODE, default='json-ld'))
         '''
@@ -317,11 +317,11 @@ class COSQuery(OSQuery):
 
         elif query.attrib.get('target', None) \
                 and len(query.attrib.get('target')) > 0:
-            results, count = search_annotationByTarget(query.attrib['target'],
-                                                     query.attrib)
+            results, count = search_annotations_by_target(query.attrib['target'],
+                                                       query.attrib)
         elif query.attrib.get('status', None) \
                 and len(query.attrib.get('status')) > 0:
-            results, count = search_annotationsByStatus(query.attrib)
+            results, count = search_annotations_by_status(query.attrib)
         return {'results': results, 'count': count}
 
 

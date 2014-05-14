@@ -95,9 +95,9 @@ FORMAT_MAP = {'json-ld': 'application/ld+json',
               'ttl': 'text/turtle'}
 
 def rdf_format_from_mime(mimetype):
-    for k, v in FORMAT_MAP.iteritems():
-        if mimetype == v:
-            return k
+    for key, value in FORMAT_MAP.iteritems():
+        if mimetype == value:
+            return key
 
 CH_NS = "http://charm.eu/ch#"
 # Create a namespace object for the CHARMe namespace.
@@ -164,7 +164,7 @@ def insert_rdf(data, mimetype, graph=None, store=None):
     tmp_g.parse(data=data, format=mimetype)
 
 
-    _formatSubmittedAnnotation(tmp_g)
+    _format_submitted_annotation(tmp_g)
     final_g = generate_graph(store, graph)
 
     for ns in tmp_g.namespaces():
@@ -175,7 +175,7 @@ def insert_rdf(data, mimetype, graph=None, store=None):
 
     return final_g
 
-def _formatResourceURIRef(resource_id):
+def _format_resource_uri_ref(resource_id):
     '''
         Returns the URIRef associated with the id for this specific node
     '''
@@ -185,7 +185,7 @@ def _formatResourceURIRef(resource_id):
                                 RESOURCE,
                                 resource_id))
 
-def _formatNodeURIRef(uriref, anno_uri, body_uri):
+def _format_node_uri_ref(uriref, anno_uri, body_uri):
     '''
         Rewrite a URIRef according to the node configuration
         * uriref:rdflib.URIRef
@@ -194,7 +194,7 @@ def _formatNodeURIRef(uriref, anno_uri, body_uri):
     '''
     if isinstance(uriref, URIRef) and NODE_URI in uriref:
         uriref = URIRef(uriref.replace(NODE_URI,
-                               getattr(settings,
+                                       getattr(settings,
                                        'NODE_URI',
                                        NODE_URI) + '/'))
 
@@ -210,19 +210,19 @@ def _formatNodeURIRef(uriref, anno_uri, body_uri):
                                        (RESOURCE, body_uri)))
     return uriref
 
-def _formatSubmittedAnnotation(graph):
+def _format_submitted_annotation(graph):
     '''
         Formats the graph according to the node configuration
     '''
     anno_uri = uuid.uuid4().hex
     body_uri = uuid.uuid4().hex
 
-    for s, p, o in graph:
-            graph.remove((s, p, o))
-            s = _formatNodeURIRef(s, anno_uri, body_uri)
-            p = _formatNodeURIRef(p, anno_uri, body_uri)
-            o = _formatNodeURIRef(o, anno_uri, body_uri)
-            graph.add((s, p, o))
+    for subject, pred, obj in graph:
+            graph.remove((subject, pred, obj))
+            subject = _format_node_uri_ref(subject, anno_uri, body_uri)
+            pred = _format_node_uri_ref(pred, anno_uri, body_uri)
+            obj = _format_node_uri_ref(obj, anno_uri, body_uri)
+            graph.add((subject, pred, obj))
 
 def change_annotation_state(resource_id, new_graph):
     '''
@@ -235,13 +235,14 @@ def change_annotation_state(resource_id, new_graph):
     old_graph = find_annotation_graph(resource_id)
     old_g = generate_graph(CharmeMiddleware.get_store(), old_graph)
     new_g = generate_graph(CharmeMiddleware.get_store(), new_graph)
-    for res in old_g.triples((_formatResourceURIRef(resource_id), None, None)):
+    for res in old_g.triples((_format_resource_uri_ref(resource_id), None,
+                              None)):
         old_g.remove(res)
         new_g.add(res)
     return new_g
 
 def find_annotation_graph(resource_id):
-    triple = (_formatResourceURIRef(resource_id), None, None)
+    triple = (_format_resource_uri_ref(resource_id), None, None)
     for graph in [ANNO_SUBMITTED, ANNO_STABLE, ANNO_RETIRED, ANNO_INVALID]:
         new_g = generate_graph(CharmeMiddleware.get_store(), graph)
         if triple in new_g:
@@ -253,10 +254,10 @@ def find_resource_by_id(resource_id, depth=None):
         * resource_id:String
         * return: an rdflib.Graph object
     '''
-    g = ConjunctiveGraph(store=CharmeMiddleware.get_store())
-    uriRef = _formatResourceURIRef(resource_id)
+    graph = ConjunctiveGraph(store=CharmeMiddleware.get_store())
+    uriRef = _format_resource_uri_ref(resource_id)
     LOGGING.debug("Looking resource %s" % (uriRef))
-    return _extractSubject(g, uriRef, depth)
+    return _extractSubject(graph, uriRef, depth)
 
 # This code is a workaround until FUSEKI fixes this bug
 # https://issues.apache.org/jira/browse/JENA-592
@@ -293,8 +294,8 @@ def _collect_annotations(graph):
             tmp_g.add(res)
         for res in body:
             tmp_g.add(res)
-    except URLError as e:
+    except URLError as ex:
         raise StoreConnectionError("Cannot open a connection with triple store \n"
-                                   + str(e))
+                                   + str(ex))
 
     return tmp_g

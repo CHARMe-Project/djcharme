@@ -25,11 +25,11 @@ def _register_user(request):
     if user_form.is_valid():
         try:
             user = User.objects.create_user(
-                        user_form.cleaned_data.get('username'),
-                        user_form.cleaned_data.get('email'),
-                        password=user_form.cleaned_data.get('password'),
-                        first_name=user_form.cleaned_data.get('first_name'),
-                        last_name=user_form.cleaned_data.get('last_name'))
+                            user_form.cleaned_data.get('username'),
+                            user_form.cleaned_data.get('email'),
+                            password=user_form.cleaned_data.get('password'),
+                            first_name=user_form.cleaned_data.get('first_name'),
+                            last_name=user_form.cleaned_data.get('last_name'))
             user.save()
             return HttpResponseRedirect(reverse('login'))
         except IntegrityError:
@@ -66,7 +66,7 @@ def userinfo(request):
                 ret['first_name'] = access_t.user.first_name
                 ret['last_name'] = access_t.user.last_name
                 return HttpResponse(dumps(ret),
-                        content_type="application/json")
+                                    content_type="application/json")
             except AccessToken.DoesNotExist:
                 continue
     return HttpResponseNotFound()
@@ -77,4 +77,4 @@ def token_response(request):
 def test_token(request):
     return mm_render_to_response(request, {}, 'oauth_test2.html')
 
-User        
+User

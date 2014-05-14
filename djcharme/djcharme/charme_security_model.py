@@ -45,8 +45,8 @@ class LoginForm(Form):
                          required=True)
 
     error_messages = {
-        'invalid_login': "Please enter a correct username and password. "
-                           "Note that both fields may be case-sensitive.",
+        'invalid_login': ("Please enter a correct username and password. "
+                          "Note that both fields may be case-sensitive."),
         'inactive': "This account is inactive."
     }
 
@@ -60,12 +60,12 @@ class LoginForm(Form):
         super(LoginForm, self).__init__(*args, **kwargs)
 
         # Set the label for the "username" field.
-        UserModel = get_user_model()
-        self.username_field = (UserModel._meta.get_field
-                               (UserModel.USERNAME_FIELD))
+        user_model = get_user_model()
+        self.username_field = (user_model._meta.get_field
+                               (user_model.USERNAME_FIELD))
         if self.fields['username'].label is None:
             self.fields['username'].label = (capfirst
-                                          (self.username_field.verbose_name))
+                                             (self.username_field.verbose_name))
 
     def clean(self):
         username = self.cleaned_data.get('username')
@@ -88,8 +88,8 @@ class LoginForm(Form):
         return self.cleaned_data
 
     def check_for_test_cookie(self):
-        LOGGING.warn("check_for_test_cookie is deprecated; ensure your login "
-                "view is CSRF-protected.", DeprecationWarning)
+        LOGGING.warn(("check_for_test_cookie is deprecated; ensure your login "
+                      "view is CSRF-protected."), DeprecationWarning)
 
     def get_user_id(self):
         if self.user_cache:
@@ -102,7 +102,7 @@ class LoginForm(Form):
 
 class CharmeAuthenticationBackend(ModelBackend):
     """
-    Extends Django's ``ModelBackend`` to allow login via username, 
+    Extends Django's ``ModelBackend`` to allow login via username,
     or verification token.
 
     Args are either ``username`` and ``password``
@@ -127,5 +127,6 @@ class CharmeAuthenticationBackend(ModelBackend):
                     return backend.authenticate(username=username,
                                                 password=password)
                 except Exception:
-                    LOGGING.error("Wrong password for username: %s" % username)
+                    LOGGING.error("Wrong password for username: " + 
+                                  str(username))
                     raise SecurityError()
