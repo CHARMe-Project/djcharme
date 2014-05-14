@@ -18,21 +18,15 @@ LOGGING = logging.getLogger(__name__)
 
 
 class UserForm(Form):
+    username = CharField(max_length=30, required=True)
     first_name = CharField(max_length=30, required=False)
     last_name = CharField(max_length=30, required=False)
     password = CharField(max_length=30, widget=PasswordInput(), required=True)
     confirm_password = CharField(max_length=30, widget=PasswordInput(),
                                  required=True)
-    email = EmailField(required=True)
-    confirm_email = EmailField(required=True)
+    email = EmailField(required=False)
 
     def clean(self):
-        if (self.cleaned_data.get('email')
-            != self.cleaned_data.get('confirm_email')):
-            raise ValidationError(
-                "Email addresses must match."
-            )
-
         if (self.cleaned_data.get('password')
             != self.cleaned_data.get('confirm_password')):
             raise ValidationError(
@@ -42,13 +36,13 @@ class UserForm(Form):
 
 
 class LoginForm(Form):
-    email = EmailField(required=True)
+    username = CharField(max_length=30, required=True)
     password = CharField(max_length=30,
-                                widget=PasswordInput(),
-                                required=True)
+                         widget=PasswordInput(),
+                         required=True)
 
     error_messages = {
-        'invalid_login': "Please enter a correct %(username)s and password. "
+        'invalid_login': "Please enter a correct username and password. "
                            "Note that both fields may be case-sensitive.",
         'inactive': "This account is inactive."
     }
@@ -66,12 +60,12 @@ class LoginForm(Form):
         UserModel = get_user_model()
         self.username_field = (UserModel._meta.get_field
                                (UserModel.USERNAME_FIELD))
-        if self.fields['email'].label is None:
-            self.fields['email'].label = (capfirst
+        if self.fields['username'].label is None:
+            self.fields['username'].label = (capfirst
                                           (self.username_field.verbose_name))
 
     def clean(self):
-        username = self.cleaned_data.get('email')
+        username = self.cleaned_data.get('username')
         password = self.cleaned_data.get('password')
 
         if username and password:

@@ -24,7 +24,8 @@ def _register_user(request):
     user_form = UserForm(request.POST)
     if user_form.is_valid():
         try:
-            user = User.objects.create_user(user_form.cleaned_data.get('email'),
+            user = User.objects.create_user(
+                        user_form.cleaned_data.get('username'),
                         user_form.cleaned_data.get('email'),
                         password=user_form.cleaned_data.get('password'),
                         first_name=user_form.cleaned_data.get('first_name'),
@@ -32,9 +33,9 @@ def _register_user(request):
             user.save()
             return HttpResponseRedirect(reverse('login'))
         except IntegrityError:
-            LOGGING.debug('Email address is already registered')
-            errors = user_form._errors.setdefault('email', ErrorList())
-            errors.append(u'Email address is already registered')
+            LOGGING.debug('Username is already registered')
+            errors = user_form._errors.setdefault('username', ErrorList())
+            errors.append(u'Username is already registered')
 
     context['user_form'] = user_form
     return mm_render_to_response(request, context, 'registration.html')
@@ -61,7 +62,7 @@ def userinfo(request):
             try:
                 access_t = AccessToken.objects.get(token=term)
                 ret = {}
-                ret['email'] = access_t.user.email
+                ret['username'] = access_t.user.username
                 ret['first_name'] = access_t.user.first_name
                 ret['last_name'] = access_t.user.last_name
                 return HttpResponse(dumps(ret),

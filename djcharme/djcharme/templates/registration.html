@@ -20,6 +20,11 @@
 			{% csrf_token %}
 			<table>
 				<tr>
+					<td><label>{% trans "Username:" noop %}</label></td>
+					<td>{{ user_form.username }}</td>
+					<td class=error>{{ user_form.username.errors }}</td>
+				</tr>
+				<tr>
 					<td><label>{% trans "First name:" noop %}</label></td>
 					<td>{{ user_form.first_name }}</td>
 					<td class=error>{{ user_form.first_name.errors }}</td>
@@ -33,11 +38,6 @@
 					<td><label>{% trans "Email:" noop %}</label></td>
 					<td>{{ user_form.email }}</td>
 					<td class=error>{{ user_form.email.errors }}</td>
-				</tr>
-				<tr>
-					<td><label>{% trans "Confirm email:" noop %}</label></td>
-					<td>{{ user_form.confirm_email }}</td>
-					<td class=error>{{ user_form.confirm_email.errors }}</td>
 				</tr>
 				<tr>
 					<td><label>{% trans "Password:" noop %}</label></td>
