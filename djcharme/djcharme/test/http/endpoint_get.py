@@ -22,7 +22,6 @@ LOGGING = logging.getLogger(__name__)
 
 class Test(unittest.TestCase):
 
-
     def setUp(self):
         self.store = CharmeMiddleware.get_store(debug=True)
 
@@ -54,8 +53,8 @@ class Test(unittest.TestCase):
             request = self.factory.get('/endpoint', data={'graph': graph},
                                        HTTP_ACCEPT=accept)
             response = endpoint(request)
-            self.assert_(response.status_code in [200, 204], "HTTPResponse has status: %s"
-                         % response.status_code)
+            self.assert_(response.status_code in [200, 204],
+                         "HTTPResponse has status: %s" % response.status_code)
             self.assert_('http://data.gov.uk//dataset/index-of-multiple-deprivation'
                          in response.content, "Cannot serialize %s" % accept)
 
@@ -65,9 +64,8 @@ class Test(unittest.TestCase):
         request = self.factory.get('/endpoint', data={'graph': graph},
                                    HTTP_ACCEPT='fake')
         response = endpoint(request)
-        self.assert_(response.status_code in [406], "HTTPResponse has status: %s"
-                     % response.status_code)
-
+        self.assert_(response.status_code in [406],
+                     "HTTPResponse has status: %s" % response.status_code)
 
     def test_GET_default(self):
         self.test_insert_anotation()
@@ -76,11 +74,10 @@ class Test(unittest.TestCase):
             request = self.factory.get('/endpoint', data={'graph': graph},
                                        HTTP_ACCEPT=accept)
             response = endpoint(request)
-            self.assert_(response.status_code in [200, 204], "HTTPResponse has status: %s"
-                         % response.status_code)
+            self.assert_(response.status_code in [200, 204],
+                         "HTTPResponse has status: %s" % response.status_code)
             self.assert_('http://data.gov.uk//dataset/index-of-multiple-deprivation'
                          in response.content, "Cannot serialize %s" % accept)
-
 
     def test_GET_default_2(self):
         self.test_insert_anotation()
@@ -88,10 +85,11 @@ class Test(unittest.TestCase):
             request = self.factory.get('/endpoint', data={},
                                        HTTP_ACCEPT=accept)
             response = endpoint(request)
-            self.assert_(response.status_code in [200, 204], "HTTPResponse has status: %s"
-                         % response.status_code)
+            self.assert_(response.status_code in [200, 204],
+                         "HTTPResponse has status: %s" % response.status_code)
             self.assert_('http://data.gov.uk//dataset/index-of-multiple-deprivation'
                          in response.content, "Cannot serialize %s" % accept)
+
 
 if __name__ == "__main__":
     # import sys;sys.argv = ['', 'Test.test_get_index']

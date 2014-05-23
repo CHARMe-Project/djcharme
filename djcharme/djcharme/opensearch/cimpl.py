@@ -331,7 +331,6 @@ class COSQuery(OSQuery):
             results, count = search_annotations_by_status(query.attrib)
         return {'results': results, 'count': count}
 
-
     def _querySignature(self, params_model):
         _params = []
         for params in params_model:

@@ -14,18 +14,15 @@ from djcharme.node.search import search_title
 
 class Test(unittest.TestCase):
 
-
     def setUp(self):
-        self.store = CharmeMiddleware.get_store(debug = True)
+        self.store = CharmeMiddleware.get_store(debug=True)
         self.graph = 'submitted'
         self.identifier = '%s/%s' % (SPARQL_DATA, self.graph)
-        self.g = Graph(store=self.store, identifier=self.identifier) 
-
+        self.g = Graph(store=self.store, identifier=self.identifier)
 
     def tearDown(self):
         for res in self.g:
             self.g.remove(res)
-
 
     def testSearchTitle(self):
         print insert_rdf(turtle_usecase1, 'turtle', graph=ANNO_SUBMITTED).serialize(format="turtle")
@@ -33,5 +30,5 @@ class Test(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    #import sys;sys.argv = ['', 'Test.testName']
+    # import sys;sys.argv = ['', 'Test.testName']
     unittest.main()
