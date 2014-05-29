@@ -37,10 +37,7 @@ import logging
 from ceda_markup.atom.atom import createID, createUpdated, createPublished, \
     createEntry
 from ceda_markup.atom.info import createContent, createTitle, TEXT_TYPE
-from ceda_markup.gml.gml import createBeginPosition, createEndPosition, \
-    createTimePeriod, createValidTime
-from ceda_markup.opensearch import COUNT_DEFAULT, \
-    START_INDEX_DEFAULT, START_PAGE_DEFAULT, filter_results
+from ceda_markup.opensearch import filter_results
 from ceda_markup.opensearch.os_param import OSParam
 from ceda_markup.opensearch.os_request import OS_NAMESPACE
 from ceda_markup.opensearch.osquery import OSQuery
@@ -49,72 +46,38 @@ from ceda_markup.opensearch.template.osresponse import OSEngineResponse, Result
 
 from djcharme.node.actions import CH_NODE, ANNO_STABLE
 from djcharme.node.search import search_title, search_annotations_by_target, \
-    search_annotations_by_status, annotation_resource
+    search_targets_by_data_type, search_annotations_by_status, \
+    search_annotations_by_domain, annotation_resource
 from djcharme.views import check_mime_format
-
-
-GUID = 'guid'
-FILE_ID = 'guid'
-COLLECTION = 'collection'
-OBSERVATION = 'observation'
-RESULT = 'result'
-BBOX = 'bbox'
-DUMMY_GUID = 'dummy_guid'
-
-FATCAT_HOST = 'citest1.jc.rl.ac.uk'
-FATCAT_ROOT_PATH = 'fatcatOS'
-PROXY_URL = 'http://wwwcache.rl.ac.uk:8080'
-
-CEDA_TITLE = 'ceda_title'
 
 LOGGING = logging.getLogger(__name__)
 
+COUNT_DEFAULT = 10
+START_INDEX_DEFAULT = 1
+START_PAGE_DEFAULT = 1
 
-def append_valid_time(subresult, entry, atomroot,
-                      begin_position, end_position):
-    # xmlentry = entry.buildElement()
-    if begin_position is not None:
-        begin_position = createBeginPosition(root=atomroot,
-                                             body=subresult.beginPosition)
-    if end_position is not None:
-        end_position = createEndPosition(root=atomroot,
-                                         body=subresult.endPosition)
-    time_period = createTimePeriod(root=atomroot,
-                                   begin=begin_position, end=end_position)
-    valid_time = createValidTime(root=atomroot, body=time_period)
-    if begin_position is not None or end_position is not None:
-        entry.append(valid_time)
-
-
-def extract_title(ceda_obj):
-    if hasattr(ceda_obj, 'identifier'):
-        for ident in ceda_obj.identifier:
-            if ident.authority.title == CEDA_TITLE:
-                return ident.code
-
-
-def generate_url_id(url, iid=None):
+def _generate_url_id(url, iid=None):
     if iid is None:
         return "%s/search" % (url)
 
     return "%s/search/%s" % (url, iid)
 
 
-def import_count_and_page(context):
+def _import_count_and_page(context):
     ret = []
 
     try:
-        ret.append(int(context.get('count', COUNT_DEFAULT)))
+        ret.append(int(context.get('count')))
     except (ValueError, TypeError):
         ret.append(COUNT_DEFAULT)
 
     try:
-        ret.append(int(context.get('startIndex', START_INDEX_DEFAULT)))
+        ret.append(int(context.get('startIndex')))
     except (ValueError, TypeError):
         ret.append(START_INDEX_DEFAULT)
 
     try:
-        ret.append(int(context.get('startPage', START_PAGE_DEFAULT)))
+        ret.append(int(context.get('startPage')))
     except (ValueError, TypeError):
         ret.append(START_PAGE_DEFAULT)
 
@@ -122,18 +85,22 @@ def import_count_and_page(context):
 
 
 class COSAtomResponse(OSAtomResponse):
-    '''
-    classdocs
-    '''
+    """
+    Class docs.
+
+    """
 
     def __init__(self):
-        '''
-        Constructor
-        '''
+        """
+        Constructor.
+
+        """
         super(COSAtomResponse, self).__init__()
 
     def generate_entries(self, atomroot, subresults, path, \
                          params_model, context):
+        LOGGING.debug("COSAtomResponse:generate_entries(atomroot, subresults, "\
+                      "path, params_model, context)")
         if subresults is None:
             return
 
@@ -162,14 +129,18 @@ class COSAtomResponse(OSAtomResponse):
             atomroot.append(entry)
 
     def generate_url(self, osHostURL, context):
-        '''
-            Returns the proper URL to assemble the OSResponse links
-        '''
-        return generate_url_id(osHostURL, context.get('target', None))
+        """
+        Returns the proper URL to assemble the OSResponse links.
+
+        """
+        LOGGING.debug("COSAtomResponse:generate_url(" + osHostURL
+                      + ", context)")
+        return _generate_url_id(osHostURL, context.get('target', None))
 
     def digest_search_results(self, results, context):
+        LOGGING.debug("COSAtomResponse:digest_search_results(results, context)")
         title = "CHARMe results"
-        count, start_index, start_page = import_count_and_page(context)
+        count, start_index, start_page = _import_count_and_page(context)
 
         # set_subresults = set(results.subjects())
         # subjects = [subj for subj in set_subresults]
@@ -184,9 +155,11 @@ class COSAtomResponse(OSAtomResponse):
         for annotation_graph in results['results']:
             try:
                 subject = ([subj for subj in
-                            annotation_graph.triples(annotation_resource())][0][0])
-                subresults.append({'subject': str(subject),
-                                   'triple': annotation_graph.serialize(format=iformat)})
+                            annotation_graph.triples(annotation_resource())]
+                           [0][0])
+                subresults.append(
+                    {'subject': str(subject),
+                     'triple': annotation_graph.serialize(format=iformat)})
             except IndexError:
                 LOGGING.warn("No Annotation resource for graph %s",
                              annotation_graph.serialize())
@@ -202,101 +175,131 @@ class COSAtomResponse(OSAtomResponse):
 
 
 class COSRDFResponse(OSEngineResponse):
-    '''
-    classdocs
-    '''
+    """
+    Class docs.
+
+    """
 
     def __init__(self):
-        '''
-        Constructor
-        '''
+        """
+        Constructor.
+
+        """
         super(COSRDFResponse, self).__init__('rdf')
 
     def digest_search_results(self, results, context):
+        LOGGING.debug("COSRDFResponse:digest_search_results(results, context)")
         title = "CHARMe results"
-        count, start_index, start_page = import_count_and_page(context)
+        count, start_index, start_page = _import_count_and_page(context)
         subresults = filter_results(results, count, start_index, start_page)
         return Result(count, start_index, start_page, len(results), \
                       subresult=subresults, title=title)
         # return results.serialize(format='xml')
 
     def generate_response(self, results, query, ospath, params_model, context):
+        LOGGING.debug("COSRDFResponse:generate_response(results, query, " \
+                      "ospath, params_model, context)")
         return results
 
 
 class COSJsonLDResponse(OSEngineResponse):
-    '''
-    classdocs
-    '''
+    """
+    Class docs.
+
+    """
 
     def __init__(self):
-        '''
-        Constructor
-        '''
+        """
+        Constructor.
+
+        """
         super(COSJsonLDResponse, self).__init__('json-ld')
 
     def digest_search_results(self, results, context):
+        LOGGING.debug("COSJsonLDResponse:digest_search_results(results, " \
+                      "context)")
         return results.serialize(format='json-ld')
 
     def generate_response(self, results, query, ospath, params_model, context):
+        LOGGING.debug("COSJsonLDResponse:generate_response(results, query, " \
+                      "ospath, params_model, context)")
         return results
 
 
 class COSTurtleResponse(OSEngineResponse):
-    '''
-    classdocs
-    '''
+    """
+    Class docs.
+
+    """
 
     def __init__(self):
-        '''
-        Constructor
-        '''
+        """
+        Constructor.
+
+        """
         super(COSTurtleResponse, self).__init__('ttl')
 
     def digest_search_results(self, results, context):
+        LOGGING.debug("COSTurtleResponse:digest_search_results(results, " \
+                      "context)")
         return results.serialize(format='turtle')
 
     def generate_response(self, results, query, ospath, params_model, context):
+        LOGGING.debug("COSTurtleResponse:generate_response(results, query, " \
+                      "ospath, params_model, context)")
         return results
 
 
 class COSHTMLResponse(OSAtomResponse):
-    '''
-    classdocs
-    '''
+    """
+    Class docs.
+
+    """
 
     def __init__(self):
-        '''
-        Constructor
-        '''
+        """
+        Constructor.
+
+        """
         super(COSHTMLResponse, self).__init__()
 
     def generateResponse(self, result, queries, ospath, **kwargs):
+        LOGGING.debug("COSHTMLResponse:generateResponse(result, queries, " \
+                      "ospath, **kwargs)")
         return result + " HTML!"
 
 
 class COSQuery(OSQuery):
-    '''
-    classdocs
-    '''
+    """
+    Class docs.
+
+    """
 
     def __init__(self):
-        '''
-            Constructor
-        '''
+        """
+        Constructor.
+
+        """
         params = []
         params.append(OSParam("count", "count",
-                              namespace=OS_NAMESPACE, default='1'))
+                              namespace=OS_NAMESPACE,
+                              default=str(COUNT_DEFAULT)))
         params.append(OSParam("startPage", "startPage",
-                              namespace=OS_NAMESPACE, default='1'))
+                              namespace=OS_NAMESPACE,
+                              default=str(START_PAGE_DEFAULT)))
         params.append(OSParam("startIndex", "startIndex",
-                              namespace=OS_NAMESPACE, default='1'))
+                              namespace=OS_NAMESPACE,
+                              default=str(START_INDEX_DEFAULT)))
         params.append(OSParam("q", "searchTerms",
                               namespace=OS_NAMESPACE, default=''))
         params.append(OSParam("title", "title",
                               namespace="http://purl.org/dc/terms/",
                               default=''))
+        params.append(OSParam("dataType", "dataType",
+                              namespace=CH_NODE, default=''))
         params.append(OSParam("target", "target",
+                              namespace=CH_NODE, default=''))
+        params.append(OSParam("domainOfInterest", "domainOfInterest",
                               namespace=CH_NODE, default=''))
         params.append(OSParam("status", "status",
                               namespace=CH_NODE, default=ANNO_STABLE))
@@ -316,20 +319,39 @@ class COSQuery(OSQuery):
         super(COSQuery, self).__init__(params)
 
     def do_search(self, query, context):
+        LOGGING.debug("do_search(query, context)")
         results = None
-        count = 0
+        total_results = 0
+
         if query.attrib.get('title', None) != None \
                 and len(query.attrib.get('title')) > 0:
-            results, count = search_title(query.attrib['title'], query.attrib)
+            results, total_results = search_title(query.attrib['title'],
+                                                  query.attrib)
 
         elif query.attrib.get('target', None) \
                 and len(query.attrib.get('target')) > 0:
-            results, count = search_annotations_by_target(query.attrib['target'],
-                                                          query.attrib)
+
+            results, total_results = (
+                search_annotations_by_target(query.attrib['target'],
+                                                    query.attrib))
+
+        elif query.attrib.get('domainOfInterest', None) \
+                and len(query.attrib.get('domainOfInterest')) > 0:
+            results, total_results = (
+                search_annotations_by_domain(query.attrib['domainOfInterest'],
+                                             query.attrib))
+
+        elif query.attrib.get('dataType', None) \
+                and len(query.attrib.get('dataType')) > 0:
+            results, total_results = (
+                search_targets_by_data_type(query.attrib['dataType'],
+                                            query.attrib))
+
         elif query.attrib.get('status', None) \
                 and len(query.attrib.get('status')) > 0:
-            results, count = search_annotations_by_status(query.attrib)
-        return {'results': results, 'count': count}
+            results, total_results = search_annotations_by_status(query.attrib)
+
+        return {'results': results, 'count': total_results}
 
     def _querySignature(self, params_model):
         _params = []

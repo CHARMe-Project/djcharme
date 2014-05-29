@@ -41,7 +41,8 @@ def setUp():
     query = COSQuery()
     # responses = [COSRDFResponse(), COSTurtleResponse(), COSJsonLDResponse(), COSAtomResponse()]
     responses = [COSAtomResponse()]
-    os_short_name = "Web Search"
-    os_description = "A default description"
-    os = OpenSearchDescription(os_short_name, os_description)
+    os_short_name = "CHARMe Search"
+    os_description = "Use CHARMe Search to search for annotations"
+    os_tags = "dataType domainOfInterest target title"
+    os = OpenSearchDescription(os_short_name, os_description, os_tags=os_tags)
     return OSEngine(query, responses, os)

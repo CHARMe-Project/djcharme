@@ -35,7 +35,7 @@ import logging
 
 from rdflib.graph import Graph
 from rdflib.namespace import RDF
-from rdflib.term import URIRef, Variable
+from rdflib.term import URIRef
 
 from djcharme.charme_middleware import CharmeMiddleware
 from djcharme.node import _extract_subject
@@ -55,14 +55,17 @@ WHERE {
     ?cit cito:hasCitedEntity ?paper .
     ?paper text:query (dcterm:title '%s' 10) .
 }
+ORDER BY ?anno
+LIMIT %s
+%s
 """
 
-COUNT_TITLE = """
+SEARCH_TITLE_COUNT = """
 PREFIX text: <http://jena.apache.org/text#>
 PREFIX dcterm:  <http://purl.org/dc/terms/>
 PREFIX oa: <http://www.w3.org/ns/oa#>
 PREFIX cito: <http://purl.org/spar/cito/>
-SELECT Distinct count(?anno)
+SELECT count(DISTINCT ?anno)
 WHERE {
     ?anno oa:hasBody ?cit .
     ?cit cito:hasCitedEntity ?paper .
@@ -70,89 +73,178 @@ WHERE {
 }
 """
 
-COUNT_TRIPLE = """
-SELECT count(%s)
+SEARCH_TARGET = """
+PREFIX oa: <http://www.w3.org/ns/oa#>
+SELECT Distinct ?anno
 WHERE {
-    %s
+    ?anno oa:hasTarget <%s> .
+}
+ORDER BY ?anno
+LIMIT %s
+%s
+"""
+
+SEARCH_TARGET_COUNT = """
+PREFIX oa: <http://www.w3.org/ns/oa#>
+SELECT count(DISTINCT ?anno)
+WHERE {
+    ?anno oa:hasTarget <%s> .
 }
 """
 
+# TODO
+SEARCH_DOMAIN = """
+PREFIX oa: <http://www.w3.org/ns/oa#>
+SELECT Distinct ?anno
+WHERE {
+    ?anno domainOfInterest <%s> .
+}
+ORDER BY ?anno
+LIMIT %s
+%s
+"""
+
+# TODO
+SEARCH_DOMAIN_COUNT = """
+PREFIX oa: <http://www.w3.org/ns/oa#>
+SELECT count(DISTINCT ?anno)
+WHERE {
+    ?anno domainOfInterest <%s> .
+}
+"""
+
+SEARCH_DATA_TYPE = """
+PREFIX oa: <http://www.w3.org/ns/oa#>
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+SELECT Distinct ?anno
+WHERE {
+    ?anno oa:hasTarget ?target .
+    ?target rdf:type <%s> .
+}
+ORDER BY ?anno
+LIMIT %s
+%s
+"""
+
+SEARCH_DATA_TYPE_COUNT = """
+PREFIX oa: <http://www.w3.org/ns/oa#>
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+SELECT count(DISTINCT ?anno)
+WHERE {
+    ?anno oa:hasTarget ?target .
+    ?target rdf:type <%s> .
+}
+"""
+
+SEARCH_STATUS = """
+PREFIX oa: <http://www.w3.org/ns/oa#>
+SELECT Distinct ?anno
+WHERE {
+    ?anno oa:hasTarget ?o .
+}
+ORDER BY ?anno
+LIMIT %s
+%s
+"""
+
+SEARCH_STATUS_COUNT = """
+PREFIX oa: <http://www.w3.org/ns/oa#>
+SELECT count(DISTINCT ?anno)
+WHERE {
+    ?anno oa:hasTarget ?o .
+}
+"""
 
 def annotation_resource(anno_uri=None):
+    """
+    Get an annotation subject, predicate, object using the anno_uri as the
+    subject.
+
+    Args:
+        anno_uri (str): The annotation uri.
+
+    Returns:
+        str, str, str. Subject, predicate, object. If anno_uri is None then the
+        returned subject will be None.
+
+    """
     anno_ref = None
     if anno_uri:
         anno_ref = URIRef(anno_uri)
     return (anno_ref, RDF.type, URIRef('http://www.w3.org/ns/oa#Annotation'))
 
 
-def sparqlize_triple(triple):
-    template = '<%s>'
-    subject = Variable('s').n3()
-    pred = Variable('p').n3()
-    obj = Variable('o').n3()
-    if triple[0] != None:
-        subject = template % str(triple[0])
-    if triple[1] != None:
-        pred = template % str(triple[1])
-    if triple[2] != None:
-        obj = template % str(triple[2])
-    return '%s %s %s' % (subject, pred, obj)
-
-
-def annotation_target(target_uri):
-    return (None, URIRef('http://www.w3.org/ns/oa#hasTarget'),
-            URIRef(target_uri))
-
-
-def _del_limit_offset(graph):
-    old_limit = None
-    old_offset = None
-    if hasattr(graph, 'LIMIT'):
-        old_limit = getattr(graph, 'LIMIT')
-        del graph.LIMIT
-    if hasattr(graph, 'OFFSET'):
-        old_offset = getattr(graph, 'OFFSET')
-        del graph.OFFSET
-    return (old_limit, old_offset)
-
-
-def _set_limit_offset(graph, limit_offset):
-    if limit_offset[0] != None:
-        graph.LIMIT = limit_offset[0]
-    if limit_offset[1] != None:
-        graph.OFFSET = limit_offset[1]
-
-
 def _populate_annotations(graph, triples, depth=3):
     ret = []
     for row in triples:
         tmp_g = Graph()
-        limit_offset = _del_limit_offset(graph)
         for subj in _extract_subject(graph, row[0], depth):
             tmp_g.add(subj)
         ret.append(tmp_g)
-        _set_limit_offset(graph, limit_offset)
     return ret
+
+
+def _get_count(triples):
+    """
+    Retrieve the value of a count query from a list of triples.
+
+    Args:
+        triples ([triple]): The results from a SELECT count(?) query
+
+    Returns:
+        an int of the count
+    """
+    for triple in triples:
+        return int(triple[0])
+
+
+def _get_limit(query_attr):
+    """
+    Get the limit for the number of results to return.
+
+    Args:
+        query_attr (dict): The query parameters from the users request.
+
+    """
+    limit = int(query_attr.get('count'))
+    return limit
+
+
+def _get_offset(query_attr):
+    """
+    Get the off set of results to return.
+
+    Args:
+        query_attr (dict): The query parameters from the users request.
+
+    """
+    limit = _get_limit(query_attr)
+    LOGGING.debug("Using limit: " + str(limit))
+    offset = (int(query_attr.get('startPage', 1)) - 1) * limit
+    offset = offset + int(query_attr.get('startIndex', 1)) - 1
+    if offset > 0:
+        LOGGING.debug("Using offset: " + str(offset))
+        return "OFFSET " + offset
+    else:
+        return ""
+
+
+def _get_graph(query_attr):
+    """
+    Get the graph based on the value of the attribute 'status'.
+
+    If the users has not set a value for 'status' the use the ANNO_STABLE graph
+
+    Args:
+        query_attr (dict): The query parameters from the users request.
+    """
+    graph_name = str(query_attr.get('status', ANNO_STABLE))
+    return generate_graph(CharmeMiddleware.get_store(), graph_name)
 
 
 def _do__open_search(query_attr, graph, triples):
     depth = int(query_attr.get('depth', 3))
-    limit = int(query_attr.get('count', 10))
-    offset = (int(query_attr.get('startPage', 1)) - 1) * limit
-    offset = offset + int(query_attr.get('startIndex', 1)) - 1
-    if limit > 0:
-        graph.LIMIT = limit
-        LOGGING.warning("Cancelled LIMIT parameter as less than zero: %s",
-                        limit)
-    if offset > 0:
-        graph.OFFSET = offset
-        LOGGING.warning("Cancelled OFFSET parameter as less than zero: %s",
-                        offset)
     ret = _populate_annotations(graph, triples, depth)
-    if hasattr(graph, 'LIMIT'):
-        del graph.LIMIT
-    if hasattr(graph, 'OFFSET'):
-        del graph.OFFSET
     return ret
 
 
@@ -164,58 +256,123 @@ class SearchProxy(object):
 
 
 def search_title(title, query_attr):
-    '''
-        Returns annotations which refer to a given dcterm:title
-        - string **title**
-            the title to search
-        - dict **query_attr**
-            dictionary of parameters
-    '''
-    graph_name = str(query_attr.get('status', ANNO_STABLE))
-    graph = generate_graph(CharmeMiddleware.get_store(), graph_name)
-    triples = graph.query(SEARCH_TITLE % (title))
+    """
+    Get the annotations which refer to the given dcterm:title.
+
+    Args:
+        title (str): The title to search for.
+        query_attr (dict): The query parameters from the users request.
+
+    Returns:
+        list of triples. The result of the search.
+
+    """
+    LOGGING.debug("search_title(" + title + ", query_attr)")
+    graph = _get_graph(query_attr)
+    triples = graph.query(SEARCH_TITLE % (title, _get_limit(query_attr),
+                                          _get_offset(query_attr)))
     results = _do__open_search(query_attr, graph, triples)
-    enc_count = graph.query(COUNT_TITLE % (title))
-    count = str(enc_count.bindings[0].values()[0])
-    if count == 'None':
-        count = 0
-    return results, int(count)
+    total_results = _get_count(graph.query(SEARCH_TITLE_COUNT % (title)))
+    LOGGING.debug("search_title returning " + str(len(results)) +
+                  " triples out of " + str(total_results))
+    return results, total_results
 
 
 def search_annotations_by_status(query_attr):
-    '''
-        Returns annotations which refer to a given dcterm:title
-        - dict **query_attr**
-            dictionary of parameters
-    '''
-    graph_name = str(query_attr.get('status', ANNO_STABLE))
-    graph = generate_graph(CharmeMiddleware.get_store(), graph_name)
-    triples = graph.triples(annotation_resource())
+    """
+    Get all the annotations with the given status.
+
+    Args:
+        query_attr (dict): The query parameters from the users request.
+
+    Returns:
+        list of triples. The result of the search.
+
+    """
+    LOGGING.debug("search_annotations_by_status(query_attr)")
+    graph = _get_graph(query_attr)
+    triples = graph.query(SEARCH_STATUS % (_get_limit(query_attr),
+                                           _get_offset(query_attr)))
     results = _do__open_search(query_attr, graph, triples)
-    enc_count = graph.query(COUNT_TRIPLE %
-                        ('?s', sparqlize_triple(annotation_resource())))
-    count = str(enc_count.bindings[0].values()[0])
-    if count == 'None':
-        count = 0
-    return results, int(count)
+    total_results = _get_count(graph.query(SEARCH_STATUS_COUNT))
+    LOGGING.debug("search_annotations_by_status returning " + str(len(results))
+                  + " triples out of " + str(total_results))
+    return results, total_results
 
 
-def search_annotations_by_target(predicate, query_attr):
-    '''
-        Returns annotations which have hasTarget the given predicate
-        - string **predicate**
-            the annotation predicate
-        - dict **query_attr**
-            dictionary of parameters
-    '''
-    graph_name = str(query_attr.get('status', ANNO_STABLE))
-    graph = generate_graph(CharmeMiddleware.get_store(), graph_name)
-    look_for = annotation_target(predicate)
-    triples = graph.triples(look_for)
+def search_annotations_by_target(target_uri, query_attr):
+    """
+    Get the annotations which refer to the given target.
+
+    Args:
+        target_uri (str): The target uri to search for.
+        query_attr (dict): The query parameters from the users request.
+
+    Returns:
+        list of triples. The result of the search.
+
+    """
+    LOGGING.debug("search_annotations_by_target(" + target_uri +
+                  ", query_attr)")
+    graph = _get_graph(query_attr)
+    triples = graph.query(SEARCH_TARGET % (URIRef(target_uri),
+                                              _get_limit(query_attr),
+                                              _get_offset(query_attr)))
     results = _do__open_search(query_attr, graph, triples)
-    s = '?s'
-    enc_count = graph.query(COUNT_TRIPLE % ('?s', sparqlize_triple(look_for)))
-    count = str(enc_count.bindings[0].values()[0])
-    if count == 'None':
-        count = 0
-    return results, int(count)
+    total_results = _get_count(graph.query(SEARCH_TARGET_COUNT %
+                                           (URIRef(target_uri))))
+    LOGGING.debug("search_annotations_by_target returning " + str(len(results))
+                  + " triples out of " + str(total_results))
+    return results, total_results
+
+
+def search_annotations_by_domain(domain_of_interest, query_attr):
+    """
+    Get the annotations which refer to the given domain of interest.
+
+    Args:
+        domain_of_interest (str): The domain of interest to search for.
+        query_attr (dict): The query parameters from the users request.
+
+    Returns:
+        list of triples. The result of the search.
+
+    """
+    LOGGING.debug("search_annotations_by_domain(" + domain_of_interest
+                  + ", query_attr)")
+    graph = _get_graph(query_attr)
+    triples = graph.query(SEARCH_DOMAIN % (URIRef(domain_of_interest),
+                                              _get_limit(query_attr),
+                                              _get_offset(query_attr)))
+    results = _do__open_search(query_attr, graph, triples)
+    total_results = _get_count(graph.query(SEARCH_DOMAIN_COUNT %
+                                           (URIRef(domain_of_interest))))
+    LOGGING.debug("search_annotations_by_domain returning " + str(len(results))
+                  + " triples out of " + str(total_results))
+    return results, total_results
+
+
+def search_targets_by_data_type(target_type, query_attr):
+    """
+    Get the annotations which refer to the given target type.
+
+    Args:
+        target_type (str): The target type to search for.
+        query_attr (dict): The query parameters from the users request.
+
+    Returns:
+        list of triples. The result of the search.
+
+    """
+    LOGGING.debug("search_targets_by_data_type(" + target_type +
+                  ", query_attr)")
+    graph = _get_graph(query_attr)
+    triples = graph.query(SEARCH_DATA_TYPE % (URIRef(target_type),
+                                              _get_limit(query_attr),
+                                              _get_offset(query_attr)))
+    results = _do__open_search(query_attr, graph, triples)
+    total_results = _get_count(graph.query(SEARCH_DATA_TYPE_COUNT %
+                                           (URIRef(target_type))))
+    LOGGING.debug("search_targets_by_data_type returning " + str(len(results)) +
+                  " triples out of " + str(total_results))
+    return results, total_results

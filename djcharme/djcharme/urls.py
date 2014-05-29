@@ -59,6 +59,8 @@ urlpatterns = patterns('',
      url(r'^search/description', search.get_description,
          name='os_description'),
      url(r'^search/' + iformats_re, search.do_search, name='os_search'),
+
+     # Tokens
      url(r'^token/validate/(?P<token>\w+)/(?P<expire>\w+)',
          registration.validate_token, name='validate_token'),
      url(r'^token/validate', registration.validate_token,
