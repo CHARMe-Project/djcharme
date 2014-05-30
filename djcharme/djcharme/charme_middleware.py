@@ -193,7 +193,7 @@ class CharmeMiddleware(object):
             return response
 
     def process_exception(self, request, exception):
-        LOGGING.error("process_exception - %s", exception)
+        LOGGING.info("process_exception - %s", str(exception))
 
     def _get_user_roles(self, user):
         # user.roles = contact_role_server

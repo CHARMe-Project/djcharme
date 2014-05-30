@@ -219,11 +219,11 @@ def _get_offset(query_attr):
 
     """
     limit = _get_limit(query_attr)
-    LOGGING.debug("Using limit: " + str(limit))
+    LOGGING.debug("Using limit: %s", str(limit))
     offset = (int(query_attr.get('startPage', 1)) - 1) * limit
     offset = offset + int(query_attr.get('startIndex', 1)) - 1
     if offset > 0:
-        LOGGING.debug("Using offset: " + str(offset))
+        LOGGING.debug("Using offset: %s", str(offset))
         return "OFFSET " + offset
     else:
         return ""
@@ -267,14 +267,14 @@ def search_title(title, query_attr):
         list of triples. The result of the search.
 
     """
-    LOGGING.debug("search_title(" + title + ", query_attr)")
+    LOGGING.debug("search_title(%s, query_attr)", str(title))
     graph = _get_graph(query_attr)
     triples = graph.query(SEARCH_TITLE % (title, _get_limit(query_attr),
                                           _get_offset(query_attr)))
     results = _do__open_search(query_attr, graph, triples)
     total_results = _get_count(graph.query(SEARCH_TITLE_COUNT % (title)))
-    LOGGING.debug("search_title returning " + str(len(results)) +
-                  " triples out of " + str(total_results))
+    LOGGING.debug("search_title returning %s triples out of %s",
+                  str(len(results)), str(total_results))
     return results, total_results
 
 
@@ -295,8 +295,8 @@ def search_annotations_by_status(query_attr):
                                            _get_offset(query_attr)))
     results = _do__open_search(query_attr, graph, triples)
     total_results = _get_count(graph.query(SEARCH_STATUS_COUNT))
-    LOGGING.debug("search_annotations_by_status returning " + str(len(results))
-                  + " triples out of " + str(total_results))
+    LOGGING.debug("search_annotations_by_status returning %s triples out of %s",
+                  str(len(results)), str(total_results))
     return results, total_results
 
 
@@ -312,17 +312,17 @@ def search_annotations_by_target(target_uri, query_attr):
         list of triples. The result of the search.
 
     """
-    LOGGING.debug("search_annotations_by_target(" + target_uri +
-                  ", query_attr)")
+    LOGGING.debug("search_annotations_by_target(%s, query_attr)",
+                  str(target_uri))
     graph = _get_graph(query_attr)
     triples = graph.query(SEARCH_TARGET % (URIRef(target_uri),
-                                              _get_limit(query_attr),
-                                              _get_offset(query_attr)))
+                                           _get_limit(query_attr),
+                                           _get_offset(query_attr)))
     results = _do__open_search(query_attr, graph, triples)
     total_results = _get_count(graph.query(SEARCH_TARGET_COUNT %
                                            (URIRef(target_uri))))
-    LOGGING.debug("search_annotations_by_target returning " + str(len(results))
-                  + " triples out of " + str(total_results))
+    LOGGING.debug("search_annotations_by_target returning %s triples out of %s",
+                  str(len(results)), str(total_results))
     return results, total_results
 
 
@@ -338,17 +338,17 @@ def search_annotations_by_domain(domain_of_interest, query_attr):
         list of triples. The result of the search.
 
     """
-    LOGGING.debug("search_annotations_by_domain(" + domain_of_interest
-                  + ", query_attr)")
+    LOGGING.debug("search_annotations_by_domain(%s, query_attr)",
+                  str(domain_of_interest))
     graph = _get_graph(query_attr)
     triples = graph.query(SEARCH_DOMAIN % (URIRef(domain_of_interest),
-                                              _get_limit(query_attr),
-                                              _get_offset(query_attr)))
+                                           _get_limit(query_attr),
+                                           _get_offset(query_attr)))
     results = _do__open_search(query_attr, graph, triples)
     total_results = _get_count(graph.query(SEARCH_DOMAIN_COUNT %
                                            (URIRef(domain_of_interest))))
-    LOGGING.debug("search_annotations_by_domain returning " + str(len(results))
-                  + " triples out of " + str(total_results))
+    LOGGING.debug("search_annotations_by_domain returning %s triples out of %s",
+                  str(len(results)), str(total_results))
     return results, total_results
 
 
@@ -364,8 +364,8 @@ def search_targets_by_data_type(target_type, query_attr):
         list of triples. The result of the search.
 
     """
-    LOGGING.debug("search_targets_by_data_type(" + target_type +
-                  ", query_attr)")
+    LOGGING.debug("search_targets_by_data_type(%s, query_attr)",
+                  str(target_type))
     graph = _get_graph(query_attr)
     triples = graph.query(SEARCH_DATA_TYPE % (URIRef(target_type),
                                               _get_limit(query_attr),
@@ -373,6 +373,6 @@ def search_targets_by_data_type(target_type, query_attr):
     results = _do__open_search(query_attr, graph, triples)
     total_results = _get_count(graph.query(SEARCH_DATA_TYPE_COUNT %
                                            (URIRef(target_type))))
-    LOGGING.debug("search_targets_by_data_type returning " + str(len(results)) +
-                  " triples out of " + str(total_results))
+    LOGGING.debug("search_targets_by_data_type returning %s triples out of %s",
+                  str(len(results)), str(total_results))
     return results, total_results

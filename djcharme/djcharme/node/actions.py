@@ -46,6 +46,7 @@ from djcharme.node import _extract_subject
 
 
 LOGGING = logging.getLogger(__name__)
+
 '''
 SELECT_ANNOTATION = """
     PREFIX an: <http://charm.eu/data/anno/>
@@ -118,8 +119,6 @@ CH_NODE = 'chnode'
 RESOURCE = 'resource'
 DATA = 'data'
 PAGE = 'page'
-
-LOGGING = logging.getLogger(__name__)
 
 
 def format_graph_iri(graph, baseurl='http://dummyhost'):
@@ -264,7 +263,7 @@ def find_resource_by_id(resource_id, depth=None):
     '''
     graph = ConjunctiveGraph(store=CharmeMiddleware.get_store())
     uri_ref = _format_resource_uri_ref(resource_id)
-    LOGGING.debug("Looking resource %s", uri_ref)
+    LOGGING.debug("Looking resource %s", str(uri_ref))
     return _extract_subject(graph, uri_ref, depth)
 
 

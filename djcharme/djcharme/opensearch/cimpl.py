@@ -133,8 +133,8 @@ class COSAtomResponse(OSAtomResponse):
         Returns the proper URL to assemble the OSResponse links.
 
         """
-        LOGGING.debug("COSAtomResponse:generate_url(" + osHostURL
-                      + ", context)")
+        LOGGING.debug("COSAtomResponse:generate_url(%s, context)",
+                      str(osHostURL))
         return _generate_url_id(osHostURL, context.get('target', None))
 
     def digest_search_results(self, results, context):
@@ -162,7 +162,7 @@ class COSAtomResponse(OSAtomResponse):
                      'triple': annotation_graph.serialize(format=iformat)})
             except IndexError:
                 LOGGING.warn("No Annotation resource for graph %s",
-                             annotation_graph.serialize())
+                             str(annotation_graph.serialize()))
                 continue
         return Result(count, start_index, start_page, results['count'], \
                       subresult=subresults, title=title)
@@ -333,7 +333,7 @@ class COSQuery(OSQuery):
 
             results, total_results = (
                 search_annotations_by_target(query.attrib['target'],
-                                                    query.attrib))
+                                             query.attrib))
 
         elif query.attrib.get('domainOfInterest', None) \
                 and len(query.attrib.get('domainOfInterest')) > 0:

@@ -225,12 +225,12 @@ def index(request, graph='stable'):
     req_format = _validate_format(request)
 
     if req_format:
-        LOGGING.debug("Annotations %s", __serialize(tmp_g,
-                                                     req_format=req_format))
+        LOGGING.debug("Annotations %s", str(__serialize(tmp_g,
+                                                     req_format=req_format)))
         return HttpResponse(__serialize(tmp_g, req_format=req_format))
 
     states = {}
-    LOGGING.debug("Annotations %s", tmp_g.serialize())
+    LOGGING.debug("Annotations %s", str(tmp_g.serialize()))
     for subject, pred, obj in tmp_g.triples((None, None, OA['Annotation'])):
         states[subject] = find_annotation_graph(subject)
 
@@ -257,8 +257,8 @@ def advance_status(request):
     '''
     if isPOST(request) and 'application/json' in content_type(request):
         params = json.loads(request.body)
-        LOGGING.info("advancing %s to state:%s", params.get('annotation'),
-                     params.get('toState'))
+        LOGGING.info("advancing %s to state:%s", str(params.get('annotation')),
+                     str(params.get('toState')))
         tmp_g = change_annotation_state(params.get('annotation'),
                                         params.get('toState'))
 
@@ -267,10 +267,10 @@ def advance_status(request):
 
 def process_resource(request, resource_id):
     if _validate_mime_format(request):
-        LOGGING.info("Redirecting to /%s/%s", RESOURCE, resource_id)
+        LOGGING.info("Redirecting to /%s/%s", str(RESOURCE), str(resource_id))
         return HttpResponseSeeOther('/%s/%s' % (RESOURCE, resource_id))
     if 'text/html' in request.META.get('HTTP_ACCEPT', None):
-        LOGGING.info("Redirecting to /page/%s", resource_id)
+        LOGGING.info("Redirecting to /page/%s", str(resource_id))
         return HttpResponseSeeOther('/page/%s' % resource_id)
     return HttpResponseNotFound()
 

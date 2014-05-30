@@ -65,11 +65,11 @@ def index(request, graph='stable'):
 
     if req_format is not None:
         LOGGING.debug("Annotations %s",
-                      __serialize(tmp_g, req_format=req_format))
+                      str(__serialize(tmp_g, req_format=req_format)))
         return HttpResponse(__serialize(tmp_g, req_format=req_format))
     elif 'text/html' in http_accept(request):
         states = {}
-        LOGGING.debug("Annotations %s", tmp_g.serialize())
+        LOGGING.debug("Annotations %s", str(tmp_g.serialize()))
         for subject, pred, obj in tmp_g.triples((None, None, OA['Annotation'])):
             states[subject] = find_annotation_graph(subject)
 
@@ -140,8 +140,8 @@ def advance_status(request):
             messages.add_message(request, messages.ERROR,
                                  "Missing annotation/state parameters")
             return mm_render_to_response_error(request, '400.html', 400)
-        LOGGING.info("advancing %s to state:%s", params.get('annotation'),
-                     params.get('toState'))
+        LOGGING.info("advancing %s to state:%s", str(params.get('annotation')),
+                     str(params.get('toState')))
         tmp_g = change_annotation_state(params.get('annotation'),
                                         params.get('toState'))
 
@@ -157,11 +157,11 @@ def process_resource(request, resource_id):
         path = "/%s/%s" % (DATA, resource_id)
         if getformat is not None:
             path = "%s/?format=%s" % (path, getformat)
-        LOGGING.info("Redirecting to %s", path)
+        LOGGING.info("Redirecting to %s", str(path))
         return HttpResponseSeeOther(path)
 
     if 'text/html' in http_accept(request):
-        LOGGING.info("Redirecting to /%s/%s", PAGE, resource_id)
+        LOGGING.info("Redirecting to /%s/%s", str(PAGE), str(resource_id))
         return HttpResponseSeeOther('/%s/%s' % (PAGE, resource_id))
     return HttpResponseNotFound()
 
