@@ -47,8 +47,10 @@ from ceda_markup.opensearch.template.osresponse import OSEngineResponse, Result
 from djcharme.node.actions import CH_NODE, ANNO_STABLE
 from djcharme.node.search import search_title, search_annotations_by_target, \
     search_targets_by_data_type, search_annotations_by_status, \
-    search_annotations_by_domain, annotation_resource
+    search_by_motivation, search_by_organization, \
+    search_by_domain, annotation_resource
 from djcharme.views import check_mime_format
+
 
 LOGGING = logging.getLogger(__name__)
 
@@ -301,6 +303,10 @@ class COSQuery(OSQuery):
                               namespace=CH_NODE, default=''))
         params.append(OSParam("domainOfInterest", "domainOfInterest",
                               namespace=CH_NODE, default=''))
+        params.append(OSParam("motivation", "motivation",
+                              namespace=CH_NODE, default=''))
+        params.append(OSParam("organization", "organization",
+                              namespace=CH_NODE, default=''))
         params.append(OSParam("status", "status",
                               namespace=CH_NODE, default=ANNO_STABLE))
         params.append(OSParam("depth", "depth",
@@ -338,14 +344,25 @@ class COSQuery(OSQuery):
         elif query.attrib.get('domainOfInterest', None) \
                 and len(query.attrib.get('domainOfInterest')) > 0:
             results, total_results = (
-                search_annotations_by_domain(query.attrib['domainOfInterest'],
-                                             query.attrib))
+                search_by_domain(query.attrib['domainOfInterest'],
+                                 query.attrib))
 
         elif query.attrib.get('dataType', None) \
                 and len(query.attrib.get('dataType')) > 0:
             results, total_results = (
                 search_targets_by_data_type(query.attrib['dataType'],
                                             query.attrib))
+
+        elif query.attrib.get('motivation', None) \
+                and len(query.attrib.get('motivation')) > 0:
+            results, total_results = (
+                search_by_motivation(query.attrib['motivation'], query.attrib))
+
+        elif query.attrib.get('organization', None) \
+                and len(query.attrib.get('organization')) > 0:
+            results, total_results = (
+                search_by_organization(query.attrib['organization'],
+                                       query.attrib))
 
         elif query.attrib.get('status', None) \
                 and len(query.attrib.get('status')) > 0:

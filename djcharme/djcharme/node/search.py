@@ -97,7 +97,7 @@ SEARCH_DOMAIN = """
 PREFIX oa: <http://www.w3.org/ns/oa#>
 SELECT Distinct ?anno
 WHERE {
-    ?anno domainOfInterest <%s> .
+    ?anno oa:domainOfInterest <%s> .
 }
 ORDER BY ?anno
 LIMIT %s
@@ -109,7 +109,7 @@ SEARCH_DOMAIN_COUNT = """
 PREFIX oa: <http://www.w3.org/ns/oa#>
 SELECT count(DISTINCT ?anno)
 WHERE {
-    ?anno domainOfInterest <%s> .
+    ?anno oa:domainOfInterest <%s> .
 }
 """
 
@@ -133,6 +133,48 @@ SELECT count(DISTINCT ?anno)
 WHERE {
     ?anno oa:hasTarget ?target .
     ?target rdf:type <%s> .
+}
+"""
+
+SEARCH_MOTIVATION = """
+PREFIX oa: <http://www.w3.org/ns/oa#>
+SELECT Distinct ?anno
+WHERE {
+    ?anno oa:motivatedBy <%s> .
+}
+ORDER BY ?anno
+LIMIT %s
+%s
+"""
+
+SEARCH_MOTIVATION_COUNT = """
+PREFIX oa: <http://www.w3.org/ns/oa#>
+SELECT count(DISTINCT ?anno)
+WHERE {
+    ?anno oa:motivatedBy <%s> .
+}
+"""
+
+SEARCH_ORGANIZATION = """
+PREFIX foaf: <http://xmlns.com/foaf/0.1/>
+PREFIX oa: <http://www.w3.org/ns/oa#>
+SELECT Distinct ?anno
+WHERE {
+    ?anno oa:serializedBy ?agent .
+    ?agent foaf:Organization <%s> .
+}
+ORDER BY ?anno
+LIMIT %s
+%s
+"""
+
+SEARCH_ORGANIZATION_COUNT = """
+PREFIX foaf: <http://xmlns.com/foaf/0.1/>
+PREFIX oa: <http://www.w3.org/ns/oa#>
+SELECT count(DISTINCT ?anno)
+WHERE {
+    ?anno oa:serializedBy ?agent .
+    ?agent foaf:Organization <%s> .
 }
 """
 
@@ -326,7 +368,7 @@ def search_annotations_by_target(target_uri, query_attr):
     return results, total_results
 
 
-def search_annotations_by_domain(domain_of_interest, query_attr):
+def search_by_domain(domain_of_interest, query_attr):
     """
     Get the annotations which refer to the given domain of interest.
 
@@ -338,7 +380,7 @@ def search_annotations_by_domain(domain_of_interest, query_attr):
         list of triples. The result of the search.
 
     """
-    LOGGING.debug("search_annotations_by_domain(%s, query_attr)",
+    LOGGING.debug("search_by_domain(%s, query_attr)",
                   str(domain_of_interest))
     graph = _get_graph(query_attr)
     triples = graph.query(SEARCH_DOMAIN % (URIRef(domain_of_interest),
@@ -347,8 +389,60 @@ def search_annotations_by_domain(domain_of_interest, query_attr):
     results = _do__open_search(query_attr, graph, triples)
     total_results = _get_count(graph.query(SEARCH_DOMAIN_COUNT %
                                            (URIRef(domain_of_interest))))
-    LOGGING.debug("search_annotations_by_domain returning %s triples out of %s",
+    LOGGING.debug("search_by_domain returning %s triples out of %s",
                   str(len(results)), str(total_results))
+    return results, total_results
+
+
+def search_by_motivation(motivation, query_attr):
+    """
+    Get the annotations which have the given motivation.
+
+    Args:
+        motivation (str): The motivation for the annotation.
+        query_attr (dict): The query parameters from the users request.
+
+    Returns:
+        list of triples. The result of the search.
+
+    """
+    LOGGING.debug("search_by_motivation(%s, query_attr)",
+                  str(motivation))
+    graph = _get_graph(query_attr)
+    triples = graph.query(SEARCH_MOTIVATION % (URIRef(motivation),
+                                           _get_limit(query_attr),
+                                           _get_offset(query_attr)))
+    results = _do__open_search(query_attr, graph, triples)
+    total_results = _get_count(graph.query(SEARCH_MOTIVATION_COUNT %
+                                           (URIRef(motivation))))
+    LOGGING.debug("search_by_motivation returning %s triples out " \
+                  "of %s", str(len(results)), str(total_results))
+    return results, total_results
+
+
+def search_by_organization(organization, query_attr):
+    """
+    Get the annotations which were annotated from the given organization.
+
+    Args:
+        organization (str): The organization that the annotation were made from.
+        query_attr (dict): The query parameters from the users request.
+
+    Returns:
+        list of triples. The result of the search.
+
+    """
+    LOGGING.debug("search_by_organization(%s, query_attr)",
+                  str(organization))
+    graph = _get_graph(query_attr)
+    triples = graph.query(SEARCH_ORGANIZATION % (URIRef(organization),
+                                           _get_limit(query_attr),
+                                           _get_offset(query_attr)))
+    results = _do__open_search(query_attr, graph, triples)
+    total_results = _get_count(graph.query(SEARCH_ORGANIZATION_COUNT %
+                                           (URIRef(organization))))
+    LOGGING.debug("search_by_organization returning %s triples " \
+                  "out of %s", str(len(results)), str(total_results))
     return results, total_results
 
 
