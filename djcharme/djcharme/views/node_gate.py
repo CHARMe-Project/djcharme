@@ -124,7 +124,7 @@ def insert(request):
     if isPOST(request) or isOPTIONS(request):
         triples = request.body
         insert_rdf(triples, req_format, graph=ANNO_SUBMITTED)
-        return HttpResponse(None, content_type=FORMAT_MAP.get(ret_format))
+        return HttpResponse("", content_type=FORMAT_MAP.get(ret_format))
 
 
 # Temporary solution as long identify a solution for csrf
