@@ -12,6 +12,7 @@ from django.http.response import (HttpResponseRedirectBase, HttpResponse,
 from django.views.decorators.csrf import csrf_exempt
 
 from djcharme import mm_render_to_response, mm_render_to_response_error
+from djcharme.exception import ParseError
 from djcharme.exception import StoreConnectionError
 from djcharme.node.actions import (OA, FORMAT_MAP, find_annotation_graph,
                                    insert_rdf, ANNO_SUBMITTED, DATA,
@@ -123,7 +124,12 @@ def insert(request):
 
     if isPOST(request) or isOPTIONS(request):
         triples = request.body
-        insert_rdf(triples, req_format, graph=ANNO_SUBMITTED)
+        try:
+            insert_rdf(triples, req_format, graph=ANNO_SUBMITTED)
+        except ParseError as ex:
+            LOGGING.debug("insert parsing error: %s", str(ex))
+            messages.add_message(request, messages.ERROR, str(ex))
+            return mm_render_to_response_error(request, '400.html', 400)
         return HttpResponse("", content_type=FORMAT_MAP.get(ret_format))
 
 

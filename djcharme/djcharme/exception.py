@@ -116,3 +116,15 @@ class MissingCookieError(SecurityError):
 
     def __str__(self):
         return self.value
+
+
+class ParseError(SecurityError):
+    """
+        Parse error
+    """
+
+    def __init__(self, value):
+        self.value = value
+
+    def __str__(self):
+        return self.value

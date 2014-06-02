@@ -41,6 +41,7 @@ from rdflib.graph import ConjunctiveGraph
 from rdflib.namespace import Namespace
 
 from djcharme.charme_middleware import CharmeMiddleware
+from djcharme.exception import ParseError
 from djcharme.exception import StoreConnectionError
 from djcharme.node import _extract_subject
 
@@ -163,8 +164,13 @@ def insert_rdf(data, mimetype, graph=None, store=None):
         store = CharmeMiddleware.get_store()
     tmp_g = Graph()
     # Necessary as RDFlib does not contain the json-ld lib
-    tmp_g.parse(data=data, format=mimetype)
-
+    try:
+        tmp_g.parse(data=data, format=mimetype)
+    except SyntaxError as ex:
+        try:
+            raise ParseError(str(ex))
+        except UnicodeDecodeError:
+            raise ParseError(ex.__dict__["_why"])
 
     _format_submitted_annotation(tmp_g)
     final_g = generate_graph(store, graph)
