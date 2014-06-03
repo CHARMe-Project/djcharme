@@ -32,6 +32,8 @@ Created on 24 Sep 2013
 @author: mnagni
 '''
 import logging
+import re
+import string
 
 from rdflib.graph import Graph
 from rdflib.namespace import RDF
@@ -158,10 +160,12 @@ WHERE {
 SEARCH_ORGANIZATION = """
 PREFIX foaf: <http://xmlns.com/foaf/0.1/>
 PREFIX oa: <http://www.w3.org/ns/oa#>
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
 SELECT Distinct ?anno
 WHERE {
-    ?anno oa:serializedBy ?agent .
-    ?agent foaf:Organization <%s> .
+    ?anno oa:annotatedBy ?organization
+    ?organization rdf:type foaf:Organization .
+    ?organization foaf:name <%s> .
 }
 ORDER BY ?anno
 LIMIT %s
@@ -171,10 +175,12 @@ LIMIT %s
 SEARCH_ORGANIZATION_COUNT = """
 PREFIX foaf: <http://xmlns.com/foaf/0.1/>
 PREFIX oa: <http://www.w3.org/ns/oa#>
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
 SELECT count(DISTINCT ?anno)
 WHERE {
-    ?anno oa:serializedBy ?agent .
-    ?agent foaf:Organization <%s> .
+    ?anno oa:annotatedBy ?organization
+    ?organization rdf:type foaf:Organization .
+    ?organization foaf:name <%s> .
 }
 """
 
@@ -214,6 +220,12 @@ def annotation_resource(anno_uri=None):
     if anno_uri:
         anno_ref = URIRef(anno_uri)
     return (anno_ref, RDF.type, URIRef('http://www.w3.org/ns/oa#Annotation'))
+
+
+def _do__open_search(query_attr, graph, triples):
+    depth = int(query_attr.get('depth', 3))
+    ret = _populate_annotations(graph, triples, depth)
+    return ret
 
 
 def _populate_annotations(graph, triples, depth=3):
@@ -284,17 +296,193 @@ def _get_graph(query_attr):
     return generate_graph(CharmeMiddleware.get_store(), graph_name)
 
 
-def _do__open_search(query_attr, graph, triples):
-    depth = int(query_attr.get('depth', 3))
-    ret = _populate_annotations(graph, triples, depth)
-    return ret
-
-
 class SearchProxy(object):
     def __init__(self, query):
         _query = query
         self.query_signature = None
         super(SearchProxy, self).__init__(self)
+
+
+def search_terms(terms, query_attr):
+    """
+    Get the annotations which refer to the given dcterm:title.
+
+    Args:
+        terms (str): The terms to search for.
+        query_attr (dict): The query parameters from the users request.
+
+    Returns:
+        list of triples. The result of the search.
+
+    """
+    LOGGING.debug("search_terms(%s, query_attr)", str(terms))
+    graph = _get_graph(query_attr)
+    limit = _get_limit(query_attr)
+    offset = _get_offset(query_attr)
+    results = []
+    total_results = 0
+    term_list = re.sub('[' + string.punctuation + ']', '', terms).split()
+    for term in term_list:
+        if term == "dataType":
+            result, count = _get_data_types(graph, "dataType", limit, offset)
+            results.append(result)
+            total_results = total_results + count
+        elif term == "domainOfInterset":
+            result, count = _get_domains_of_interest(graph, "domainOfInterset",
+                                                     limit, offset)
+            results.append(result)
+            total_results = total_results + count
+        elif term == "motivation":
+            result, count = _get_motivations(graph, "motivation", limit, offset)
+            results.append(result)
+            total_results = total_results + count
+        elif term == "organization":
+            result, count = _get_organizations(graph, "organization", limit, offset)
+            results.append(result)
+            total_results = total_results + count
+        elif term == "target":
+            result, count = _get_targets(graph, "target", limit, offset)
+            results.append(result)
+            total_results = total_results + count
+
+    return results, total_results
+
+
+def _get_data_types(graph, term, limit, offset):
+    statement = """
+    PREFIX oa: <http://www.w3.org/ns/oa#>
+    PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+    SELECT Distinct ?dataType
+    WHERE {
+    ?s oa:hasTarget ?target .
+    ?target rdf:type ?dataType .
+    }
+    ORDER BY ?dataType
+    LIMIT %s
+    %s"""
+    count_statement = """
+    PREFIX oa: <http://www.w3.org/ns/oa#>
+    PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+    SELECT count (Distinct ?dataType)
+    WHERE {
+    ?s oa:hasTarget ?target .
+    ?target rdf:type ?dataType .
+    }"""
+    statement = statement % (limit, offset)
+    result = {'searchTerm': term}
+    result['results'] = graph.query(statement)
+    result['count'] = _get_count(graph.query(count_statement))
+    LOGGING.debug("search_terms returning %s triples out of %s for %s",
+                  str(len(result['results'])), str(result['count']), str(term))
+    return result, result['count']
+
+def _get_domains_of_interest(graph, term, limit, offset):
+    statement = """
+    PREFIX oa: <http://www.w3.org/ns/oa#>
+    PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+    SELECT Distinct ?dataType
+    WHERE {
+    ?s oa:hasTarget ?target .
+    ?target rdf:type ?dataType .
+    }
+    ORDER BY ?dataType
+    LIMIT %s
+    %s"""
+    count_statement = """
+    PREFIX oa: <http://www.w3.org/ns/oa#>
+    PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+    SELECT count (Distinct ?dataType)
+    WHERE {
+    ?s oa:hasTarget ?target .
+    ?target rdf:type ?dataType .
+    }"""
+    statement = statement % (limit, offset)
+    result = {'searchTerm': term}
+    result['results'] = graph.query(statement)
+    result['count'] = _get_count(graph.query(count_statement))
+    LOGGING.debug("search_terms returning %s triples out of %s for %s",
+                  str(len(result['results'])), str(result['count']), str(term))
+    return result, result['count']
+
+
+def _get_motivations(graph, term, limit, offset):
+    statement = """
+    PREFIX oa: <http://www.w3.org/ns/oa#>
+    SELECT Distinct ?motivation
+    WHERE {
+    ?s oa:motivatedBy ?motivation .
+    }
+    ORDER BY ?motivation
+    LIMIT %s
+    %s"""
+    count_statement = """
+    PREFIX oa: <http://www.w3.org/ns/oa#>
+    SELECT count (Distinct ?motivation)
+    WHERE {
+    ?s oa:motivatedBy ?motivation .
+    }"""
+    statement = statement % (limit, offset)
+    result = {'searchTerm': term}
+    result['results'] = graph.query(statement)
+    result['count'] = _get_count(graph.query(count_statement))
+    LOGGING.debug("search_terms returning %s triples out of %s for %s",
+                  str(len(result['results'])), str(result['count']), str(term))
+    return result, result['count']
+
+
+
+def _get_organizations(graph, term, limit, offset):
+    statement = """
+    PREFIX foaf: <http://xmlns.com/foaf/0.1/>
+    PREFIX oa: <http://www.w3.org/ns/oa#>
+    PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+    SELECT DISTINCT ?name
+    WHERE {
+    ?organization rdf:type foaf:Organization .
+    ?organization foaf:name ?name .
+    }
+    ORDER BY ?dataType
+    LIMIT %s
+    %s"""
+    count_statement = """
+    PREFIX foaf: <http://xmlns.com/foaf/0.1/>
+    PREFIX oa: <http://www.w3.org/ns/oa#>
+    PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+    SELECT count (Distinct ?name)
+    WHERE {
+    ?organization rdf:type foaf:Organization .
+    ?organization foaf:name ?name .
+    }"""
+    statement = statement % (limit, offset)
+    result = {'searchTerm': term}
+    result['results'] = graph.query(statement)
+    result['count'] = _get_count(graph.query(count_statement))
+    LOGGING.debug("search_terms returning %s triples out of %s for %s",
+                  str(len(result['results'])), str(result['count']), str(term))
+    return result, result['count']
+
+
+def _get_targets(graph, term, limit, offset):
+    statement = """
+    PREFIX oa: <http://www.w3.org/ns/oa#>
+    SELECT Distinct ?target
+    WHERE {?s oa:hasTarget ?target .}
+    ORDER BY ?target
+    LIMIT %s
+    %s"""
+    count_statement = """
+    PREFIX oa: <http://www.w3.org/ns/oa#>
+    SELECT count (Distinct ?target)
+    WHERE {
+    ?s oa:hasTarget ?target .
+    }"""
+    statement = statement % (limit, offset)
+    result = {'searchTerm': term}
+    result['results'] = graph.query(statement)
+    result['count'] = _get_count(graph.query(count_statement))
+    LOGGING.debug("search_terms returning %s triples out of %s for %s",
+                  str(len(result['results'])), str(result['count']), str(term))
+    return result, result['count']
 
 
 def search_title(title, query_attr):

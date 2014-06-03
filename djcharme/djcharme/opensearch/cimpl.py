@@ -48,7 +48,7 @@ from djcharme.node.actions import CH_NODE, ANNO_STABLE
 from djcharme.node.search import search_title, search_annotations_by_target, \
     search_targets_by_data_type, search_annotations_by_status, \
     search_by_motivation, search_by_organization, \
-    search_by_domain, annotation_resource
+    search_by_domain, annotation_resource, search_terms
 from djcharme.views import check_mime_format
 
 
@@ -57,6 +57,10 @@ LOGGING = logging.getLogger(__name__)
 COUNT_DEFAULT = 10
 START_INDEX_DEFAULT = 1
 START_PAGE_DEFAULT = 1
+
+ANNOTATIONS = "annotations"
+SEARCH_TERMS = "searchTerms"
+
 
 def _generate_url_id(url, iid=None):
     if iid is None:
@@ -149,12 +153,25 @@ class COSAtomResponse(OSAtomResponse):
         # annotation_subresults = filter_results(results,
         #                                    count, start_index, start_page)
 
-        subresults = []
         iformat = context.get('format', 'json-ld')
         if iformat == None:
             iformat = 'json-ld'
         iformat = check_mime_format(iformat)
-        for annotation_graph in results['results']:
+        if results['type'] == ANNOTATIONS:
+            subresults = self._get_annotations(results['results'], iformat)
+        elif results['type'] == SEARCH_TERMS:
+            subresults = self._get_search_term_results(results['results'],
+                                                       iformat)
+        return Result(count, start_index, start_page, results['count'],
+                      subresult=subresults, title=title)
+
+    def _get_annotations(self, results, iformat):
+        """
+
+        """
+
+        subresults = []
+        for annotation_graph in results:
             try:
                 subject = ([subj for subj in
                             annotation_graph.triples(annotation_resource())]
@@ -166,8 +183,31 @@ class COSAtomResponse(OSAtomResponse):
                 LOGGING.warn("No Annotation resource for graph %s",
                              str(annotation_graph.serialize()))
                 continue
-        return Result(count, start_index, start_page, results['count'], \
-                      subresult=subresults, title=title)
+        return subresults
+
+    def _get_search_term_results(self, results, iformat):
+        subresults = []
+        for result in results:
+            if iformat == 'json-ld':
+                out = self._get_search_term_results_json_ld(result)
+            else:
+                out = ""
+            subresults.append(
+                    {'subject': result['searchTerm'], 'triple': out})
+        return subresults
+
+    def _get_search_term_results_json_ld(self, results):
+        out = '"{@' + results['searchTerm'] + ':['
+        first = True
+        for result in results['results']:
+            if first:
+                first = False
+            else:
+                out = out + ', '
+            out = out + '"' + str(result[0]) + '"'
+        out = out + ']}'
+        return out
+    
 
 '''
     def generate_response(self, results, query, \
@@ -328,8 +368,15 @@ class COSQuery(OSQuery):
         LOGGING.debug("do_search(query, context)")
         results = None
         total_results = 0
+        search_type = ANNOTATIONS
 
-        if query.attrib.get('title', None) != None \
+        if query.attrib.get('q', None) != None \
+                and len(query.attrib.get('q')) > 0:
+            results, total_results = search_terms(query.attrib['q'],
+                                                  query.attrib)
+            search_type = SEARCH_TERMS
+
+        elif query.attrib.get('title', None) != None \
                 and len(query.attrib.get('title')) > 0:
             results, total_results = search_title(query.attrib['title'],
                                                   query.attrib)
@@ -368,7 +415,7 @@ class COSQuery(OSQuery):
                 and len(query.attrib.get('status')) > 0:
             results, total_results = search_annotations_by_status(query.attrib)
 
-        return {'results': results, 'count': total_results}
+        return {'results': results, 'count': total_results, 'type' : search_type}
 
     def _querySignature(self, params_model):
         _params = []
