@@ -322,29 +322,26 @@ def search_terms(terms, query_attr):
     results = []
     total_results = 0
     term_list = re.sub('[' + string.punctuation + ']', '', terms).split()
+    if terms == "*":
+        term_list = ["*"]
     for term in term_list:
-        if term == "dataType":
+        if term == "dataType" or term == "*":
             result, count = _get_data_types(graph, "dataType", limit, offset)
             results.append(result)
             total_results = total_results + count
-        elif term == "domainOfInterset":
-            result, count = _get_domains_of_interest(graph, "domainOfInterset",
+        if term == "domainOfInterest" or term == "*":
+            result, count = _get_domains_of_interest(graph, "domainOfInterest",
                                                      limit, offset)
             results.append(result)
             total_results = total_results + count
-        elif term == "motivation":
+        if term == "motivation" or term == "*":
             result, count = _get_motivations(graph, "motivation", limit, offset)
             results.append(result)
             total_results = total_results + count
-        elif term == "organization":
+        if term == "organization" or term == "*":
             result, count = _get_organizations(graph, "organization", limit, offset)
             results.append(result)
             total_results = total_results + count
-        elif term == "target":
-            result, count = _get_targets(graph, "target", limit, offset)
-            results.append(result)
-            total_results = total_results + count
-
     return results, total_results
 
 
@@ -375,6 +372,7 @@ def _get_data_types(graph, term, limit, offset):
     LOGGING.debug("search_terms returning %s triples out of %s for %s",
                   str(len(result['results'])), str(result['count']), str(term))
     return result, result['count']
+
 
 def _get_domains_of_interest(graph, term, limit, offset):
     statement = """
@@ -462,29 +460,6 @@ def _get_organizations(graph, term, limit, offset):
     return result, result['count']
 
 
-def _get_targets(graph, term, limit, offset):
-    statement = """
-    PREFIX oa: <http://www.w3.org/ns/oa#>
-    SELECT Distinct ?target
-    WHERE {?s oa:hasTarget ?target .}
-    ORDER BY ?target
-    LIMIT %s
-    %s"""
-    count_statement = """
-    PREFIX oa: <http://www.w3.org/ns/oa#>
-    SELECT count (Distinct ?target)
-    WHERE {
-    ?s oa:hasTarget ?target .
-    }"""
-    statement = statement % (limit, offset)
-    result = {'searchTerm': term}
-    result['results'] = graph.query(statement)
-    result['count'] = _get_count(graph.query(count_statement))
-    LOGGING.debug("search_terms returning %s triples out of %s for %s",
-                  str(len(result['results'])), str(result['count']), str(term))
-    return result, result['count']
-
-
 def search_title(title, query_attr):
     """
     Get the annotations which refer to the given dcterm:title.
@@ -549,7 +524,7 @@ def search_annotations_by_target(target_uri, query_attr):
                                            _get_limit(query_attr),
                                            _get_offset(query_attr)))
     results = _do__open_search(query_attr, graph, triples)
-    total_results = _get_count(graph.query(SEARCH_TARGET_COUNT %
+    total_results = _get_count(graph.query(SEARCH_TARGET_COUNT % 
                                            (URIRef(target_uri))))
     LOGGING.debug("search_annotations_by_target returning %s triples out of %s",
                   str(len(results)), str(total_results))
@@ -575,7 +550,7 @@ def search_by_domain(domain_of_interest, query_attr):
                                            _get_limit(query_attr),
                                            _get_offset(query_attr)))
     results = _do__open_search(query_attr, graph, triples)
-    total_results = _get_count(graph.query(SEARCH_DOMAIN_COUNT %
+    total_results = _get_count(graph.query(SEARCH_DOMAIN_COUNT % 
                                            (URIRef(domain_of_interest))))
     LOGGING.debug("search_by_domain returning %s triples out of %s",
                   str(len(results)), str(total_results))
@@ -601,7 +576,7 @@ def search_by_motivation(motivation, query_attr):
                                            _get_limit(query_attr),
                                            _get_offset(query_attr)))
     results = _do__open_search(query_attr, graph, triples)
-    total_results = _get_count(graph.query(SEARCH_MOTIVATION_COUNT %
+    total_results = _get_count(graph.query(SEARCH_MOTIVATION_COUNT % 
                                            (URIRef(motivation))))
     LOGGING.debug("search_by_motivation returning %s triples out " \
                   "of %s", str(len(results)), str(total_results))
@@ -627,7 +602,7 @@ def search_by_organization(organization, query_attr):
                                            _get_limit(query_attr),
                                            _get_offset(query_attr)))
     results = _do__open_search(query_attr, graph, triples)
-    total_results = _get_count(graph.query(SEARCH_ORGANIZATION_COUNT %
+    total_results = _get_count(graph.query(SEARCH_ORGANIZATION_COUNT % 
                                            (URIRef(organization))))
     LOGGING.debug("search_by_organization returning %s triples " \
                   "out of %s", str(len(results)), str(total_results))
@@ -653,7 +628,7 @@ def search_targets_by_data_type(target_type, query_attr):
                                               _get_limit(query_attr),
                                               _get_offset(query_attr)))
     results = _do__open_search(query_attr, graph, triples)
-    total_results = _get_count(graph.query(SEARCH_DATA_TYPE_COUNT %
+    total_results = _get_count(graph.query(SEARCH_DATA_TYPE_COUNT % 
                                            (URIRef(target_type))))
     LOGGING.debug("search_targets_by_data_type returning %s triples out of %s",
                   str(len(results)), str(total_results))

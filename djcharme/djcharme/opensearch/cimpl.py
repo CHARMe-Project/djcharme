@@ -205,7 +205,7 @@ class COSAtomResponse(OSAtomResponse):
             else:
                 out = out + ', '
             out = out + '"' + str(result[0]) + '"'
-        out = out + ']}'
+        out = out + ']}"'
         return out
     
 
@@ -369,7 +369,6 @@ class COSQuery(OSQuery):
         results = None
         total_results = 0
         search_type = ANNOTATIONS
-
         if query.attrib.get('q', None) != None \
                 and len(query.attrib.get('q')) > 0:
             results, total_results = search_terms(query.attrib['q'],
@@ -417,6 +416,17 @@ class COSQuery(OSQuery):
 
         return {'results': results, 'count': total_results, 'type' : search_type}
 
+    def do_suggest(self, query, context):
+        LOGGING.debug("do_suggest(query, context)")
+        results = None
+        total_results = 0
+        if query.attrib.get('q', None) != None \
+                and len(query.attrib.get('q')) > 0:
+            results, total_results = search_terms(query.attrib['q'],
+                                                  query.attrib)
+        # else: TODO error?
+        return {'results': results, 'count': total_results, 'type' : SEARCH_TERMS}            
+            
     def _querySignature(self, params_model):
         _params = []
         for params in params_model:
