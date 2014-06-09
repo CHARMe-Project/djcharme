@@ -269,6 +269,7 @@ OAUTH_SCOPES = (
 SECURITY_FILTER = [
     ("/.*", ("OPTIONS",)),  # Allow all OPTIONS requests
     ("/search", ("GET", "OPTIONS")),
+    ("/suggest", ("GET", "OPTIONS")),
     ("/accounts/login", ("GET", "POST")),
     ("/accounts/registration", ("GET", "POST")),
     ("/data", ("GET")),

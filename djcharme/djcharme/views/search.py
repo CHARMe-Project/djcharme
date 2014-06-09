@@ -87,14 +87,10 @@ def get_description(request, collection_guid=None,
     context['response'] = mark_safe(response)
     return _dispatch_response(request, 'responseTemplate.html', context)
 
+
 def do_search(request, iformat):
     host_url = _build_host_url(request)
-    context = CharmeMiddleware.get_osengine().create_query_dictionary()
-    if request.GET is not None:
-        for param in request.GET.iteritems():
-            context[param[0]] = param[1]
-
-    context.update(context)
+    context = _update_context(request)
     try:
         response = CharmeMiddleware.get_osengine().do_search(host_url,
                                                              iformat, context)
@@ -102,11 +98,40 @@ def do_search(request, iformat):
     except Exception as ex:
         try:
             messages.add_message(request, messages.ERROR, ex)
+            LOGGING.error(str(ex))
         except PluginException as ex:
             LOGGING.error(str(ex))
         except MessageFailure as ex:
             LOGGING.error(str(ex))
         return mm_render_to_response_error(request, '503.html', 503)
+
+
+def do_suggest(request, iformat):
+    host_url = _build_host_url(request)
+    context = _update_context(request)
+    try:
+        response = CharmeMiddleware.get_osengine().do_suggest(host_url,
+                                                             iformat, context)
+        return HttpResponse(response, mimetype=FORMAT_MAP.get(iformat))
+    except Exception as ex:
+        try:
+            messages.add_message(request, messages.ERROR, ex)
+            LOGGING.error(str(ex))
+        except PluginException as ex:
+            LOGGING.error(str(ex))
+        except MessageFailure as ex:
+            LOGGING.error(str(ex))
+        return mm_render_to_response_error(request, '503.html', 503)
+
+
+def _update_context(request):
+    context = CharmeMiddleware.get_osengine().create_query_dictionary()
+    if request.GET is not None:
+        for param in request.GET.iteritems():
+            context[param[0]] = param[1]
+    context.update(context)
+    return context
+
 
 def _build_description_ospath(hostURL, collection_guid=None,
                               observation_guid=None, result_guid=None):
@@ -118,6 +143,7 @@ def _build_description_ospath(hostURL, collection_guid=None,
     if result_guid:
         ospath = "%s%s/" % (ospath, result_guid)
     return ospath
+
 
 def _dispatch_response(request, template, context):
     context.update(csrf(request))

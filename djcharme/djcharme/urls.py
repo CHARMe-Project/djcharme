@@ -59,6 +59,8 @@ urlpatterns = patterns('',
      url(r'^search/description', search.get_description,
          name='os_description'),
      url(r'^search/' + iformats_re, search.do_search, name='os_search'),
+     # TODO change to suggest once ceda-markup is updated
+     url(r'^suggest/' + iformats_re, search.do_search, name='os_search'),
 
      # Tokens
      url(r'^token/validate/(?P<token>\w+)/(?P<expire>\w+)',
