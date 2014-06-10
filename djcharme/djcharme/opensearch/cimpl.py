@@ -48,7 +48,7 @@ from djcharme.node.actions import CH_NODE, ANNO_STABLE
 from djcharme.node.search import search_title, search_annotations_by_target, \
     search_targets_by_data_type, search_annotations_by_status, \
     search_by_motivation, search_by_organization, \
-    search_by_domain, annotation_resource, search_terms
+    search_by_domain, annotation_resource, get_suggestions
 from djcharme.views import check_mime_format
 
 
@@ -188,26 +188,16 @@ class COSAtomResponse(OSAtomResponse):
     def _get_search_term_results(self, results, iformat):
         subresults = []
         for result in results:
-            if iformat == 'json-ld':
-                out = self._get_search_term_results_json_ld(result)
-            else:
-                out = ""
-            subresults.append(
-                    {'subject': result['searchTerm'], 'triple': out})
+            graph = result['graph']
+            try:
+                subresults.append(
+                    {'subject': result['searchTerm'],
+                     'triple': graph.serialize(format=iformat)})
+            except IndexError:
+                LOGGING.warn("No Annotation resource for graph %s",
+                             str(graph.serialize()))
+                continue
         return subresults
-
-    def _get_search_term_results_json_ld(self, results):
-        out = '"{@' + results['searchTerm'] + ':['
-        first = True
-        for result in results['results']:
-            if first:
-                first = False
-            else:
-                out = out + ', '
-            out = out + '"' + str(result[0]) + '"'
-        out = out + ']}"'
-        return out
-    
 
 '''
     def generate_response(self, results, query, \
@@ -371,7 +361,7 @@ class COSQuery(OSQuery):
         search_type = ANNOTATIONS
         if query.attrib.get('q', None) != None \
                 and len(query.attrib.get('q')) > 0:
-            results, total_results = search_terms(query.attrib['q'],
+            results, total_results = get_suggestions(query.attrib['q'],
                                                   query.attrib)
             search_type = SEARCH_TERMS
 
@@ -414,7 +404,8 @@ class COSQuery(OSQuery):
                 and len(query.attrib.get('status')) > 0:
             results, total_results = search_annotations_by_status(query.attrib)
 
-        return {'results': results, 'count': total_results, 'type' : search_type}
+        return {'results': results, 'count': total_results,
+                'type': search_type}
 
     def do_suggest(self, query, context):
         LOGGING.debug("do_suggest(query, context)")
@@ -422,11 +413,12 @@ class COSQuery(OSQuery):
         total_results = 0
         if query.attrib.get('q', None) != None \
                 and len(query.attrib.get('q')) > 0:
-            results, total_results = search_terms(query.attrib['q'],
+            results, total_results = get_suggestions(query.attrib['q'],
                                                   query.attrib)
         # else: TODO error?
-        return {'results': results, 'count': total_results, 'type' : SEARCH_TERMS}            
-            
+        return {'results': results, 'count': total_results,
+                'type': SEARCH_TERMS}
+
     def _querySignature(self, params_model):
         _params = []
         for params in params_model:

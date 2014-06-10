@@ -34,9 +34,11 @@ Created on 24 Sep 2013
 import logging
 import re
 import string
+from urlparse import urlparse
 
 from rdflib.graph import Graph
 from rdflib.namespace import RDF
+from rdflib.term import Literal
 from rdflib.term import URIRef
 
 from djcharme.charme_middleware import CharmeMiddleware
@@ -94,24 +96,26 @@ WHERE {
 }
 """
 
-# TODO
 SEARCH_DOMAIN = """
 PREFIX oa: <http://www.w3.org/ns/oa#>
+PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
 SELECT Distinct ?anno
 WHERE {
-    ?anno oa:domainOfInterest <%s> .
+    ?anno oa:hasBody ?body .
+    ?body skos:prefLabel <%s> .
 }
 ORDER BY ?anno
 LIMIT %s
 %s
 """
 
-# TODO
 SEARCH_DOMAIN_COUNT = """
 PREFIX oa: <http://www.w3.org/ns/oa#>
+PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
 SELECT count(DISTINCT ?anno)
 WHERE {
-    ?anno oa:domainOfInterest <%s> .
+    ?anno oa:hasBody ?body .
+    ?body skos:prefLabel <%s> .
 }
 """
 
@@ -238,6 +242,30 @@ def _populate_annotations(graph, triples, depth=3):
     return ret
 
 
+def _populate_graph(graph, triples):
+    tmp_g = Graph()
+    for row in triples:
+        for subj in _extract_subjectx(graph, row[0]):
+            tmp_g.add(subj)
+    return tmp_g
+
+
+def _extract_subjectx(graph, subject):
+    '''
+        Extracts from graph and describes, if exists, the specified subject
+        - Graph **graph**
+            the graph to search in
+        - URIRef **uriRef**
+            the subject to describe
+
+        **return** an rdflib.Graph containing the subject details
+    '''
+    tmp_g = Graph()
+    for res in graph.triples((subject, None, None)):
+        tmp_g.add(res)
+    return tmp_g
+
+
 def _get_count(triples):
     """
     Retrieve the value of a count query from a list of triples.
@@ -303,22 +331,38 @@ class SearchProxy(object):
         super(SearchProxy, self).__init__(self)
 
 
-def search_terms(terms, query_attr):
+def get_suggestions(terms, query_attr):
     """
-    Get the annotations which refer to the given dcterm:title.
+    Get the values for the given terms.
+
 
     Args:
-        terms (str): The terms to search for.
+        terms (str): The terms to search for. This should be a space seperated
+            list or an '*'. Available terms include:
+                dataType
+                domainOfInterest
+                motivation
+                organization
         query_attr (dict): The query parameters from the users request.
 
     Returns:
-        list of triples. The result of the search.
+        list of dict. Key words:
+            graph - A graph containing the results
+            count - The count of available results
+            searchTerm - The term that was searched for
 
     """
-    LOGGING.debug("search_terms(%s, query_attr)", str(terms))
+    LOGGING.debug("get_suggestions(%s, query_attr)", str(terms))
     graph = _get_graph(query_attr)
     limit = _get_limit(query_attr)
     offset = _get_offset(query_attr)
+#     if (query_attr.get('target', None) != None
+#         and len(query_attr.get('target')) > 0):
+#         triples = graph.query(SEARCH_TARGET % (URIRef(query_attr.get('target')),
+#                                                _get_limit(query_attr),
+#                                                _get_offset(query_attr)))
+#         graph = _populate_graph(graph, triples)
+
     results = []
     total_results = 0
     term_list = re.sub('[' + string.punctuation + ']', '', terms).split()
@@ -339,7 +383,8 @@ def search_terms(terms, query_attr):
             results.append(result)
             total_results = total_results + count
         if term == "organization" or term == "*":
-            result, count = _get_organizations(graph, "organization", limit, offset)
+            result, count = _get_organizations(graph, "organization", limit,
+                                               offset)
             results.append(result)
             total_results = total_results + count
     return results, total_results
@@ -360,47 +405,39 @@ def _get_data_types(graph, term, limit, offset):
     count_statement = """
     PREFIX oa: <http://www.w3.org/ns/oa#>
     PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
-    SELECT count (Distinct ?dataType)
+    SELECT  count (Distinct ?dataType)
     WHERE {
     ?s oa:hasTarget ?target .
     ?target rdf:type ?dataType .
     }"""
-    statement = statement % (limit, offset)
-    result = {'searchTerm': term}
-    result['results'] = graph.query(statement)
-    result['count'] = _get_count(graph.query(count_statement))
-    LOGGING.debug("search_terms returning %s triples out of %s for %s",
-                  str(len(result['results'])), str(result['count']), str(term))
-    return result, result['count']
+    return _do_query(graph, term, limit, offset, statement, count_statement,
+                     "http://www.w3.org/2004/02/skos/core#prefLabel")
 
 
 def _get_domains_of_interest(graph, term, limit, offset):
     statement = """
     PREFIX oa: <http://www.w3.org/ns/oa#>
     PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
-    SELECT Distinct ?dataType
+    PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+    SELECT Distinct ?domainOfInterest
     WHERE {
-    ?s oa:hasTarget ?target .
-    ?target rdf:type ?dataType .
+    ?body rdf:type oa:SemanticTag .
+    ?body skos:prefLabel ?domainOfInterest .
     }
-    ORDER BY ?dataType
+    ORDER BY ?domainOfInterest
     LIMIT %s
     %s"""
     count_statement = """
     PREFIX oa: <http://www.w3.org/ns/oa#>
     PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
-    SELECT count (Distinct ?dataType)
+    PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+    SELECT count (Distinct ?domainOfInterest)
     WHERE {
-    ?s oa:hasTarget ?target .
-    ?target rdf:type ?dataType .
+    ?body rdf:type oa:SemanticTag .
+    ?body skos:prefLabel ?domainOfInterest .
     }"""
-    statement = statement % (limit, offset)
-    result = {'searchTerm': term}
-    result['results'] = graph.query(statement)
-    result['count'] = _get_count(graph.query(count_statement))
-    LOGGING.debug("search_terms returning %s triples out of %s for %s",
-                  str(len(result['results'])), str(result['count']), str(term))
-    return result, result['count']
+    return _do_query(graph, term, limit, offset, statement, count_statement,
+                     "http://www.w3.org/2004/02/skos/core#prefLabel")
 
 
 def _get_motivations(graph, term, limit, offset):
@@ -419,14 +456,8 @@ def _get_motivations(graph, term, limit, offset):
     WHERE {
     ?s oa:motivatedBy ?motivation .
     }"""
-    statement = statement % (limit, offset)
-    result = {'searchTerm': term}
-    result['results'] = graph.query(statement)
-    result['count'] = _get_count(graph.query(count_statement))
-    LOGGING.debug("search_terms returning %s triples out of %s for %s",
-                  str(len(result['results'])), str(result['count']), str(term))
-    return result, result['count']
-
+    return _do_query(graph, term, limit, offset, statement, count_statement,
+                     "http://www.w3.org/2004/02/skos/core#prefLabel")
 
 
 def _get_organizations(graph, term, limit, offset):
@@ -439,7 +470,7 @@ def _get_organizations(graph, term, limit, offset):
     ?organization rdf:type foaf:Organization .
     ?organization foaf:name ?name .
     }
-    ORDER BY ?dataType
+    ORDER BY ?name
     LIMIT %s
     %s"""
     count_statement = """
@@ -451,12 +482,33 @@ def _get_organizations(graph, term, limit, offset):
     ?organization rdf:type foaf:Organization .
     ?organization foaf:name ?name .
     }"""
+    return _do_query(graph, term, limit, offset, statement, count_statement,
+                     "http://xmlns.com/foaf/0.1/name")
+
+
+def _do_query(graph, term, limit, offset, statement, count_statement,
+              labelType):
     statement = statement % (limit, offset)
     result = {'searchTerm': term}
-    result['results'] = graph.query(statement)
     result['count'] = _get_count(graph.query(count_statement))
-    LOGGING.debug("search_terms returning %s triples out of %s for %s",
-                  str(len(result['results'])), str(result['count']), str(term))
+    triples = graph.query(statement)
+    result['graph'] = Graph()
+    url = urlparse(labelType)
+    obj = ''
+    for row in triples:
+        url = urlparse(row[0])
+        obj = ''
+        if url.fragment != '':
+            obj = url.fragment
+        elif url.path != None:
+            path = str(url.path)
+            bits = path.split('/')
+            obj = bits[(len(bits) - 1)]
+        else:
+            obj = row[0]
+        result['graph'].add((URIRef(row[0]), URIRef(labelType), Literal(obj)))
+    LOGGING.debug("_do_query returning %s triples out of %s for %s",
+                  str(len(result['graph'])), str(result['count']), str(term))
     return result, result['count']
 
 
@@ -469,7 +521,7 @@ def search_title(title, query_attr):
         query_attr (dict): The query parameters from the users request.
 
     Returns:
-        list of triples. The result of the search.
+        list of graphs. The result of the search.
 
     """
     LOGGING.debug("search_title(%s, query_attr)", str(title))
@@ -483,6 +535,21 @@ def search_title(title, query_attr):
     return results, total_results
 
 
+def search_annotations_by_region(region_uri, query_attr):
+    """
+    Get the annotations which refer to the given region.
+
+    Args:
+        region_uri (str): The region uri to search for.
+        query_attr (dict): The query parameters from the users request.
+
+    Returns:
+        list of graphs. The result of the search.
+
+    """
+#     TODO
+    pass
+
 def search_annotations_by_status(query_attr):
     """
     Get all the annotations with the given status.
@@ -491,7 +558,7 @@ def search_annotations_by_status(query_attr):
         query_attr (dict): The query parameters from the users request.
 
     Returns:
-        list of triples. The result of the search.
+        list of graphs. The result of the search.
 
     """
     LOGGING.debug("search_annotations_by_status(query_attr)")
@@ -514,22 +581,26 @@ def search_annotations_by_target(target_uri, query_attr):
         query_attr (dict): The query parameters from the users request.
 
     Returns:
-        list of triples. The result of the search.
+        list of graphs. The result of the search.
 
     """
     LOGGING.debug("search_annotations_by_target(%s, query_attr)",
                   str(target_uri))
-    graph = _get_graph(query_attr)
-    triples = graph.query(SEARCH_TARGET % (URIRef(target_uri),
-                                           _get_limit(query_attr),
-                                           _get_offset(query_attr)))
-    results = _do__open_search(query_attr, graph, triples)
-    total_results = _get_count(graph.query(SEARCH_TARGET_COUNT % 
+    graph, results = _search_annotations_by_target(target_uri, query_attr)
+    total_results = _get_count(graph.query(SEARCH_TARGET_COUNT %
                                            (URIRef(target_uri))))
     LOGGING.debug("search_annotations_by_target returning %s triples out of %s",
                   str(len(results)), str(total_results))
     return results, total_results
 
+
+def _search_annotations_by_target(target_uri, query_attr, graph=None):
+    if graph == None:
+        graph = _get_graph(query_attr)
+    triples = graph.query(SEARCH_TARGET % (URIRef(target_uri),
+                                           _get_limit(query_attr),
+                                           _get_offset(query_attr)))
+    return graph, _do__open_search(query_attr, graph, triples)
 
 def search_by_domain(domain_of_interest, query_attr):
     """
@@ -540,7 +611,7 @@ def search_by_domain(domain_of_interest, query_attr):
         query_attr (dict): The query parameters from the users request.
 
     Returns:
-        list of triples. The result of the search.
+        list of graphs. The result of the search.
 
     """
     LOGGING.debug("search_by_domain(%s, query_attr)",
@@ -550,7 +621,7 @@ def search_by_domain(domain_of_interest, query_attr):
                                            _get_limit(query_attr),
                                            _get_offset(query_attr)))
     results = _do__open_search(query_attr, graph, triples)
-    total_results = _get_count(graph.query(SEARCH_DOMAIN_COUNT % 
+    total_results = _get_count(graph.query(SEARCH_DOMAIN_COUNT %
                                            (URIRef(domain_of_interest))))
     LOGGING.debug("search_by_domain returning %s triples out of %s",
                   str(len(results)), str(total_results))
@@ -566,7 +637,7 @@ def search_by_motivation(motivation, query_attr):
         query_attr (dict): The query parameters from the users request.
 
     Returns:
-        list of triples. The result of the search.
+        list of graphs. The result of the search.
 
     """
     LOGGING.debug("search_by_motivation(%s, query_attr)",
@@ -576,7 +647,7 @@ def search_by_motivation(motivation, query_attr):
                                            _get_limit(query_attr),
                                            _get_offset(query_attr)))
     results = _do__open_search(query_attr, graph, triples)
-    total_results = _get_count(graph.query(SEARCH_MOTIVATION_COUNT % 
+    total_results = _get_count(graph.query(SEARCH_MOTIVATION_COUNT %
                                            (URIRef(motivation))))
     LOGGING.debug("search_by_motivation returning %s triples out " \
                   "of %s", str(len(results)), str(total_results))
@@ -592,7 +663,7 @@ def search_by_organization(organization, query_attr):
         query_attr (dict): The query parameters from the users request.
 
     Returns:
-        list of triples. The result of the search.
+        list of graphs. The result of the search.
 
     """
     LOGGING.debug("search_by_organization(%s, query_attr)",
@@ -602,7 +673,7 @@ def search_by_organization(organization, query_attr):
                                            _get_limit(query_attr),
                                            _get_offset(query_attr)))
     results = _do__open_search(query_attr, graph, triples)
-    total_results = _get_count(graph.query(SEARCH_ORGANIZATION_COUNT % 
+    total_results = _get_count(graph.query(SEARCH_ORGANIZATION_COUNT %
                                            (URIRef(organization))))
     LOGGING.debug("search_by_organization returning %s triples " \
                   "out of %s", str(len(results)), str(total_results))
@@ -618,7 +689,7 @@ def search_targets_by_data_type(target_type, query_attr):
         query_attr (dict): The query parameters from the users request.
 
     Returns:
-        list of triples. The result of the search.
+        list of graphs. The result of the search.
 
     """
     LOGGING.debug("search_targets_by_data_type(%s, query_attr)",
@@ -628,7 +699,7 @@ def search_targets_by_data_type(target_type, query_attr):
                                               _get_limit(query_attr),
                                               _get_offset(query_attr)))
     results = _do__open_search(query_attr, graph, triples)
-    total_results = _get_count(graph.query(SEARCH_DATA_TYPE_COUNT % 
+    total_results = _get_count(graph.query(SEARCH_DATA_TYPE_COUNT %
                                            (URIRef(target_type))))
     LOGGING.debug("search_targets_by_data_type returning %s triples out of %s",
                   str(len(results)), str(total_results))
