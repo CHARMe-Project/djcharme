@@ -45,10 +45,8 @@ from ceda_markup.opensearch.template.atom import OSAtomResponse
 from ceda_markup.opensearch.template.osresponse import OSEngineResponse, Result
 
 from djcharme.node.actions import CH_NODE, ANNO_STABLE
-from djcharme.node.search import search_title, search_annotations_by_target, \
-    search_targets_by_data_type, search_annotations_by_status, \
-    search_by_motivation, search_by_organization, \
-    search_by_domain, annotation_resource, get_suggestions
+from djcharme.node.search import annotation_resource, get_suggestions, \
+    get_search_results
 from djcharme.views import check_mime_format
 
 
@@ -359,53 +357,14 @@ class COSQuery(OSQuery):
         results = None
         total_results = 0
         search_type = ANNOTATIONS
-        if query.attrib.get('q', None) != None \
-                and len(query.attrib.get('q')) > 0:
+        if (query.attrib.get('q', None) != None
+            and len(query.attrib.get('q')) > 0):
             results, total_results = get_suggestions(query.attrib['q'],
-                                                  query.attrib)
+                                                     query.attrib)
             search_type = SEARCH_TERMS
-
-        elif query.attrib.get('title', None) != None \
-                and len(query.attrib.get('title')) > 0:
-            results, total_results = search_title(query.attrib['title'],
-                                                  query.attrib)
-
-        elif query.attrib.get('target', None) \
-                and len(query.attrib.get('target')) > 0:
-
-            results, total_results = (
-                search_annotations_by_target(query.attrib['target'],
-                                             query.attrib))
-
-        elif query.attrib.get('domainOfInterest', None) \
-                and len(query.attrib.get('domainOfInterest')) > 0:
-            results, total_results = (
-                search_by_domain(query.attrib['domainOfInterest'],
-                                 query.attrib))
-
-        elif query.attrib.get('dataType', None) \
-                and len(query.attrib.get('dataType')) > 0:
-            results, total_results = (
-                search_targets_by_data_type(query.attrib['dataType'],
-                                            query.attrib))
-
-        elif query.attrib.get('motivation', None) \
-                and len(query.attrib.get('motivation')) > 0:
-            results, total_results = (
-                search_by_motivation(query.attrib['motivation'], query.attrib))
-
-        elif query.attrib.get('organization', None) \
-                and len(query.attrib.get('organization')) > 0:
-            results, total_results = (
-                search_by_organization(query.attrib['organization'],
-                                       query.attrib))
-
-        elif query.attrib.get('status', None) \
-                and len(query.attrib.get('status')) > 0:
-            results, total_results = search_annotations_by_status(query.attrib)
-
-        return {'results': results, 'count': total_results,
-                'type': search_type}
+        else:
+            results, total_results = get_search_results(query.attrib)
+        return {'results':results, 'count':total_results, 'type':search_type}
 
     def do_suggest(self, query, context):
         LOGGING.debug("do_suggest(query, context)")
@@ -416,8 +375,7 @@ class COSQuery(OSQuery):
             results, total_results = get_suggestions(query.attrib['q'],
                                                   query.attrib)
         # else: TODO error?
-        return {'results': results, 'count': total_results,
-                'type': SEARCH_TERMS}
+        return {'results':results, 'count':total_results, 'type':SEARCH_TERMS}
 
     def _querySignature(self, params_model):
         _params = []
