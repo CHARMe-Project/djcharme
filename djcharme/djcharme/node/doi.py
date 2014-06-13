@@ -36,7 +36,7 @@ def get_document(source, headers={}, host='data.datacite.org', proxy=None,
     return doc
 
 
-def load_doi(doi, graph):
+def load_doi(doi, graph, user):
     try:
         _id = str(doi)[str(doi).index('//') + 2:]
 
@@ -46,7 +46,7 @@ def load_doi(doi, graph):
                                 proxy=getattr(settings, HTTP_PROXY),
                                 proxy_port=getattr(settings, HTTP_PROXY_PORT))
 
-        insert_rdf(response, 'xml',
+        insert_rdf(response, 'xml', user,
                    graph=ANNO_SUBMITTED).serialize(format='turtle')
     except Exception as ex:
         # pass

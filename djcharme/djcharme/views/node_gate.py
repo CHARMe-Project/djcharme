@@ -125,7 +125,7 @@ def insert(request):
     if isPOST(request) or isOPTIONS(request):
         triples = request.body
         try:
-            insert_rdf(triples, req_format, graph=ANNO_SUBMITTED)
+            insert_rdf(triples, req_format, request.user, graph=ANNO_SUBMITTED)
         except ParseError as ex:
             LOGGING.debug("insert parsing error: %s", str(ex))
             messages.add_message(request, messages.ERROR, str(ex))

@@ -31,12 +31,13 @@ Created on 12 Apr 2013
 
 @author: mnagni
 '''
+from datetime import datetime
 import logging
 from urllib2 import URLError
 import uuid
 
 from django.conf import settings
-from rdflib import Graph, URIRef
+from rdflib import Graph, URIRef, Literal
 from rdflib.graph import ConjunctiveGraph
 from rdflib.namespace import Namespace
 
@@ -105,6 +106,7 @@ CH_NS = "http://charm.eu/ch#"
 # Create a namespace object for the CHARMe namespace.
 RDF = Namespace("http://www.w3.org/1999/02/22-rdf-syntax-ns#")
 OA = Namespace("http://www.w3.org/ns/oa#")
+FOAF = Namespace("http://xmlns.com/foaf/0.1/")
 CH = Namespace(CH_NS)
 
 ANNO_SUBMITTED = 'submitted'
@@ -148,7 +150,7 @@ def generate_graph(store, graph):
     return Graph(store=store, identifier=format_graph_iri(graph))
 
 
-def insert_rdf(data, mimetype, graph=None, store=None):
+def insert_rdf(data, mimetype, user, graph=None, store=None):
     '''
         Inserts an RDF/json-ld document into the triplestore
         - string **data**
@@ -160,6 +162,7 @@ def insert_rdf(data, mimetype, graph=None, store=None):
         - rdflib.Store **store**
             if none use the return of get_store()
     '''
+    LOGGING.debug("insert_rdf(data, mimetype, user, graph=None, store=None)")
     if store is None:
         store = CharmeMiddleware.get_store()
     tmp_g = Graph()
@@ -179,9 +182,53 @@ def insert_rdf(data, mimetype, graph=None, store=None):
         final_g.store.bind(str(nspace[0]), nspace[1])
 
     for res in tmp_g:
+        if (res[1] == URIRef(RDF + 'type')
+            and res[2] == URIRef(OA + 'Annotation')):
+            prov = _get_prov(res[0], user)
+            for triple in prov:
+                final_g.add(triple)
         final_g.add(res)
 
     return final_g
+
+
+def _get_prov(anno, user):
+    """
+    Get the provenance data for the annotation.
+
+    Args:
+        anno(URIRef): The annotation uri.
+        user(User): The user details.
+
+    Returns:
+        a list of triples.
+
+    """
+    person_uri = (getattr(settings, 'NODE_URI', NODE_URI)
+                  + '/%s/%s' % (RESOURCE, uuid.uuid4().hex))
+    triples = []
+    triples.append((anno, URIRef(OA + 'annotatedAt'),
+                    Literal(datetime.utcnow())))
+    triples.append((anno, URIRef(OA + 'annotatedBy'), URIRef(person_uri)))
+    triples.append((URIRef(person_uri), URIRef(RDF + 'type'),
+                    URIRef(FOAF + 'Person')))
+    triples.append((URIRef(person_uri),
+                    URIRef(FOAF + 'accountName'),
+                    Literal(user.username)))
+    if user.last_name != None and len(user.last_name) > 0:
+        triples.append((URIRef(person_uri),
+                        URIRef(FOAF + 'familyName'),
+                        Literal(user.last_name)))
+    if user.first_name != None and len(user.first_name) > 0:
+        triples.append((URIRef(person_uri),
+                        URIRef(FOAF + 'givenName'),
+                        Literal(user.first_name)))
+    # TODO add back in when we give the user the option
+#     if user.email != None and len(user.email) > 0:
+#         triples.append((URIRef(person_uri),
+#                         URIRef(FOAF + 'mbox'),
+#                         Literal(user.email)))
+    return triples
 
 
 def _format_resource_uri_ref(resource_id):

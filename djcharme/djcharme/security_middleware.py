@@ -128,12 +128,31 @@ def is_valid_token(token):
     if token:
         try:
             access_t = AccessToken.objects.get(token=token)
-            if datetime.now(access_t.expires.tzinfo) - access_t.expires \
-                    < timedelta(seconds=0):
+            if access_t.get_expire_delta() > 0:
                 return True
         except AccessToken.DoesNotExist:
             return False
     return False
+
+
+def _get_user(token):
+    """
+    Get the user information for the given token.
+
+    Args:
+        token (str): The auth token.
+
+    Returns:
+        User. Details about the user.
+
+    """
+    if token:
+        try:
+            access_t = AccessToken.objects.get(token=token)
+        except AccessToken.DoesNotExist:
+            LOGGER.warn("_get_user - Cannot get 'User' from access token")
+            return None
+    return access_t.user
 
 
 class SecurityMiddleware(object):
@@ -158,6 +177,7 @@ class SecurityMiddleware(object):
         if request.environ.get('HTTP_AUTHORIZATION', None):
             for term in request.environ.get('HTTP_AUTHORIZATION').split():
                 if is_valid_token(term):
+                    request.user = _get_user(term)
                     LOGGER.debug('process_request - ' \
                     'Request has an access token')
                     return

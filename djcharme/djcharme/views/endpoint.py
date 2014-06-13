@@ -104,6 +104,7 @@ def processPUT(request):
     conjunctive_graph.update(query_object)
     insert_rdf(payload,
                content_type(request),
+               request.user,
                graph)
 
     return HttpResponse(status=204)
@@ -136,6 +137,7 @@ def processPOST(request):
     payload = request.body
     insert_rdf(payload,
                content_type(request),
+               request.user,
                graph)
 
     return HttpResponse(status=204)
@@ -247,7 +249,7 @@ def insert(request):
 
     if request.method == 'POST':
         triples = request.body
-        tmp_g = insert_rdf(triples, req_format, graph=ANNO_SUBMITTED)
+        tmp_g = insert_rdf(triples, req_format, request.user, graph=ANNO_SUBMITTED)
         return HttpResponse(__serialize(tmp_g, req_format=req_format))
 
 

@@ -44,7 +44,7 @@ from ceda_markup.opensearch.osquery import OSQuery
 from ceda_markup.opensearch.template.atom import OSAtomResponse
 from ceda_markup.opensearch.template.osresponse import OSEngineResponse, Result
 
-from djcharme.node.actions import CH_NODE, ANNO_STABLE
+from djcharme.node.actions import CH_NODE, FOAF, RDF, ANNO_STABLE
 from djcharme.node.search import annotation_resource, get_suggestions, \
     get_search_results
 from djcharme.views import check_mime_format
@@ -322,21 +322,23 @@ class COSQuery(OSQuery):
                               default=str(START_INDEX_DEFAULT)))
         params.append(OSParam("q", "searchTerms",
                               namespace=OS_NAMESPACE, default=''))
-        params.append(OSParam("title", "title",
-                              namespace="http://purl.org/dc/terms/",
-                              default=''))
-        params.append(OSParam("dataType", "dataType",
-                              namespace=CH_NODE, default=''))
-        params.append(OSParam("target", "target",
-                              namespace=CH_NODE, default=''))
+        params.append(OSParam("dataType", "type",
+                              namespace=RDF, default=''))
         params.append(OSParam("domainOfInterest", "domainOfInterest",
                               namespace=CH_NODE, default=''))
         params.append(OSParam("motivation", "motivation",
                               namespace=CH_NODE, default=''))
-        params.append(OSParam("organization", "organization",
-                              namespace=CH_NODE, default=''))
+        params.append(OSParam("organization", "name",
+                              namespace=FOAF, default=''))
         params.append(OSParam("status", "status",
                               namespace=CH_NODE, default=ANNO_STABLE))
+        params.append(OSParam("target", "target",
+                              namespace=CH_NODE, default=''))
+        params.append(OSParam("title", "title",
+                              namespace="http://purl.org/dc/terms/",
+                              default=''))
+        params.append(OSParam("userName", "accountName",
+                              namespace=FOAF, default=''))
         params.append(OSParam("depth", "depth",
                               namespace=CH_NODE, default='1'))
         params.append(OSParam("format", "format",
@@ -354,16 +356,19 @@ class COSQuery(OSQuery):
 
     def do_search(self, query, context):
         LOGGING.debug("do_search(query, context)")
-        results = None
+        results = []
         total_results = 0
-        search_type = ANNOTATIONS
-        if (query.attrib.get('q', None) != None
-            and len(query.attrib.get('q')) > 0):
-            results, total_results = get_suggestions(query.attrib['q'],
-                                                     query.attrib)
+# TODO Hack until ceda_marckup supports suggest
+        try:
+            context.keys().index('suggest')
+            if (query.attrib.get('q', None) != None
+                and len(query.attrib.get('q')) > 0):
+                results, total_results = get_suggestions(query.attrib['q'],
+                                                         query.attrib)
             search_type = SEARCH_TERMS
-        else:
+        except ValueError:
             results, total_results = get_search_results(query.attrib)
+            search_type = ANNOTATIONS
         return {'results':results, 'count':total_results, 'type':search_type}
 
     def do_suggest(self, query, context):

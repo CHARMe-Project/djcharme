@@ -96,33 +96,34 @@ ANNOTATIONS_FOR_TITLE = """
 ?cit cito:hasCitedEntity ?paper .
 ?paper text:query (dcterm:title '%s' 10) ."""
 
+ANNOTATIONS_FOR_USER = """
+?anno oa:annotatedBy ?person .
+?person foaf:accountName ?userName"""
+
 ANNOTATION_CLAUSES = {'dataType':ANNOTATIONS_FOR_DATA_TYPE,
-           'domainOfInterest':ANNOTATIONS_FOR_DOMAIN,
-           'motivation':ANNOTATIONS_FOR_MOTIVATION,
-           'organization':ANNOTATIONS_FOR_ORGANIZATION,
-           'region':ANNOTATIONS_FOR_REGION,
-           'status':ANNOTATIONS_FOR_STATUS,
-           'target':ANNOTATIONS_FOR_TARGET,
-           'title':ANNOTATIONS_FOR_TITLE}
+                      'domainOfInterest':ANNOTATIONS_FOR_DOMAIN,
+                      'motivation':ANNOTATIONS_FOR_MOTIVATION,
+                      'organization':ANNOTATIONS_FOR_ORGANIZATION,
+                      'region':ANNOTATIONS_FOR_REGION,
+                      'status':ANNOTATIONS_FOR_STATUS,
+                      'target':ANNOTATIONS_FOR_TARGET,
+                      'title':ANNOTATIONS_FOR_TITLE,
+                      'userName':ANNOTATIONS_FOR_USER}
 
-SEARCH_STATUS = """
-PREFIX oa: <http://www.w3.org/ns/oa#>
-SELECT Distinct ?anno
-WHERE {
-    ?anno oa:hasTarget ?o .
-}
-ORDER BY ?anno
-LIMIT %s
-%s
-"""
 
-SEARCH_STATUS_COUNT = """
-PREFIX oa: <http://www.w3.org/ns/oa#>
-SELECT count(DISTINCT ?anno)
-WHERE {
-    ?anno oa:hasTarget ?o .
-}
-"""
+def get_multi_value_parameter_names():
+    """
+    Get the list parameter names that can be used in an open searches and can
+    have multiple occurrences.
+
+    Returns:
+        a list of parameter names
+
+    """
+    parameter_names = ANNOTATION_CLAUSES.keys()
+    parameter_names.remove('status')
+    return parameter_names
+
 
 def annotation_resource(anno_uri=None):
     """
@@ -154,7 +155,9 @@ def _populate_annotations(graph, triples, depth=3):
     for row in triples:
         tmp_g = Graph()
         for subj in _extract_subject(graph, row[0], depth):
-            tmp_g.add(subj)
+            # Hide the username
+            if subj[1] != URIRef('http://xmlns.com/foaf/0.1/accountName'):
+                tmp_g.add(subj)
         ret.append(tmp_g)
     return ret
 
@@ -239,57 +242,57 @@ class SearchProxy(object):
         super(SearchProxy, self).__init__(self)
 
 
-def get_suggestions(terms, query_attr):
+def get_suggestions(parameter_names, query_attr):
     """
-    Get the values for the given terms.
+    Get the values for the given parameter names.
 
 
     Args:
-        terms (str): The terms to search for. This should be a space separated
-            list or an '*'. Available terms include:
-                dataType
-                domainOfInterest
-                motivation
-                organization
+        parameter_names (str): The parameter names to search for. This should be
+            a space separated list or an '*'. For a list of available parameter
+            names use get_parameter_names().
         query_attr (dict): The query parameters from the users request.
 
     Returns:
         list of dict. Key words:
             graph - A graph containing the results
             count - The count of available results
-            searchTerm - The term that was searched for
+            searchTerm - The parameter name that was searched for
 
     """
-    LOGGING.debug("get_suggestions(%s, query_attr)", str(terms))
+    LOGGING.debug("get_suggestions(%s, query_attr)", str(parameter_names))
     graph = _get_graph(query_attr)
     limit = _get_limit(query_attr)
     offset = _get_offset(query_attr)
     results = []
     total_results = 0
-    term_list = re.sub('[' + string.punctuation + ']', '', terms).split()
-    if terms == "*":
-        term_list = ["*"]
+    parameter_name_list = (re.sub('[' + string.punctuation + ']', '',
+                                  parameter_names).split())
+    if parameter_names == "*":
+        parameter_name_list = ["*"]
     where_clause = ''
-    for facet in ANNOTATION_CLAUSES.keys():
-        where_clause = where_clause + _get_where_for_facet(query_attr, facet)
-    for term in term_list:
-        if term == "dataType" or term == "*":
+    for parameter_name in ANNOTATION_CLAUSES.keys():
+        where_clause = (where_clause +
+                        _get_where_for_parameter_name(query_attr,
+                                                      parameter_name))
+    for parameter_name in parameter_name_list:
+        if parameter_name == "dataType" or parameter_name == "*":
             result, count = _get_data_types(graph, "dataType", where_clause,
                                             limit, offset)
             results.append(result)
             total_results = total_results + count
-        if term == "domainOfInterest" or term == "*":
+        if parameter_name == "domainOfInterest" or parameter_name == "*":
             result, count = _get_domains_of_interest(graph, "domainOfInterest",
                                                      where_clause, limit,
                                                      offset)
             results.append(result)
             total_results = total_results + count
-        if term == "motivation" or term == "*":
+        if parameter_name == "motivation" or parameter_name == "*":
             result, count = _get_motivations(graph, "motivation", where_clause,
                                              limit, offset)
             results.append(result)
             total_results = total_results + count
-        if term == "organization" or term == "*":
+        if parameter_name == "organization" or parameter_name == "*":
             result, count = _get_organizations(graph, "organization",
                                                where_clause, limit, offset)
             results.append(result)
@@ -297,11 +300,12 @@ def get_suggestions(terms, query_attr):
     return results, total_results
 
 
-def _get_data_types(graph, term, where_clause, limit, offset):
+def _get_data_types(graph, parameter_name, where_clause, limit, offset):
     statement = (PREFIX +
     """
     SELECT Distinct ?dataType
-    WHERE {{%s}
+    WHERE {
+    {%s}
     ?s oa:hasTarget ?target .
     ?target rdf:type ?dataType .
     }
@@ -312,18 +316,21 @@ def _get_data_types(graph, term, where_clause, limit, offset):
     """
     SELECT  count (Distinct ?dataType)
     WHERE {
+    {%s}
     ?s oa:hasTarget ?target .
     ?target rdf:type ?dataType .
-    }""")
-    return _do_query(graph, term, statement, count_statement,
+    }""") % where_clause
+    return _do_query(graph, parameter_name, statement, count_statement,
                      "http://www.w3.org/2004/02/skos/core#prefLabel")
 
 
-def _get_domains_of_interest(graph, term, where_clause, limit, offset):
+def _get_domains_of_interest(graph, parameter_name, where_clause, limit,
+                             offset):
     statement = (PREFIX +
     """
     SELECT ?body ?domainOfInterest
-    WHERE {{%s}
+    WHERE {
+    {%s}
     ?body rdf:type oa:SemanticTag .
     ?body skos:prefLabel ?domainOfInterest .
     }
@@ -334,18 +341,20 @@ def _get_domains_of_interest(graph, term, where_clause, limit, offset):
     """
     SELECT count (Distinct ?domainOfInterest)
     WHERE {
+    {%s}
     ?body rdf:type oa:SemanticTag .
     ?body skos:prefLabel ?domainOfInterest .
-    }""")
-    return _do_query(graph, term, statement, count_statement,
+    }""") % where_clause
+    return _do_query(graph, parameter_name, statement, count_statement,
                      "http://www.w3.org/2004/02/skos/core#prefLabel")
 
 
-def _get_motivations(graph, term, where_clause, limit, offset):
+def _get_motivations(graph, parameter_name, where_clause, limit, offset):
     statement = (PREFIX +
     """
     SELECT Distinct ?motivation
-    WHERE {{%s}
+    WHERE {
+    {%s}
     ?s oa:motivatedBy ?motivation .
     }
     ORDER BY ?motivation
@@ -355,17 +364,19 @@ def _get_motivations(graph, term, where_clause, limit, offset):
     """
     SELECT count (Distinct ?motivation)
     WHERE {
+    {%s}
     ?s oa:motivatedBy ?motivation .
-    }""")
-    return _do_query(graph, term, statement, count_statement,
+    }""") % where_clause
+    return _do_query(graph, parameter_name, statement, count_statement,
                      "http://www.w3.org/2004/02/skos/core#prefLabel")
 
 
-def _get_organizations(graph, term, where_clause, limit, offset):
+def _get_organizations(graph, parameter_name, where_clause, limit, offset):
     statement = (PREFIX +
     """
     SELECT DISTINCT ?name
-    WHERE {{%s}
+    WHERE {
+    {%s}
     ?organization rdf:type foaf:Organization .
     ?organization foaf:name ?name .
     }
@@ -376,18 +387,18 @@ def _get_organizations(graph, term, where_clause, limit, offset):
     """
     SELECT count (Distinct ?name)
     WHERE {
+    {%s}
     ?organization rdf:type foaf:Organization .
     ?organization foaf:name ?name .
-    }""")
-    return _do_query(graph, term, statement, count_statement,
+    }""") % where_clause
+    return _do_query(graph, parameter_name, statement, count_statement,
                      "http://xmlns.com/foaf/0.1/name")
 
 
-def _do_query(graph, term, statement, count_statement,
+def _do_query(graph, parameter_name, statement, count_statement,
               labelType):
-    result = {'searchTerm': term}
+    result = {'searchTerm': parameter_name}
     result['count'] = _get_count(graph.query(count_statement))
-    print statement
     triples = graph.query(statement)
     result['graph'] = Graph()
     url = urlparse(labelType)
@@ -408,7 +419,8 @@ def _do_query(graph, term, statement, count_statement,
                 obj = row[0]
         result['graph'].add((URIRef(row[0]), URIRef(labelType), Literal(obj)))
     LOGGING.debug("_do_query returning %s triples out of %s for %s",
-                  str(len(result['graph'])), str(result['count']), str(term))
+                  str(len(result['graph'])), str(result['count']),
+                  str(parameter_name))
     return result, result['count']
 
 
@@ -434,7 +446,6 @@ def get_search_results(query_attr):
 
     statement_count = PREFIX + ANNOTATIONS_SELECT_COUNT + where_clause
     graph = _get_graph(query_attr)
-    print statement
     triples = graph.query(statement)
     results = _do__open_search(query_attr, graph, triples)
     total_results = _get_count(graph.query(statement_count))
@@ -455,8 +466,10 @@ def _get_where_clause(query_attr):
 
     """
     where_clause = ''
-    for facet in ANNOTATION_CLAUSES.keys():
-        where_clause = where_clause + _get_where_for_facet(query_attr, facet)
+    for parameter_name in ANNOTATION_CLAUSES.keys():
+        where_clause = (where_clause +
+                        _get_where_for_parameter_name(query_attr,
+                                                      parameter_name))
     # special case for status
     if len(where_clause) == 0:
         where_clause = where_clause = '{' + ANNOTATION_CLAUSES['status'] + '}'
@@ -464,33 +477,36 @@ def _get_where_clause(query_attr):
     return where_clause
 
 
-def _get_where_for_facet(query_attr, facet):
+def _get_where_for_parameter_name(query_attr, parameter_name):
     """
-    Add the where clause and filter for the given facet.
+    Add the where clause and filter for the given parameter name.
 
     Args:
         query_attr (dict): The query parameters from the users request.
-        facet (str): The name of the facet.
+        parameter_name (str): The name of the parameter.
 
     Returns:
         str The where clause.
     """
-    values = query_attr.get(facet)
-    if values == None or len(values) < 1 or facet == 'status':
+    values = query_attr.get(parameter_name)
+    if values == None or len(values) < 1 or parameter_name == 'status':
         return  ''
-    if facet == 'title':
-        return '{' + (ANNOTATION_CLAUSES[facet] % values) + '}'
+    if parameter_name == 'title':
+        return '{' + (ANNOTATION_CLAUSES[parameter_name] % values) + '}'
 
+    # TODO remove split when I can work out to handle the parameter being
+    # returned as a list.
     values = values.split()
-    where_clause = '{' + ANNOTATION_CLAUSES[facet] + ' FILTER ('
+
+    where_clause = '{' + ANNOTATION_CLAUSES[parameter_name] + ' FILTER ('
     first_term = True
     for value in values:
         if first_term:
             first_term = False
         else:
             where_clause = where_clause + ' || '
-        where_clause = where_clause + '?' + facet + "="
-        if facet == 'title':
+        where_clause = where_clause + '?' + parameter_name + "="
+        if parameter_name == 'title' or parameter_name == 'userName':
             where_clause = where_clause + "'" + value + "'"
         else:
             where_clause = where_clause + "<" + URIRef(value) + '>'
