@@ -124,14 +124,14 @@ def load_sample():
                 continue
 
             try:
-                tmp_g = insert_rdf(annotation, 'turtle', user,
+                insert_rdf(annotation, 'turtle', user,
                                    graph=ANNO_SUBMITTED)
             except BadSyntax as ex:
                 LOGGING.warn(ex)
                 continue
 
             # print tmp_g.serialize(format='turtle')
-            for item in tmp_g.triples((None, None,
-                                       URIRef('http://purl.org/spar/fabio/Article'))):
-                if 'doi' in str(item[0]):
-                    load_doi(item[0], tmp_g, user)
+#             for item in tmp_g.triples((None, None,
+#                                        URIRef('http://purl.org/spar/fabio/Article'))):
+#                 if 'doi' in str(item[0]):
+#                     load_doi(item[0], tmp_g, user)

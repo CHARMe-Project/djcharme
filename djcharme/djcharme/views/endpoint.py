@@ -249,8 +249,9 @@ def insert(request):
 
     if request.method == 'POST':
         triples = request.body
-        tmp_g = insert_rdf(triples, req_format, request.user, graph=ANNO_SUBMITTED)
-        return HttpResponse(__serialize(tmp_g, req_format=req_format))
+        anno_uri = insert_rdf(triples, req_format, request.user,
+                              graph=ANNO_SUBMITTED)
+        return HttpResponse(anno_uri)
 
 
 def advance_status(request):

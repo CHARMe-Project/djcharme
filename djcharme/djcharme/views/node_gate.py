@@ -114,6 +114,19 @@ def insert(request):
         Inserts in the triplestore a new annotation under the "ANNO_SUBMITTED"
         graph
     '''
+    try:
+        return _insert(request)
+    except Exception as ex:
+        LOGGING.error("insert - unexpected error: %s", str(ex))
+        messages.add_message(request, messages.ERROR, str(ex))
+        return mm_render_to_response_error(request, '500.html', 500)
+
+
+def _insert(request):
+    '''
+        Inserts in the triplestore a new annotation under the "ANNO_SUBMITTED"
+        graph
+    '''
     req_format = __get_req_format(request)
     ret_format = __get_ret_format(request, req_format)
 
@@ -125,18 +138,31 @@ def insert(request):
     if isPOST(request) or isOPTIONS(request):
         triples = request.body
         try:
-            insert_rdf(triples, req_format, request.user, graph=ANNO_SUBMITTED)
+            anno_uri = insert_rdf(triples, req_format, request.user,
+                                  graph=ANNO_SUBMITTED)
         except ParseError as ex:
             LOGGING.debug("insert parsing error: %s", str(ex))
             messages.add_message(request, messages.ERROR, str(ex))
             return mm_render_to_response_error(request, '400.html', 400)
-        return HttpResponse("", content_type=FORMAT_MAP.get(ret_format))
+        return HttpResponse(anno_uri, content_type=FORMAT_MAP.get(ret_format))
 
 
 # Temporary solution as long identify a solution for csrf
 # @csrf_protect
 @csrf_exempt
 def advance_status(request):
+    '''
+        Advance the status of an annotation
+    '''
+    try:
+        return _advance_status(request)
+    except Exception as ex:
+        LOGGING.error("advance_status - unexpected error: %s", str(ex))
+        messages.add_message(request, messages.ERROR, str(ex))
+        return mm_render_to_response_error(request, '500.html', 500)
+
+
+def _advance_status(request):
     '''
         Advance the status of an annotation
     '''
@@ -158,6 +184,18 @@ def process_resource(request, resource_id):
     """
         Process the resource dependent on the mime format.
     """
+    try:
+        return _process_resource(request, resource_id)
+    except Exception as ex:
+        LOGGING.error("process_resource - unexpected error: %s", str(ex))
+        messages.add_message(request, messages.ERROR, str(ex))
+        return mm_render_to_response_error(request, '500.html', 500)
+
+
+def _process_resource(request, resource_id):
+    """
+        Process the resource dependent on the mime format.
+    """
     if validate_mime_format(request) is not None:
         getformat = get_format(request)
         path = "/%s/%s" % (DATA, resource_id)
@@ -176,6 +214,18 @@ def process_data(request, resource_id):
     """
         Process the data dependent on the mime format.
     """
+    try:
+        return _process_data(request, resource_id)
+    except Exception as ex:
+        LOGGING.error("process_data - unexpected error: %s", str(ex))
+        messages.add_message(request, messages.ERROR, str(ex))
+        return mm_render_to_response_error(request, '500.html', 500)
+
+
+def _process_data(request, resource_id):
+    """
+        Process the data dependent on the mime format.
+    """
     if get_format(request) is None and 'text/html' in http_accept(request):
         return process_resource(request, resource_id=resource_id)
 
@@ -189,6 +239,18 @@ def process_data(request, resource_id):
 
 
 def process_page(request, resource_id=None):
+    """
+        Process the page dependent on the mime format.
+    """
+    try:
+        return _process_page(request, resource_id)
+    except Exception as ex:
+        LOGGING.error("process_page - unexpected error: %s", str(ex))
+        messages.add_message(request, messages.ERROR, str(ex))
+        return mm_render_to_response_error(request, '500.html', 500)
+
+
+def _process_page(request, resource_id=None):
     """
         Process the page dependent on the mime format.
     """

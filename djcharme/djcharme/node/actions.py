@@ -162,6 +162,7 @@ def insert_rdf(data, mimetype, user, graph=None, store=None):
             the graph name
         - rdflib.Store **store**
             if none use the return of get_store()
+        * return:str - The URI of the new annotation
     '''
     LOGGING.debug("insert_rdf(data, mimetype, user, graph, store)")
     if store is None:
@@ -175,22 +176,28 @@ def insert_rdf(data, mimetype, user, graph=None, store=None):
             raise ParseError(str(ex))
         except UnicodeDecodeError:
             raise ParseError(ex.__dict__["_why"])
-
-    _format_submitted_annotation(tmp_g)
+    anno_uri = _format_submitted_annotation(tmp_g)
     final_g = generate_graph(store, graph)
 
     for nspace in tmp_g.namespaces():
         final_g.store.bind(str(nspace[0]), nspace[1])
-
+        count = 0
     for res in tmp_g:
+        count = count + 1
         if (res[1] == URIRef(RDF + 'type')
             and res[2] == URIRef(OA + 'Annotation')):
             prov = _get_prov(res[0], user)
             for triple in prov:
-                final_g.add(triple)
-        final_g.add(res)
-
-    return final_g
+                count = count + 1
+                try:
+                    final_g.add(triple)
+                except Exception as ex:
+                    raise ParseError(str(ex))
+        try:
+            final_g.add(res)
+        except Exception as ex:
+            raise ParseError(str(ex))
+    return anno_uri
 
 
 def _get_prov(anno, user):
@@ -286,6 +293,8 @@ def _format_submitted_annotation(graph):
         pred = _format_node_uri_ref(pred, agent_uri, anno_uri, body_uri)
         obj = _format_node_uri_ref(obj, agent_uri, anno_uri, body_uri)
         graph.add((subject, pred, obj))
+    anno_id = _format_node_uri_ref(URIRef('chnode:annoID'), '', anno_uri, '')
+    return anno_id
 
 
 def change_annotation_state(resource_id, new_graph):
