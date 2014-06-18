@@ -44,7 +44,7 @@ from rdflib.plugin import PluginException
 from djcharme import mm_render_to_response_error
 from djcharme.charme_middleware import CharmeMiddleware
 from djcharme.node.actions import FORMAT_MAP
-
+from djcharme.node.search import get_multi_value_parameter_names
 
 hostURL = 'http://localhost:8000'
 
@@ -110,7 +110,9 @@ def do_suggest(request, iformat):
     host_url = _build_host_url(request)
     context = _update_context(request)
     try:
-        response = CharmeMiddleware.get_osengine().do_suggest(host_url,
+        # TODO change when ceda_markup has been updated to accept do_suggest
+        context['suggest'] = True
+        response = CharmeMiddleware.get_osengine().do_search(host_url,
                                                              iformat, context)
         return HttpResponse(response, mimetype=FORMAT_MAP.get(iformat))
     except Exception as ex:
@@ -126,9 +128,17 @@ def do_suggest(request, iformat):
 
 def _update_context(request):
     context = CharmeMiddleware.get_osengine().create_query_dictionary()
+    search_parameter_names = get_multi_value_parameter_names()
     if request.GET is not None:
+        # TODO remove next two lines
         for param in request.GET.iteritems():
             context[param[0]] = param[1]
+            # TODO use list when I can work out how to sort out the response
+#         for key in request.GET.keys():
+#             if search_parameter_names.count(key) > 0:
+#                 context[key] = request.GET.getlist(key)
+#             else:
+#                 context[key] = request.GET.get(key)
     context.update(context)
     return context
 

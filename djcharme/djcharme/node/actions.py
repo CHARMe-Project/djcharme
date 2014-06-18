@@ -115,6 +115,7 @@ ANNO_STABLE = 'stable'
 ANNO_RETIRED = 'retired'
 
 NODE_URI = 'http://localhost/'
+AGENT_URI = 'agentID'
 ANNO_URI = 'annoID'
 BODY_URI = 'bodyID'
 CH_NODE = 'chnode'
@@ -162,7 +163,7 @@ def insert_rdf(data, mimetype, user, graph=None, store=None):
         - rdflib.Store **store**
             if none use the return of get_store()
     '''
-    LOGGING.debug("insert_rdf(data, mimetype, user, graph=None, store=None)")
+    LOGGING.debug("insert_rdf(data, mimetype, user, graph, store)")
     if store is None:
         store = CharmeMiddleware.get_store()
     tmp_g = Graph()
@@ -242,10 +243,11 @@ def _format_resource_uri_ref(resource_id):
                                 resource_id))
 
 
-def _format_node_uri_ref(uriref, anno_uri, body_uri):
+def _format_node_uri_ref(uriref, agent_uri, anno_uri, body_uri):
     '''
         Rewrite a URIRef according to the node configuration
         * uriref:rdflib.URIRef
+        * agent_uri:String as hexadecimal
         * anno_uri:String as hexadecimal
         * body_uri:String as hexadecimal
     '''
@@ -258,6 +260,9 @@ def _format_node_uri_ref(uriref, anno_uri, body_uri):
         uriref = URIRef(uriref.replace(CH_NODE + ':',
                                        getattr(settings, 'NODE_URI', NODE_URI)
                                        + '/'))
+    if isinstance(uriref, URIRef) and AGENT_URI in uriref:
+        uriref = URIRef(uriref.replace(AGENT_URI, "%s/%s" %
+                                       (RESOURCE, agent_uri)))
     if isinstance(uriref, URIRef) and ANNO_URI in uriref:
         uriref = URIRef(uriref.replace(ANNO_URI, "%s/%s" %
                                        (RESOURCE, anno_uri)))
@@ -271,14 +276,15 @@ def _format_submitted_annotation(graph):
     '''
         Formats the graph according to the node configuration
     '''
+    agent_uri = uuid.uuid4().hex
     anno_uri = uuid.uuid4().hex
     body_uri = uuid.uuid4().hex
 
     for subject, pred, obj in graph:
         graph.remove((subject, pred, obj))
-        subject = _format_node_uri_ref(subject, anno_uri, body_uri)
-        pred = _format_node_uri_ref(pred, anno_uri, body_uri)
-        obj = _format_node_uri_ref(obj, anno_uri, body_uri)
+        subject = _format_node_uri_ref(subject, agent_uri, anno_uri, body_uri)
+        pred = _format_node_uri_ref(pred, agent_uri, anno_uri, body_uri)
+        obj = _format_node_uri_ref(obj, agent_uri, anno_uri, body_uri)
         graph.add((subject, pred, obj))
 
 
