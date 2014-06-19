@@ -152,9 +152,13 @@ class COSAtomResponse(OSAtomResponse):
         #                                    count, start_index, start_page)
 
         iformat = context.get('format', 'json-ld')
+        iformat = check_mime_format(iformat)
         if iformat == None:
             iformat = 'json-ld'
-        iformat = check_mime_format(iformat)
+        if iformat == 'rdf':
+            iformat = 'xml'
+        elif iformat == 'ttl':
+            iformat = 'turtle'
         if results['type'] == ANNOTATIONS:
             subresults = self._get_annotations(results['results'], iformat)
         elif results['type'] == SEARCH_TERMS:
