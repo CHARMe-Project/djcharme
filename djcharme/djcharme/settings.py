@@ -273,6 +273,8 @@ SECURITY_FILTER = [
     ("/accounts/login", ("GET", "POST")),
     ("/accounts/registration", ("GET", "POST")),
     ("/data", ("GET")),
+    ("/page", ("GET")),
+    ("/resource", ("GET")),
     ("/oauth2\/?", ("GET", "POST")),
     ("admin", ("GET", "POST")),
     ("/token/validate/", ("GET",)),
