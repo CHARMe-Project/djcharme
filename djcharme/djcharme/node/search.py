@@ -374,7 +374,7 @@ def _get_motivations(graph, parameter_name, where_clause, limit, offset):
 def _get_organizations(graph, parameter_name, where_clause, limit, offset):
     statement = (PREFIX +
     """
-    SELECT DISTINCT ?name
+    SELECT ?organization ?name
     WHERE {
     {%s}
     ?organization rdf:type foaf:Organization .
