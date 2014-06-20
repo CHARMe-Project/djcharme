@@ -244,7 +244,7 @@ def _get_prov(anno, user, client):
                         URIRef(client.url)))
         triples.append((URIRef(client.url), URIRef(RDF + 'type'),
                         URIRef(FOAF + 'Organization')))
-        triples.append((URIRef(client.url), URIRef(FOAF + 'Organization'),
+        triples.append((URIRef(client.url), URIRef(FOAF + 'name'),
                         Literal(client.name)))
 
     return triples
