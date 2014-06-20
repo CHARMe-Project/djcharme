@@ -9,16 +9,14 @@ import logging
 from django.contrib.auth.models import User
 from provider.oauth2.models import Client
 from rdflib.plugins.parsers.notation3 import BadSyntax
-from rdflib.term import URIRef
 
 from djcharme import get_resource
 from djcharme.node.actions import insert_rdf, ANNO_SUBMITTED
-from djcharme.node.doi import load_doi
 
 
 LOGGING = logging.getLogger(__name__)
 
-citation_template = '''
+CITATION_TEMPLATE = '''
 
 @prefix oa: <http://www.w3.org/ns/oa#> .
 @prefix fabio: <http://purl.org/spar/fabio/> .
@@ -49,7 +47,10 @@ cito:hasCitedEntity <load_target> .
 
 
 def __load_datasets():
+    """
+    Load sample data sets.
 
+    """
     datasets_file = open(get_resource('dataset_to_ceda_mappings.csv'))
     # datasets_file = open('resources/dataset_to_ceda_mappings.csv')
     dataset_reader = csv.reader(datasets_file, dialect='excel-tab')
@@ -62,12 +63,16 @@ def __load_datasets():
             continue
         try:
             datasets[row[0]] = row[1:3]
-        except:
+        except Exception:
             pass
     return datasets
 
 
 def __load_citations():
+    """
+    Load sample citations.
+
+    """
     citations_file = open(get_resource
                           ('ceda_citations_to_metadata_url_mappings.csv'))
     citations_reader = csv.reader(citations_file, dialect='excel-tab')
@@ -85,12 +90,16 @@ def __load_citations():
             else:
                 citations[row[0]] = [row[1:]]
             dataset_name = row[0]
-        except:
+        except Exception:
             pass
     return citations
 
 
 def load_sample():
+    """
+    Load sample data.
+
+    """
     datasets = __load_datasets()
     citations = __load_citations()
     user = User()
@@ -99,13 +108,13 @@ def load_sample():
     user.username = 'sample'
     user.email = 'sam.ple@example.org'
     client = Client()
-    client.name = 'My Organization'
-    client.url = 'https://localhost/organization/'
+    client.name = 'Sample Organization'
+    client.url = 'https://localhost/samlpeOrganization/'
     for ds_key in datasets.keys():
         data_set = datasets.get(ds_key)
         cts = citations.get(ds_key, None)
         for cit in cts:
-            annotation = citation_template.replace("load_target",
+            annotation = CITATION_TEMPLATE.replace("load_target",
                                                    data_set[1].strip())
             if cit[8]:
                 annotation = annotation.replace("load_body", cit[8].strip())
@@ -133,9 +142,3 @@ def load_sample():
             except BadSyntax as ex:
                 LOGGING.warn(ex)
                 continue
-
-            # print tmp_g.serialize(format='turtle')
-#             for item in tmp_g.triples((None, None,
-#                                        URIRef('http://purl.org/spar/fabio/Article'))):
-#                 if 'doi' in str(item[0]):
-#                     load_doi(item[0], tmp_g, user, client)
