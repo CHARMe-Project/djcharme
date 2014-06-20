@@ -7,6 +7,7 @@ import csv
 import logging
 
 from django.contrib.auth.models import User
+from provider.oauth2.models import Client
 from rdflib.plugins.parsers.notation3 import BadSyntax
 from rdflib.term import URIRef
 
@@ -97,6 +98,9 @@ def load_sample():
     user.last_name = 'Ple'
     user.username = 'sample'
     user.email = 'sam.ple@example.org'
+    client = Client()
+    client.name = 'My Organization'
+    client.url = 'https://localhost/organization/'
     for ds_key in datasets.keys():
         data_set = datasets.get(ds_key)
         cts = citations.get(ds_key, None)
@@ -124,7 +128,7 @@ def load_sample():
                 continue
 
             try:
-                insert_rdf(annotation, 'turtle', user,
+                insert_rdf(annotation, 'turtle', user, client,
                                    graph=ANNO_SUBMITTED)
             except BadSyntax as ex:
                 LOGGING.warn(ex)
@@ -134,4 +138,4 @@ def load_sample():
 #             for item in tmp_g.triples((None, None,
 #                                        URIRef('http://purl.org/spar/fabio/Article'))):
 #                 if 'doi' in str(item[0]):
-#                     load_doi(item[0], tmp_g, user)
+#                     load_doi(item[0], tmp_g, user, client)

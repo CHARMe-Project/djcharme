@@ -151,13 +151,17 @@ def generate_graph(store, graph):
     return Graph(store=store, identifier=format_graph_iri(graph))
 
 
-def insert_rdf(data, mimetype, user, graph=None, store=None):
+def insert_rdf(data, mimetype, user, client, graph=None, store=None):
     '''
         Inserts an RDF/json-ld document into the triplestore
         - string **data**
             a document
         - string **mimetype**
             the document mimetype
+        - User **user**
+            the User object from a request
+        - Client **client**
+            the Client object from a request
         - string **graph**
             the graph name
         - rdflib.Store **store**
@@ -176,19 +180,18 @@ def insert_rdf(data, mimetype, user, graph=None, store=None):
             raise ParseError(str(ex))
         except UnicodeDecodeError:
             raise ParseError(ex.__dict__["_why"])
-    anno_uri = _format_submitted_annotation(tmp_g)
+    _format_submitted_annotation(tmp_g)
     final_g = generate_graph(store, graph)
 
     for nspace in tmp_g.namespaces():
         final_g.store.bind(str(nspace[0]), nspace[1])
-        count = 0
+    anno_uri = ''
     for res in tmp_g:
-        count = count + 1
         if (res[1] == URIRef(RDF + 'type')
             and res[2] == URIRef(OA + 'Annotation')):
-            prov = _get_prov(res[0], user)
+            anno_uri = res[0]
+            prov = _get_prov(anno_uri, user, client)
             for triple in prov:
-                count = count + 1
                 try:
                     final_g.add(triple)
                 except Exception as ex:
@@ -200,7 +203,7 @@ def insert_rdf(data, mimetype, user, graph=None, store=None):
     return anno_uri
 
 
-def _get_prov(anno, user):
+def _get_prov(anno, user, client):
     """
     Get the provenance data for the annotation.
 
@@ -236,6 +239,14 @@ def _get_prov(anno, user):
 #         triples.append((URIRef(person_uri),
 #                         URIRef(FOAF + 'mbox'),
 #                         Literal(user.email)))
+    if client.name != None and len(client.name) > 0:
+        triples.append((anno, URIRef(OA + 'annotatedBy'),
+                        URIRef(client.url)))
+        triples.append((URIRef(client.url), URIRef(RDF + 'type'),
+                        URIRef(FOAF + 'Organization')))
+        triples.append((URIRef(client.url), URIRef(FOAF + 'Organization'),
+                        Literal(client.name)))
+
     return triples
 
 
@@ -293,8 +304,6 @@ def _format_submitted_annotation(graph):
         pred = _format_node_uri_ref(pred, agent_uri, anno_uri, body_uri)
         obj = _format_node_uri_ref(obj, agent_uri, anno_uri, body_uri)
         graph.add((subject, pred, obj))
-    anno_id = _format_node_uri_ref(URIRef('chnode:annoID'), '', anno_uri, '')
-    return anno_id
 
 
 def change_annotation_state(resource_id, new_graph):

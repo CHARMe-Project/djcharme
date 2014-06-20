@@ -139,7 +139,7 @@ def _insert(request):
         triples = request.body
         try:
             anno_uri = insert_rdf(triples, req_format, request.user,
-                                  graph=ANNO_SUBMITTED)
+                                  request.client, graph=ANNO_SUBMITTED)
         except ParseError as ex:
             LOGGING.debug("insert parsing error: %s", str(ex))
             messages.add_message(request, messages.ERROR, str(ex))

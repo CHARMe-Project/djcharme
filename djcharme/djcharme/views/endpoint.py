@@ -105,6 +105,7 @@ def processPUT(request):
     insert_rdf(payload,
                content_type(request),
                request.user,
+               request.client,
                graph)
 
     return HttpResponse(status=204)
@@ -138,6 +139,7 @@ def processPOST(request):
     insert_rdf(payload,
                content_type(request),
                request.user,
+               request.client,
                graph)
 
     return HttpResponse(status=204)
@@ -249,7 +251,7 @@ def insert(request):
 
     if request.method == 'POST':
         triples = request.body
-        anno_uri = insert_rdf(triples, req_format, request.user,
+        anno_uri = insert_rdf(triples, req_format, request.user, request.client,
                               graph=ANNO_SUBMITTED)
         return HttpResponse(anno_uri)
 

@@ -31,7 +31,6 @@ Created on 2 Nov 2012
 
 @author: mnagni
 '''
-from datetime import datetime, timedelta
 import logging
 import re
 import socket
@@ -155,9 +154,29 @@ def _get_user(token):
     return access_t.user
 
 
+def _get_client(token):
+    """
+    Get the client information for the given token.
+
+    Args:
+        token (str): The auth token.
+
+    Returns:
+        Client. Details about the client.
+
+    """
+    if token:
+        try:
+            access_t = AccessToken.objects.get(token=token)
+        except AccessToken.DoesNotExist:
+            LOGGER.warn("_get_client - Cannot get 'Client' from access token")
+            return None
+    return access_t.client
+
+
 class SecurityMiddleware(object):
     """
-        Validates if the actual user is authenticated agains a
+        Validates if the actual user is authenticated against a
         given authentication service.
         Actually the middleware intercepts all the requests submitted
         to the underlying Django application and verifies if the presence
@@ -178,6 +197,7 @@ class SecurityMiddleware(object):
             for term in request.environ.get('HTTP_AUTHORIZATION').split():
                 if is_valid_token(term):
                     request.user = _get_user(term)
+                    request.client = _get_client(term)
                     LOGGER.debug('process_request - ' \
                     'Request has an access token')
                     return

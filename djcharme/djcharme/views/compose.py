@@ -40,7 +40,7 @@ def compose_annotation(request):
                                      'compose_annotation.html')
 
     if isPOST(request):
-        insert_rdf('', request.body, request.user)
+        insert_rdf('', request.body, request.user, request.client)
     # target_link = request.REQUEST['target_link']
     # extract_alternative_links(target_link)
     return mm_render_to_response(request, context, 'compose_annotation.html')
