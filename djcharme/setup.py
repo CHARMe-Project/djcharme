@@ -34,7 +34,7 @@ setup(
     install_requires=['django',
                       'cedatheme_mf54',
                       'rdflib==4.1-dev',
-                      'rdflib-jsonld',
+                      'rdflib-jsonld==0.1',
                       'ceda-markup',
                       'py-bcrypt',
                       'django-oauth2-provider==0.2.7-dev'],
