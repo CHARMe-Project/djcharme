@@ -150,7 +150,7 @@ def processHEAD(request, return_content=False):
         Returns an httplib.HTTPRequest
     '''
     graph = get_graph_from_request(request)
-    accept = _validate_mime_format(request)
+    accept = _validate_mime_format(request, 'application/rdf+xml')
 
     if accept == None:
         return HttpResponse(status=406)
@@ -182,12 +182,18 @@ def __serialize(graph, req_format='application/rdf+xml'):
     return graph.serialize(format=req_format)
 
 
-def _validate_mime_format(request):
-    req_format = request.META.get('HTTP_ACCEPT', None)
-    if req_format:
-        for k, value in FORMAT_MAP.iteritems():
-            if req_format == value:
-                return k
+def _validate_mime_format(request, default=None):
+    """
+    Returns the first valid mimetype as mapped as rdf format
+    """
+    req_formats = request.META.get('HTTP_ACCEPT', default)
+    req_formats = req_formats.split(',')
+    for req_format in req_formats:
+        if rdf_format_from_mime(req_format) != None:
+            return req_format
+    if ((len(req_formats) == 0) or
+        (len(req_formats) == 1 and req_formats[0] == '*/*')):
+        return default
     return None
 
 
