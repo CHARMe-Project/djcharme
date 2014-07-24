@@ -150,9 +150,9 @@ def processHEAD(request, return_content=False):
         Returns an httplib.HTTPRequest
     '''
     graph = get_graph_from_request(request)
-    accept = http_accept(request)
+    accept = _validate_mime_format(request)
 
-    if accept not in FORMAT_MAP.values():
+    if accept == None:
         return HttpResponse(status=406)
 
     conjunctive_graph = None
@@ -162,7 +162,7 @@ def processHEAD(request, return_content=False):
         conjunctive_graph = generate_graph(CharmeMiddleware.get_store(),
                                            URIRef(graph))
 
-    content = conjunctive_graph.serialize(format=rdf_format_from_mime(accept))
+    content = conjunctive_graph.serialize(format=accept)
 
     if return_content:
         return HttpResponse(content=content)
