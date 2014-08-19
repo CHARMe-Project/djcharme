@@ -37,6 +37,8 @@ DEBUG = True
 SESSION_EXPIRE_AT_BROWSER_CLOSE = True
 
 SITE_ID = 1
+SITE_NAME = 'Example Site Name'
+SITE_DOMAIN = 'example.com'
 
 SITE_PREFIX = ''
 
@@ -271,6 +273,7 @@ SECURITY_FILTER = [
     ("/search", ("GET", "OPTIONS")),
     ("/suggest", ("GET", "OPTIONS")),
     ("/accounts/login", ("GET", "POST")),
+    ("/accounts/password/reset", ("GET", "POST")),
     ("/accounts/registration", ("GET", "POST")),
     ("/data", ("GET")),
     ("/page", ("GET")),
@@ -282,6 +285,14 @@ SECURITY_FILTER = [
 ]
 
 REDIRECT_FIELD_NAME = 'next'
+
+# Email settings used when resetting passwords
+EMAIL_HOST = 'localhost'
+EMAIL_PORT = 1025
+EMAIL_HOST_USER = ''
+EMAIL_HOST_PASSWORD = ''
+EMAIL_USE_TLS = False
+DEFAULT_FROM_EMAIL = 'testing@127.0.0.1:8000'
 
 # SESSION_COOKIE_SECURE = True
 # CSRF_COOKIE_SECURE = True

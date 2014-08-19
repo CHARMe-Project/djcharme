@@ -1,4 +1,4 @@
-__version__ = '0.4'
+__version__ = '0.4.1'
 
 
 import os
@@ -8,12 +8,17 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.http.response import Http404
 from django.shortcuts import render_to_response, render
 from django.template.context import RequestContext
+from django.contrib.sites.models import Site
 
 
 LOAD_SAMPLE = 'LOAD_SAMPLE'
 HTTP_PROXY = 'HTTP_PROXY'
 HTTP_PROXY_PORT = 'HTTP_PROXY_PORT'
 
+MY_SITE = Site.objects.get(pk=settings.SITE_ID)
+MY_SITE.domain = settings.SITE_DOMAIN
+MY_SITE.name = settings.SITE_NAME
+MY_SITE.save()
 
 def get_resource(file_name):
     return os.path.join(__path__[0], 'resources', file_name)

@@ -71,9 +71,14 @@ LOGGING = {
     }
 }
 
+# site settings
 SITE_PREFIX = ""
+SITE_NAME = 'CHARMe Site'
+SITE_DOMAIN = '127.0.0.1:8000'
 
 LOAD_SAMPLE = False
+
+# proxy settings
 # HTTP_PROXY = 'proxy.domain'
 # HTTP_PROXY_PORT = 8080
 

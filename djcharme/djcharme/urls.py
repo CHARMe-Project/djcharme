@@ -1,6 +1,7 @@
 from django.conf.urls import patterns, include, url
 from django.contrib import admin
 from django.contrib.auth.views import login
+from django.contrib.auth import views as auth_views
 
 from djcharme.charme_security_model import LoginForm
 from djcharme.views import node_gate, compose, endpoint, main_gui, search, \
@@ -34,11 +35,32 @@ urlpatterns = patterns('',
          name='login'),
      # Logout
      url(r'^accounts/logout/$', views.logout_view,),
+     # Profile
+     url(r'^accounts/profile/change/$', registration.profile_change,
+         name='profile_change'),
+     url(r'^accounts/profile/change/done/$', registration.profile_change_done,
+         name='profile_change_done'),
+     # Password change
+     url(r'^accounts/password/change/$', auth_views.password_change,
+        name='password_change'),
+     url(r'^accounts/password/change/done/$', auth_views.password_change_done,
+        name='password_change_done'),
+     # Password reset
+     url(r'^accounts/password/reset/$', auth_views.password_reset,
+        {'post_reset_redirect' : '/accounts/password/reset/done/'},
+        name="password_reset"),
+     url(r'^accounts/password/reset/done/$', auth_views.password_reset_done),
+     url(r'^accounts/password/reset/confirm/(?P<uidb64>[0-9A-Za-z]+)-(?P<token>.+)/$',
+        auth_views.password_reset_confirm,
+        {'post_reset_redirect' : '/accounts/password/reset/complete/'},
+        name='password_reset_confirm'),
+     url(r'^accounts/password/reset/complete/$',
+         auth_views.password_reset_complete),
 
      # Accepts external new annotation
      url(r'^insert/annotation', node_gate.insert, name='node_gate.insert'),
      # Annotation status management
-     url(r'^advance_status/(\w+)', node_gate.advance_status,
+     url(r'^advance_status/', node_gate.advance_status,
          name='advance_status'),
      #-----------------------------------------------------------
 
@@ -78,5 +100,11 @@ urlpatterns = patterns('',
      url(r'^index/(\w+)', node_gate.index, name='charme.index.id'),
      url(r'^index', node_gate.index, name='index'),
      url(r'^', main_gui.welcome, name='charme.welcome'),
+
+#      url(r'^accounts/', include('django.contrib.auth.urls')),
+
+#     url(r'^password_change/$',
+#         'django.contrib.auth.views.password_change',
+#         {'template_name': 'accounts/password_change_form.html'}),
 
 )

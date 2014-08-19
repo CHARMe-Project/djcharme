@@ -14,7 +14,9 @@ This is a BETA service
 
 <div class=links>
 	{% if user.is_authenticated %}
-		Hello {{ user.username }} [<a href="/accounts/logout/">Logout</a>]
+		Hello {{ user.first_name }}
+		[<a href="/accounts/profile/change/">Profile</a>] 
+		[<a href="/accounts/logout/">Logout</a>]
 	{% else %}
 		[<a href="/accounts/login/">Login</a> or 
 		<a href="/accounts/registration/">Register</a>]
