@@ -306,7 +306,7 @@ def _get_data_types(graph, parameter_name, where_clause, limit, offset):
     SELECT Distinct ?dataType
     WHERE {
     {%s}
-    ?s oa:hasTarget ?target .
+    ?anno oa:hasTarget ?target .
     ?target rdf:type ?dataType .
     }
     ORDER BY ?dataType
@@ -317,7 +317,7 @@ def _get_data_types(graph, parameter_name, where_clause, limit, offset):
     SELECT  count (Distinct ?dataType)
     WHERE {
     {%s}
-    ?s oa:hasTarget ?target .
+    ?anno oa:hasTarget ?target .
     ?target rdf:type ?dataType .
     }""") % where_clause
     return _do_query(graph, parameter_name, statement, count_statement,
@@ -331,6 +331,7 @@ def _get_domains_of_interest(graph, parameter_name, where_clause, limit,
     SELECT ?body ?domainOfInterest
     WHERE {
     {%s}
+    ?anno oa:hasBody ?body
     ?body rdf:type oa:SemanticTag .
     ?body skos:prefLabel ?domainOfInterest .
     }
@@ -342,6 +343,7 @@ def _get_domains_of_interest(graph, parameter_name, where_clause, limit,
     SELECT count (Distinct ?domainOfInterest)
     WHERE {
     {%s}
+    ?anno oa:hasBody ?body
     ?body rdf:type oa:SemanticTag .
     ?body skos:prefLabel ?domainOfInterest .
     }""") % where_clause
@@ -355,7 +357,7 @@ def _get_motivations(graph, parameter_name, where_clause, limit, offset):
     SELECT Distinct ?motivation
     WHERE {
     {%s}
-    ?s oa:motivatedBy ?motivation .
+    ?anno oa:motivatedBy ?motivation .
     }
     ORDER BY ?motivation
     LIMIT %s
@@ -365,7 +367,7 @@ def _get_motivations(graph, parameter_name, where_clause, limit, offset):
     SELECT count (Distinct ?motivation)
     WHERE {
     {%s}
-    ?s oa:motivatedBy ?motivation .
+    ?anno oa:motivatedBy ?motivation .
     }""") % where_clause
     return _do_query(graph, parameter_name, statement, count_statement,
                      "http://www.w3.org/2004/02/skos/core#prefLabel")
@@ -377,6 +379,7 @@ def _get_organizations(graph, parameter_name, where_clause, limit, offset):
     SELECT ?organization ?name
     WHERE {
     {%s}
+    ?anno oa:annotatedBy ?organization
     ?organization rdf:type foaf:Organization .
     ?organization foaf:name ?name .
     }
@@ -388,6 +391,7 @@ def _get_organizations(graph, parameter_name, where_clause, limit, offset):
     SELECT count (Distinct ?name)
     WHERE {
     {%s}
+    ?anno oa:annotatedBy ?organization
     ?organization rdf:type foaf:Organization .
     ?organization foaf:name ?name .
     }""") % where_clause
@@ -397,6 +401,7 @@ def _get_organizations(graph, parameter_name, where_clause, limit, offset):
 
 def _do_query(graph, parameter_name, statement, count_statement,
               labelType):
+    LOGGING.debug("_do_query %s", statement)
     result = {'searchTerm': parameter_name}
     result['count'] = _get_count(graph.query(count_statement))
     triples = graph.query(statement)
