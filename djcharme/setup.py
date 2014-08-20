@@ -34,7 +34,7 @@ setup(
     install_requires=['Django==1.6.5',
                       'SPARQLWrapper==1.6.1',
                       'ceda-markup==0.1.0',
-                      'cedatheme-mf54==1.0.0',
+                      'cedatheme_mf54==1.0.0',
                       'django-classy-tags==0.5.1',
                       'django-cookie-law==1.0.1',
                       'django-oauth2-provider==0.2.7-dev',
