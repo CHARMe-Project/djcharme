@@ -331,7 +331,7 @@ def _get_domains_of_interest(graph, parameter_name, where_clause, limit,
     SELECT ?body ?domainOfInterest
     WHERE {
     {%s}
-    ?anno oa:hasBody ?body
+    ?anno oa:hasBody ?body .
     ?body rdf:type oa:SemanticTag .
     ?body skos:prefLabel ?domainOfInterest .
     }
@@ -343,7 +343,7 @@ def _get_domains_of_interest(graph, parameter_name, where_clause, limit,
     SELECT count (Distinct ?domainOfInterest)
     WHERE {
     {%s}
-    ?anno oa:hasBody ?body
+    ?anno oa:hasBody ?body .
     ?body rdf:type oa:SemanticTag .
     ?body skos:prefLabel ?domainOfInterest .
     }""") % where_clause
@@ -379,7 +379,7 @@ def _get_organizations(graph, parameter_name, where_clause, limit, offset):
     SELECT ?organization ?name
     WHERE {
     {%s}
-    ?anno oa:annotatedBy ?organization
+    ?anno oa:annotatedBy ?organization .
     ?organization rdf:type foaf:Organization .
     ?organization foaf:name ?name .
     }
@@ -391,7 +391,7 @@ def _get_organizations(graph, parameter_name, where_clause, limit, offset):
     SELECT count (Distinct ?name)
     WHERE {
     {%s}
-    ?anno oa:annotatedBy ?organization
+    ?anno oa:annotatedBy ?organization .
     ?organization rdf:type foaf:Organization .
     ?organization foaf:name ?name .
     }""") % where_clause
