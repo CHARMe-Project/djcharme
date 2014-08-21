@@ -12,8 +12,11 @@ from django.http.response import (HttpResponseRedirectBase, HttpResponse,
 from django.views.decorators.csrf import csrf_exempt
 
 from djcharme import mm_render_to_response, mm_render_to_response_error
+from djcharme.exception import NotFoundError
 from djcharme.exception import ParseError
+from djcharme.exception import SecurityError
 from djcharme.exception import StoreConnectionError
+from djcharme.exception import UserError
 from djcharme.node.actions import (OA, FORMAT_MAP, find_annotation_graph,
                                    insert_rdf, ANNO_SUBMITTED, DATA,
                                    _collect_annotations, find_resource_by_id,
@@ -156,6 +159,15 @@ def advance_status(request):
     '''
     try:
         return _advance_status(request)
+    except NotFoundError as ex:
+        messages.add_message(request, messages.ERROR, str(ex))
+        return mm_render_to_response_error(request, '404.html', 404)
+    except SecurityError as ex:
+        messages.add_message(request, messages.ERROR, str(ex))
+        return mm_render_to_response_error(request, '403.html', 403)
+    except UserError as ex:
+        messages.add_message(request, messages.ERROR, str(ex))
+        return mm_render_to_response_error(request, '400.html', 400)
     except Exception as ex:
         LOGGING.error("advance_status - unexpected error: %s", str(ex))
         messages.add_message(request, messages.ERROR, str(ex))
@@ -168,17 +180,26 @@ def _advance_status(request):
     '''
     if isPOST(request) and 'application/json' in content_type(request):
         params = json.loads(request.body)
-        if not params.has_key('annotation') or not params.has_key('state'):
+        if not params.has_key('annotation') or not params.has_key('toState'):
             messages.add_message(request, messages.ERROR,
                                  "Missing annotation/state parameters")
             return mm_render_to_response_error(request, '400.html', 400)
         LOGGING.info("advancing %s to state:%s", str(params.get('annotation')),
                      str(params.get('toState')))
         tmp_g = change_annotation_state(params.get('annotation'),
-                                        params.get('toState'))
-
-        return HttpResponse(tmp_g.serialize())
-
+                                        params.get('toState'), request.user)
+        if tmp_g == None:
+            return HttpResponse()
+        else:
+            return HttpResponse(tmp_g.serialize())
+    elif not isPOST(request):
+        messages.add_message(request, messages.ERROR,
+            "Message must be a POST")
+        return mm_render_to_response_error(request, '405.html', 405)
+    else:
+        messages.add_message(request, messages.ERROR,
+            "Message must contain application/json")
+        return mm_render_to_response_error(request, '400.html', 400)
 
 def process_resource(request, resource_id):
     """

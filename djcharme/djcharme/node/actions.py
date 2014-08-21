@@ -42,8 +42,11 @@ from rdflib.graph import ConjunctiveGraph
 from rdflib.namespace import Namespace
 
 from djcharme.charme_middleware import CharmeMiddleware
+from djcharme.exception import NotFoundError
 from djcharme.exception import ParseError
+from djcharme.exception import SecurityError
 from djcharme.exception import StoreConnectionError
+from djcharme.exception import UserError
 from djcharme.node import _extract_subject
 
 
@@ -107,6 +110,7 @@ CH_NS = "http://charm.eu/ch#"
 RDF = Namespace("http://www.w3.org/1999/02/22-rdf-syntax-ns#")
 OA = Namespace("http://www.w3.org/ns/oa#")
 FOAF = Namespace("http://xmlns.com/foaf/0.1/")
+PROV = Namespace("http://www.w3.org/ns/prov#")
 CH = Namespace(CH_NS)
 
 ANNO_SUBMITTED = 'submitted'
@@ -306,22 +310,153 @@ def _format_submitted_annotation(graph):
         graph.add((subject, pred, obj))
 
 
-def change_annotation_state(resource_id, new_graph):
+def change_annotation_state(resource_id, new_graph, user):
     '''
         Advance the status of an annotation
         - string **resource_id**
             the resource URL
         - string **new_graph**
-            the name of the state where more the annotation
+            the name of the graph/state to move the annotation to
+        - **user**
+            information about the user
     '''
     old_graph = find_annotation_graph(resource_id)
+    if old_graph == None:
+        raise NotFoundError(("Annotation %s not found" % resource_id))
+    if old_graph == new_graph:
+#          return
+        pass
+#     if old_graph == "invalid" or old_graph == "retired":
+#         raise UserError(("Current annotation status of %s is final. Status " \
+#                          "has not been updated." % old_graph))
+
     old_g = generate_graph(CharmeMiddleware.get_store(), old_graph)
+
+    if not _is_my_annotation(old_g, resource_id, user.username):
+        if not _is_moderator(user.username):
+            raise SecurityError(("You do not have the required permission " \
+                                 "to update the status of annotation %s" %
+                                 resource_id))
+
     new_g = generate_graph(CharmeMiddleware.get_store(), new_graph)
+    # Move the people
+    for res in _get_people(old_g, resource_id):
+        old_g.remove(res)
+        new_g.add(res)
+    # Copy the organization
+    for res in _get_organization(old_g, resource_id):
+        new_g.add(res)
+    # Copy the software
+    for res in _get_software(old_g, resource_id):
+        new_g.add(res)
+    # Move the annotation
     for res in old_g.triples((_format_resource_uri_ref(resource_id), None,
                               None)):
         old_g.remove(res)
+        # We are only allowed one annotatedAt per annotation
+        if res[1] == URIRef(OA + 'annotatedAt'):
+            continue
         new_g.add(res)
+
+    # Add new prov data
+    person_uri = (getattr(settings, 'NODE_URI', NODE_URI)
+                  + '/%s/%s' % (RESOURCE, uuid.uuid4().hex))
+    new_g.add((URIRef(resource_id), URIRef(OA + 'annotatedAt'),
+                    Literal(datetime.utcnow())))
+    new_g.add((URIRef(resource_id), URIRef(OA + 'annotatedBy'),
+               URIRef(person_uri)))
+    new_g.add((URIRef(person_uri), URIRef(RDF + 'type'),
+                    URIRef(FOAF + 'Person')))
+    new_g.add((URIRef(person_uri),
+                    URIRef(FOAF + 'accountName'),
+                    Literal(user.username)))
+    if user.last_name != None and len(user.last_name) > 0:
+        new_g.add((URIRef(person_uri),
+                        URIRef(FOAF + 'familyName'),
+                        Literal(user.last_name)))
+    if user.first_name != None and len(user.first_name) > 0:
+        new_g.add((URIRef(person_uri),
+                        URIRef(FOAF + 'givenName'),
+                        Literal(user.first_name)))
     return new_g
+
+
+def _is_my_annotation(graph, resource_id, username):
+    for res in graph.triples((_format_resource_uri_ref(resource_id),
+                              URIRef(OA + 'annotatedBy'),
+                              None)):
+        for res2 in graph.triples((res[2], URIRef(FOAF + 'accountName'), None)):
+            if str(res2[2]) == username:
+                return False
+    return False
+
+
+def _is_moderator(username):
+    # TODO
+    return True
+
+
+def _get_people(graph, annotation_id):
+    """
+    Get the list of people associated with the annotation in the graph.
+
+    Args:
+        graph (rdflib.graph.Graph): The graph containing the annotation.
+        annotation_id (str): The id of the annotation.
+
+    Returns:
+        list[tuple] The list of people associated with the annotation.
+    """
+    people = []
+    for res in graph.triples((_format_resource_uri_ref(annotation_id),
+                              URIRef(OA + 'annotatedBy'), None)):
+        for res2 in graph.triples((res[2], URIRef(RDF + 'type'),
+                    URIRef(FOAF + 'Person'))):
+            for res3 in graph.triples((res2[0], None, None)):
+                people.append(res3)
+    return people
+
+
+def _get_organization(graph, annotation_id):
+    """
+    Get the list of organizations associated with the annotation in the graph.
+
+    Args:
+        graph (rdflib.graph.Graph): The graph containing the annotation.
+        annotation_id (str): The id of the annotation.
+
+    Returns:
+        list[tuple] The list of organizations associated with the annotation.
+    """
+    organization = []
+    for res in graph.triples((_format_resource_uri_ref(annotation_id),
+                              URIRef(OA + 'annotatedBy'), None)):
+        for res2 in graph.triples((res[2], URIRef(RDF + 'type'),
+                    URIRef(FOAF + 'Organization'))):
+            for res3 in graph.triples((res2[0], None, None)):
+                organization.append(res3)
+    return organization
+
+
+def _get_software(graph, annotation_id):
+    """
+    Get the list of software associated with the annotation in the graph.
+
+    Args:
+        graph (rdflib.graph.Graph): The graph containing the annotation.
+        annotation_id (str): The id of the annotation.
+
+    Returns:
+        list[tuple] The list of software associated with the annotation.
+    """
+    software = []
+    for res in graph.triples((_format_resource_uri_ref(annotation_id),
+                              URIRef(OA + 'serializedBy'), None)):
+        for res2 in graph.triples((res[2], URIRef(RDF + 'type'),
+                    URIRef(PROV + 'SoftwareAgent'))):
+            for res3 in graph.triples((res2[0], None, None)):
+                software.append(res3)
+    return software
 
 
 def find_annotation_graph(resource_id):

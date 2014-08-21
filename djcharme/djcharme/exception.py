@@ -128,3 +128,29 @@ class ParseError(SecurityError):
 
     def __str__(self):
         return self.value
+
+
+class NotFoundError(CharmeError):
+    """
+        Throw when an item is not found
+    """
+
+    def __init__(self, value):
+        self.value = value
+
+    def __str__(self):
+        return self.value
+
+
+class UserError(CharmeError):
+    """
+        Throw when a user creates an error
+    """
+
+    def __init__(self, value):
+        self.value = value
+
+    def __str__(self):
+        return self.value
+
+

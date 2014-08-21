@@ -18,7 +18,10 @@ from rdflib.term import URIRef
 from djcharme import mm_render_to_response, mm_render_to_response_error, \
     settings
 from djcharme.charme_middleware import CharmeMiddleware
+from djcharme.exception import NotFoundError
+from djcharme.exception import SecurityError
 from djcharme.exception import SerializeError, StoreConnectionError
+from djcharme.exception import UserError
 from djcharme.node.actions import OA, FORMAT_MAP, \
     ANNO_SUBMITTED, insert_rdf, find_resource_by_id, RESOURCE, \
     _collect_annotations, change_annotation_state, find_annotation_graph, \
@@ -270,10 +273,30 @@ def advance_status(request):
         params = json.loads(request.body)
         LOGGING.info("advancing %s to state:%s", str(params.get('annotation')),
                      str(params.get('toState')))
-        tmp_g = change_annotation_state(params.get('annotation'),
-                                        params.get('toState'))
-
-        return HttpResponse(tmp_g.serialize())
+        try:
+            tmp_g = change_annotation_state(params.get('annotation'),
+                                        params.get('toState'), request.user)
+        except NotFoundError as ex:
+            messages.add_message(request, messages.ERROR, str(ex))
+            return mm_render_to_response_error(request, '404.html', 404)
+        except SecurityError as ex:
+            messages.add_message(request, messages.ERROR, str(ex))
+            return mm_render_to_response_error(request, '403.html', 403)
+        except UserError as ex:
+            messages.add_message(request, messages.ERROR, str(ex))
+            return mm_render_to_response_error(request, '400.html', 400)
+        if tmp_g == None:
+            return HttpResponse()
+        else:
+            return HttpResponse(tmp_g.serialize())
+    elif not isPOST(request):
+        messages.add_message(request, messages.ERROR,
+            "Message must be a POST")
+        return mm_render_to_response_error(request, '405.html', 405)
+    else:
+        messages.add_message(request, messages.ERROR,
+            "Message must contain application/json")
+        return mm_render_to_response_error(request, '400.html', 400)
 
 
 def process_resource(request, resource_id):
