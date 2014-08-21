@@ -381,18 +381,31 @@ def change_annotation_state(resource_id, new_graph, user):
 
 
 def _is_my_annotation(graph, resource_id, username):
+    """
+    Check to see if this annotation was edited by the user.
+
+    Args:
+        graph (rdflib.graph.Graph): The graph containing the annotation.
+        annotation_id (str): The id of the annotation.
+        userername (str): The name of the user to check
+
+    Returns:
+        boolean True if the user is listed as an accountName in the annotatedBy
+        Person object of the annotation.
+
+    """
     for res in graph.triples((_format_resource_uri_ref(resource_id),
                               URIRef(OA + 'annotatedBy'),
                               None)):
         for res2 in graph.triples((res[2], URIRef(FOAF + 'accountName'), None)):
             if str(res2[2]) == username:
-                return False
+                return True
     return False
 
 
 def _is_moderator(username):
     # TODO
-    return True
+    return False
 
 
 def _get_people(graph, annotation_id):
@@ -405,6 +418,7 @@ def _get_people(graph, annotation_id):
 
     Returns:
         list[tuple] The list of people associated with the annotation.
+
     """
     people = []
     for res in graph.triples((_format_resource_uri_ref(annotation_id),
@@ -426,6 +440,7 @@ def _get_organization(graph, annotation_id):
 
     Returns:
         list[tuple] The list of organizations associated with the annotation.
+
     """
     organization = []
     for res in graph.triples((_format_resource_uri_ref(annotation_id),
@@ -447,6 +462,7 @@ def _get_software(graph, annotation_id):
 
     Returns:
         list[tuple] The list of software associated with the annotation.
+
     """
     software = []
     for res in graph.triples((_format_resource_uri_ref(annotation_id),
