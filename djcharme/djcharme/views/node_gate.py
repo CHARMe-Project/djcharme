@@ -187,18 +187,18 @@ def _advance_status(request):
         LOGGING.info("advancing %s to state:%s", str(params.get('annotation')),
                      str(params.get('toState')))
         tmp_g = change_annotation_state(params.get('annotation'),
-                                        params.get('toState'), request.user)
+                                        params.get('toState'), request)
         if tmp_g == None:
             return HttpResponse()
         else:
             return HttpResponse(tmp_g.serialize())
     elif not isPOST(request):
         messages.add_message(request, messages.ERROR,
-            "Message must be a POST")
+                             "Message must be a POST")
         return mm_render_to_response_error(request, '405.html', 405)
     else:
         messages.add_message(request, messages.ERROR,
-            "Message must contain application/json")
+                             "Message must contain application/json")
         return mm_render_to_response_error(request, '400.html', 400)
 
 def process_resource(request, resource_id):
@@ -256,7 +256,7 @@ def _process_data(request, resource_id):
 
     tmp_g = find_resource_by_id(resource_id, get_depth(request))
     return HttpResponse(tmp_g.serialize(format=req_format),
-                            mimetype=FORMAT_MAP.get(req_format))
+                        mimetype=FORMAT_MAP.get(req_format))
 
 
 def process_page(request, resource_id=None):

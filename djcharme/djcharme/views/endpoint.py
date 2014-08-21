@@ -27,7 +27,7 @@ from djcharme.node.actions import OA, FORMAT_MAP, \
     _collect_annotations, change_annotation_state, find_annotation_graph, \
     generate_graph, rdf_format_from_mime
 from djcharme.views import isGET, isPOST, isPUT, isDELETE, \
-    isHEAD, isPATCH, http_accept, content_type
+    isHEAD, isPATCH, content_type
 
 
 LOGGING = logging.getLogger(__name__)
@@ -238,8 +238,8 @@ def index(request, graph='stable'):
     req_format = _validate_format(request)
 
     if req_format:
-        LOGGING.debug("Annotations %s", str(__serialize(tmp_g,
-                                                     req_format=req_format)))
+        LOGGING.debug("Annotations %s", str(__serialize
+                                            (tmp_g, req_format=req_format)))
         return HttpResponse(__serialize(tmp_g, req_format=req_format))
 
     states = {}
@@ -275,7 +275,7 @@ def advance_status(request):
                      str(params.get('toState')))
         try:
             tmp_g = change_annotation_state(params.get('annotation'),
-                                        params.get('toState'), request.user)
+                                            params.get('toState'), request)
         except NotFoundError as ex:
             messages.add_message(request, messages.ERROR, str(ex))
             return mm_render_to_response_error(request, '404.html', 404)
@@ -291,11 +291,11 @@ def advance_status(request):
             return HttpResponse(tmp_g.serialize())
     elif not isPOST(request):
         messages.add_message(request, messages.ERROR,
-            "Message must be a POST")
+                             "Message must be a POST")
         return mm_render_to_response_error(request, '405.html', 405)
     else:
         messages.add_message(request, messages.ERROR,
-            "Message must contain application/json")
+                             "Message must contain application/json")
         return mm_render_to_response_error(request, '400.html', 400)
 
 

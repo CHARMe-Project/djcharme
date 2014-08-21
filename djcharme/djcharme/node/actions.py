@@ -214,6 +214,7 @@ def _get_prov(anno, user, client):
     Args:
         anno(URIRef): The annotation uri.
         user(User): The user details.
+        client(client): The Client object from a request
 
     Returns:
         a list of triples.
@@ -310,16 +311,20 @@ def _format_submitted_annotation(graph):
         graph.add((subject, pred, obj))
 
 
-def change_annotation_state(resource_id, new_graph, user):
-    '''
-        Advance the status of an annotation
-        - string **resource_id**
-            the resource URL
-        - string **new_graph**
-            the name of the graph/state to move the annotation to
-        - **user**
-            information about the user
-    '''
+def change_annotation_state(resource_id, new_graph, request):
+    """
+    Advance the status of an annotation.
+
+    Args:
+        annotation_id (str): The id of the annotation.
+        new_graph (str): The name of the graph/state to move the annotation to.
+        request (WSGIRequest): The incoming request.
+
+    Returns:
+        graph (rdflib.graph.Graph): The new graph containing the updated
+        annotation.
+
+    """
     old_graph = find_annotation_graph(resource_id)
     if old_graph == None:
         raise NotFoundError(("Annotation %s not found" % resource_id))
@@ -328,11 +333,10 @@ def change_annotation_state(resource_id, new_graph, user):
     if old_graph == "invalid" or old_graph == "retired":
         raise UserError(("Current annotation status of %s is final. Status " \
                          "has not been updated." % old_graph))
-
     old_g = generate_graph(CharmeMiddleware.get_store(), old_graph)
-
+    user = request.user
     if not _is_my_annotation(old_g, resource_id, user.username):
-        if not _is_moderator(user.username):
+        if not _is_moderator(request):
             raise SecurityError(("You do not have the required permission " \
                                  "to update the status of annotation %s" %
                                  resource_id))
@@ -358,25 +362,12 @@ def change_annotation_state(resource_id, new_graph, user):
         new_g.add(res)
 
     # Add new prov data
-    person_uri = (getattr(settings, 'NODE_URI', NODE_URI)
-                  + '/%s/%s' % (RESOURCE, uuid.uuid4().hex))
-    new_g.add((URIRef(resource_id), URIRef(OA + 'annotatedAt'),
-                    Literal(datetime.utcnow())))
-    new_g.add((URIRef(resource_id), URIRef(OA + 'annotatedBy'),
-               URIRef(person_uri)))
-    new_g.add((URIRef(person_uri), URIRef(RDF + 'type'),
-                    URIRef(FOAF + 'Person')))
-    new_g.add((URIRef(person_uri),
-                    URIRef(FOAF + 'accountName'),
-                    Literal(user.username)))
-    if user.last_name != None and len(user.last_name) > 0:
-        new_g.add((URIRef(person_uri),
-                        URIRef(FOAF + 'familyName'),
-                        Literal(user.last_name)))
-    if user.first_name != None and len(user.first_name) > 0:
-        new_g.add((URIRef(person_uri),
-                        URIRef(FOAF + 'givenName'),
-                        Literal(user.first_name)))
+    prov = _get_prov(URIRef(resource_id), user, request.client)
+    for triple in prov:
+        try:
+            new_g.add(triple)
+        except Exception as ex:
+            raise ParseError(str(ex))
     return new_g
 
 
@@ -403,9 +394,19 @@ def _is_my_annotation(graph, resource_id, username):
     return False
 
 
-def _is_moderator(username):
-    # TODO
-    return False
+def _is_moderator(request):
+    """
+    Check to see if this user is in the moderator group.
+
+    Args:
+        request (WSGIRequest): The incoming request.
+
+    Returns:
+        boolean True if the user is listed as a member of the moderator group.
+
+    """
+    groups = request.user.groups.values_list('name', flat=True)
+    return "moderator" in groups
 
 
 def _get_people(graph, annotation_id):
@@ -424,7 +425,7 @@ def _get_people(graph, annotation_id):
     for res in graph.triples((_format_resource_uri_ref(annotation_id),
                               URIRef(OA + 'annotatedBy'), None)):
         for res2 in graph.triples((res[2], URIRef(RDF + 'type'),
-                    URIRef(FOAF + 'Person'))):
+                                   URIRef(FOAF + 'Person'))):
             for res3 in graph.triples((res2[0], None, None)):
                 people.append(res3)
     return people
@@ -446,7 +447,7 @@ def _get_organization(graph, annotation_id):
     for res in graph.triples((_format_resource_uri_ref(annotation_id),
                               URIRef(OA + 'annotatedBy'), None)):
         for res2 in graph.triples((res[2], URIRef(RDF + 'type'),
-                    URIRef(FOAF + 'Organization'))):
+                                   URIRef(FOAF + 'Organization'))):
             for res3 in graph.triples((res2[0], None, None)):
                 organization.append(res3)
     return organization
@@ -468,13 +469,23 @@ def _get_software(graph, annotation_id):
     for res in graph.triples((_format_resource_uri_ref(annotation_id),
                               URIRef(OA + 'serializedBy'), None)):
         for res2 in graph.triples((res[2], URIRef(RDF + 'type'),
-                    URIRef(PROV + 'SoftwareAgent'))):
+                                   URIRef(PROV + 'SoftwareAgent'))):
             for res3 in graph.triples((res2[0], None, None)):
                 software.append(res3)
     return software
 
 
 def find_annotation_graph(resource_id):
+    """
+    Find the graph that contains the given resource.
+
+    Args:
+        resource_id(str): The id of the resource.
+
+    Returns:
+        str The name of the graph or None.
+
+    """
     triple = (_format_resource_uri_ref(resource_id), None, None)
     for graph in [ANNO_SUBMITTED, ANNO_STABLE, ANNO_RETIRED, ANNO_INVALID]:
         new_g = generate_graph(CharmeMiddleware.get_store(), graph)
