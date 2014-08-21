@@ -138,7 +138,7 @@ def format_graph_iri(graph, baseurl='http://dummyhost'):
             the graph name
         * return String
     '''
-    if 'http://' in graph:
+    if ('http://' in graph) or ('https://' in graph):
         return graph
 
     return '%s/%s' % (getattr(settings, 'SPARQL_DATA', baseurl), graph)
@@ -258,7 +258,7 @@ def _format_resource_uri_ref(resource_id):
     '''
         Returns the URIRef associated with the id for this specific node
     '''
-    if resource_id.startswith('http:'):
+    if resource_id.startswith('http:') or resource_id.startswith('https:'):
         return URIRef(resource_id)
     return URIRef('%s/%s/%s' % (getattr(settings, 'NODE_URI', NODE_URI),
                                 RESOURCE,
@@ -324,11 +324,10 @@ def change_annotation_state(resource_id, new_graph, user):
     if old_graph == None:
         raise NotFoundError(("Annotation %s not found" % resource_id))
     if old_graph == new_graph:
-#          return
-        pass
-#     if old_graph == "invalid" or old_graph == "retired":
-#         raise UserError(("Current annotation status of %s is final. Status " \
-#                          "has not been updated." % old_graph))
+        return
+    if old_graph == "invalid" or old_graph == "retired":
+        raise UserError(("Current annotation status of %s is final. Status " \
+                         "has not been updated." % old_graph))
 
     old_g = generate_graph(CharmeMiddleware.get_store(), old_graph)
 
