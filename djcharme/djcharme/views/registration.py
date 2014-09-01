@@ -15,7 +15,9 @@ from django.http.response import HttpResponseRedirect, HttpResponse, \
 from provider.oauth2.models import AccessToken
 
 from djcharme import mm_render_to_response
-from djcharme.charme_security_model import UserForm, UserUpdateForm
+from djcharme.charme_security_model import UserForm, UserUpdateForm, \
+    UserProfileUpdateForm
+from djcharme.models import UserProfile
 from djcharme.security_middleware import is_valid_token
 
 
@@ -34,6 +36,9 @@ def _register_user(request):
                             first_name=user_form.cleaned_data.get('first_name'),
                             last_name=user_form.cleaned_data.get('last_name'))
             user.save()
+            user_profile = UserProfile.objects.create(
+                            user_id=user.id,
+                            show_email=user_form.cleaned_data.get('show_email'))
             return HttpResponseRedirect(reverse('login'))
         except IntegrityError:
             LOGGING.debug('Username is already registered')
@@ -49,9 +54,12 @@ def _update_user(request):
     LOGGING.debug('_update_user')
     context = {}
     user_form = UserUpdateForm(request.POST, instance=request.user)
-    if user_form.is_valid():
+    user_profile_form = UserProfileUpdateForm(request.POST,
+                                              instance=request.user.userprofile)
+    if user_form.is_valid() and user_profile_form.is_valid:
         try:
             user_form.save()
+            user_profile_form.save()
             context = {}
             return mm_render_to_response(request, context,
                         'registration/profile_change_done.html')
@@ -61,6 +69,7 @@ def _update_user(request):
             errors.append(u'Username is already registered')
 
     context['user_form'] = user_form
+    context['user_profile_form'] = user_profile_form
     return mm_render_to_response(request, context,
                                  'registration/profile_change_form.html')
 
@@ -85,6 +94,7 @@ def profile_change(request):
         LOGGING.debug('method is POST')
         return _update_user(request)
     else:  # GET
+        # Set up initial values
         user = request.user
         orig_values = {}
         orig_values['username'] = user.get_username
@@ -93,6 +103,11 @@ def profile_change(request):
         orig_values['email'] = user.email
         user_form = UserUpdateForm(initial=orig_values)
         context['user_form'] = user_form
+        user_profile = user.userprofile
+        orig_values = {}
+        orig_values['show_email'] = user_profile.show_email
+        user_profile_form = UserProfileUpdateForm(initial=orig_values)
+        context['user_profile_form'] = user_profile_form
         return mm_render_to_response(request, context,
                                      'registration/profile_change_form.html')
 

@@ -40,6 +40,11 @@
 					<td class=error>{{ user_form.email.errors }}</td>
 				</tr>
 				<tr>
+					<td><label>{% trans "Show my email in annotations:" noop %}</label></td>
+					<td>{{ user_form.show_email }}</td>
+					<td class=error>{{ user_form.show_email.errors }}</td>
+				</tr>
+				<tr>
 					<td><label>{% trans "Password:" noop %}</label></td>
 					<td>{{ user_form.password }}</td>
 					<td class=error>{{ user_form.password.errors }}</td>

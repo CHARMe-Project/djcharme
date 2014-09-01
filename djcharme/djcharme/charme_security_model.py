@@ -10,12 +10,13 @@ from django.contrib.auth import authenticate, get_user_model
 from django.contrib.auth.backends import ModelBackend
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
-from django.forms.fields import CharField, EmailField
+from django.forms.fields import BooleanField, CharField, EmailField
 from django.forms.forms import Form
 from django.forms.widgets import PasswordInput
 from django.utils.text import capfirst
 
 from djcharme.exception import SecurityError
+from djcharme.models import UserProfile
 
 
 LOGGING = logging.getLogger(__name__)
@@ -29,6 +30,7 @@ class UserForm(Form):
     confirm_password = CharField(max_length=30, widget=PasswordInput(),
                                  required=True)
     email = EmailField(required=False)
+    show_email = BooleanField(required=False)
 
     def clean(self):
         if (self.cleaned_data.get('password')
@@ -38,14 +40,20 @@ class UserForm(Form):
             )
         return self.cleaned_data
 
-class UserUpdateForm(forms.ModelForm):
-    first_name = CharField(max_length=30, required=False)
-    last_name = CharField(max_length=30, required=False)
-    email = EmailField(required=False)
 
+class UserUpdateForm(forms.ModelForm):
     class Meta:
         model = User
         fields = ('first_name', 'last_name', 'email')
+
+    def clean(self):
+        return self.cleaned_data
+
+
+class UserProfileUpdateForm(forms.ModelForm):
+    class Meta:
+        model = UserProfile
+        fields = ('show_email',)
 
     def clean(self):
         return self.cleaned_data

@@ -37,6 +37,7 @@ from urllib2 import URLError
 import uuid
 
 from django.conf import settings
+from django.db.models import ObjectDoesNotExist
 from rdflib import Graph, URIRef, Literal
 from rdflib.graph import ConjunctiveGraph
 from rdflib.namespace import Namespace
@@ -239,11 +240,14 @@ def _get_prov(anno, user, client):
         triples.append((URIRef(person_uri),
                         URIRef(FOAF + 'givenName'),
                         Literal(user.first_name)))
-    # TODO add back in when we give the user the option
-#     if user.email != None and len(user.email) > 0:
-#         triples.append((URIRef(person_uri),
-#                         URIRef(FOAF + 'mbox'),
-#                         Literal(user.email)))
+    try:
+        show_email = user.userprofile.show_email
+    except ObjectDoesNotExist:
+        show_email = False
+    if show_email and user.email != None and len(user.email) > 0:
+        triples.append((URIRef(person_uri),
+                        URIRef(FOAF + 'mbox'),
+                        Literal(user.email)))
     if client.name != None and len(client.name) > 0:
         triples.append((anno, URIRef(OA + 'annotatedBy'),
                         URIRef(client.url)))

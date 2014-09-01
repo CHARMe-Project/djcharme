@@ -45,6 +45,11 @@
 					<td class=error>{{ user_form.email.errors }}</td>
 				</tr>
 				<tr>
+					<td><label>{% trans "Show my email in annotations:" noop %}</label></td>
+					<td>{{ user_profile_form.show_email }}</td>
+					<td class=error>{{ user_profile_form.show_email.errors }}</td>
+				</tr>
+				<tr>
 					<td></td>
 					<td style="text-align: right;"><input type="submit"
 						value="Update account"></td>
