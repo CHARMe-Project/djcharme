@@ -18,6 +18,7 @@ from djcharme import mm_render_to_response
 from djcharme.charme_security_model import UserForm, UserUpdateForm, \
     UserProfileUpdateForm
 from djcharme.models import UserProfile
+from django.db.models import ObjectDoesNotExist
 from djcharme.security_middleware import is_valid_token
 
 
@@ -39,6 +40,7 @@ def _register_user(request):
             user_profile = UserProfile.objects.create(
                             user_id=user.id,
                             show_email=user_form.cleaned_data.get('show_email'))
+            user_profile.save()
             return HttpResponseRedirect(reverse('login'))
         except IntegrityError:
             LOGGING.debug('Username is already registered')
@@ -54,12 +56,24 @@ def _update_user(request):
     LOGGING.debug('_update_user')
     context = {}
     user_form = UserUpdateForm(request.POST, instance=request.user)
-    user_profile_form = UserProfileUpdateForm(request.POST,
+    create_profile = False
+    try:
+        user_profile_form = UserProfileUpdateForm(request.POST,
                                               instance=request.user.userprofile)
+    except ObjectDoesNotExist:
+        user_profile_form = UserProfileUpdateForm(request.POST)
+        create_profile = True
     if user_form.is_valid() and user_profile_form.is_valid:
         try:
             user_form.save()
-            user_profile_form.save()
+            if create_profile:
+                user_profile = UserProfile.objects.create(
+                            user_id=request.user.id,
+                            show_email=
+                            user_profile_form.base_fields.get('show_email'))
+                user_profile.save()
+            else:
+                user_profile_form.save()
             context = {}
             return mm_render_to_response(request, context,
                         'registration/profile_change_done.html')
@@ -103,9 +117,13 @@ def profile_change(request):
         orig_values['email'] = user.email
         user_form = UserUpdateForm(initial=orig_values)
         context['user_form'] = user_form
-        user_profile = user.userprofile
+
         orig_values = {}
-        orig_values['show_email'] = user_profile.show_email
+        try:
+            user_profile = user.userprofile
+            orig_values['show_email'] = user_profile.show_email
+        except ObjectDoesNotExist:
+            orig_values['show_email'] = False
         user_profile_form = UserProfileUpdateForm(initial=orig_values)
         context['user_profile_form'] = user_profile_form
         return mm_render_to_response(request, context,
