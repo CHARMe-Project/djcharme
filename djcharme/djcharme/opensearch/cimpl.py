@@ -139,7 +139,7 @@ class COSAtomResponse(OSAtomResponse):
         """
         LOGGING.debug("COSAtomResponse:generate_url(%s, context)",
                       str(osHostURL))
-        return _generate_url_id(osHostURL, context.get('target', None))
+        return _generate_url_id(osHostURL, None)
 
     def digest_search_results(self, results, context):
         LOGGING.debug("COSAtomResponse:digest_search_results(results, context)")
