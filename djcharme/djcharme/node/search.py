@@ -151,14 +151,24 @@ def _do__open_search(query_attr, graph, triples):
 
 
 def _populate_annotations(graph, triples, depth=3):
-    ret = []
+    graphs = {}
     for row in triples:
         tmp_g = Graph()
+        date = None
         for subj in _extract_subject(graph, row[0], depth):
             # Hide the username
             if subj[1] != URIRef('http://xmlns.com/foaf/0.1/accountName'):
                 tmp_g.add(subj)
-        ret.append(tmp_g)
+            if subj[1] == URIRef('http://www.w3.org/ns/oa#annotatedAt'):
+                date = subj[2]
+        if date != None:
+            graphs[date] = tmp_g
+    keys = graphs.keys()
+    keys.sort()
+    keys.reverse()
+    ret = []
+    for key in keys:
+        ret.insert(0, graphs.get(key))
     return ret
 
 
