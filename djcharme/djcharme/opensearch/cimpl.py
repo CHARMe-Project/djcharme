@@ -60,11 +60,11 @@ ANNOTATIONS = "annotations"
 SEARCH_TERMS = "searchTerms"
 
 
-def _generate_url_id(url, iid=None):
-    if iid is None:
+def _generate_url_id(url, context):
+    if context.get('suggest') != None and context.get('suggest'):
+        return "%s/suggest" % (url)
+    else:
         return "%s/search" % (url)
-
-    return "%s/search/%s" % (url, iid)
 
 
 def _import_count_and_page(context):
@@ -139,7 +139,7 @@ class COSAtomResponse(OSAtomResponse):
         """
         LOGGING.debug("COSAtomResponse:generate_url(%s, context)",
                       str(osHostURL))
-        return _generate_url_id(osHostURL, None)
+        return _generate_url_id(osHostURL, context)
 
     def digest_search_results(self, results, context):
         LOGGING.debug("COSAtomResponse:digest_search_results(results, context)")

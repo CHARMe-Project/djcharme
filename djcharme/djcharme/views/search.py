@@ -46,29 +46,19 @@ from djcharme.charme_middleware import CharmeMiddleware
 from djcharme.node.actions import FORMAT_MAP
 from djcharme.node.search import get_multi_value_parameter_names
 
-hostURL = 'http://localhost:8000'
-
 LOGGING = logging.getLogger(__name__)
+
 
 def _build_host_url(request):
     hostname = socket.getfqdn()
-    if request.META['SERVER_PORT'] != str(80):
+    if (request.META['SERVER_PORT'] != str(80)
+        and request.META['SERVER_PORT'] != str(443)):
         hostname = "%s:%s" % (hostname, request.META['SERVER_PORT'])
-    return 'http://%s' % (hostname)
-
-'''
-def _build_host_url(request):
-    root = ''
-    if non_root_url != 'PROJECT_NAME_PAR' :
-        root = non_root_url
-    if 'localhost' in request.get_host():
-        return 'http://%s' % (request.get_host())
-
     if request.is_secure():
-        return 'https://%s/%s' % (request.get_host(), root)
+        return 'https://%s' % (hostname)
     else:
-        return 'http://%s/%s' % (request.get_host(), root)
-'''
+        return 'http://%s' % (hostname)
+
 
 def get_home(request):
     context = {}

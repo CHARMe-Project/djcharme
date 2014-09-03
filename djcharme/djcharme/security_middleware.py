@@ -33,16 +33,12 @@ Created on 2 Nov 2012
 '''
 import logging
 import re
-import socket
-import urllib
 
 from django.conf import settings
 from django.contrib.auth.models import AnonymousUser
 from django.core.urlresolvers import reverse
 from django.http.response import HttpResponse
 from provider.oauth2.models import AccessToken
-
-from djcharme.exception import SecurityError, MissingCookieError
 
 
 DJ_SECURITY_SHAREDSECRET_ERROR = 'No SECURITY_SHAREDSECRET parameter \
@@ -230,39 +226,3 @@ class SecurityMiddleware(object):
             except Exception as ex:
                 LOGGER.warn('process_response - Caught: ' + ex)
         return response
-
-
-def _build_url(request):
-    hostname = request.environ.get('HTTP_HOST', socket.getfqdn())
-    # hostname = socket.getfqdn()
-    new_get = request.GET.copy()
-
-    # Removed the LOGIN request attribute as we now know we need to do a login
-    new_get.pop(LOGIN, None)
-    # Removed the LOGOUT request attribute as we now know we need to do a logout
-    new_get.pop(LOGOUT, None)
-
-    # if request.META['SERVER_PORT'] != 80:
-    #    hostname = "%s:%s" % (hostname, request.META['SERVER_PORT'])
-    return 'http://%s%s?%s' % (hostname,
-                               request.path,
-                               urllib.urlencode(new_get))
-
-
-def _is_authenticated(request):
-    """
-        Verifies the presence and validity of a paste cookie.
-        If the cookie is not present the request is redirected
-        to the url specified in LOGIN_SERVICE
-        ** Return ** a tuple containing (timestamp, userid, tokens, user_data)
-        ** raise ** a DJ_SecurityException if the ticket is not valid
-    """
-    if auth_tkt_name() in request.COOKIES:
-        message = ("_is_authenticated - Found cookie '%s': %s in cookies" %
-                   (auth_tkt_name(), request.COOKIES.get(auth_tkt_name())))
-        LOGGER.debug(message)
-        try:
-            return 'Something'
-        except Exception as ex:
-            raise SecurityError(ex)
-    raise MissingCookieError(AUTHENTICATION_COOKIE_MISSING)

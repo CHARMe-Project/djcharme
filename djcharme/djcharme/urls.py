@@ -82,6 +82,8 @@ urlpatterns = patterns('',
     url(r'^search/description', search.get_description,
         name='os_description'),
     url(r'^search/' + IFORMATS_RE, search.do_search, name='os_search'),
+    url(r'^suggest/description', search.get_description,
+        name='os_description'),
     url(r'^suggest/' + IFORMATS_RE, search.do_suggest, name='os_search'),
 
     # Tokens
