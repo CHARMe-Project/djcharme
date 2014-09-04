@@ -156,9 +156,7 @@ def _populate_annotations(graph, triples, depth=3):
         tmp_g = Graph()
         date = None
         for subj in _extract_subject(graph, row[0], depth):
-            # Hide the username
-            if subj[1] != URIRef('http://xmlns.com/foaf/0.1/accountName'):
-                tmp_g.add(subj)
+            tmp_g.add(subj)
             if subj[1] == URIRef('http://www.w3.org/ns/oa#annotatedAt'):
                 date = subj[2]
         if date != None:
