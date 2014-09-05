@@ -163,7 +163,6 @@ def _populate_annotations(graph, triples, depth=3):
             graphs[date] = tmp_g
     keys = graphs.keys()
     keys.sort()
-    keys.reverse()
     ret = []
     for key in keys:
         ret.insert(0, graphs.get(key))
