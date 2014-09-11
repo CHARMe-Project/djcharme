@@ -164,8 +164,13 @@ def _populate_annotations(graph, triples, depth=3):
     keys = graphs.keys()
     keys.sort()
     ret = []
+    # TODO get newestFirst from the user
+    newestFirst = True
     for key in keys:
-        ret.insert(0, graphs.get(key))
+        if newestFirst:
+            ret.insert(0, graphs.get(key))
+        else:
+            ret.append(graphs.get(key))
     return ret
 
 
