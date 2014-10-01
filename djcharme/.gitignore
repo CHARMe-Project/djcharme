@@ -1,13 +1,2 @@
-/dist
+/build
 /djcharme.egg-info
-/deployIndjcharme.sh
-/deployIndjcharme.sh~
-/sqlite.db
-/.settings
-/.project
-/.pydevproject
-/RemoteSystemsTempFiles
-/.metadata
-/.~lock.CHARMeNodeICD.odt#
-/.buildpath
-/.directory
