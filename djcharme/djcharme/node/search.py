@@ -58,26 +58,30 @@ PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
 PREFIX foaf: <http://xmlns.com/foaf/0.1/>"""
 
 ANNOTATIONS_SELECT = """
-SELECT Distinct ?anno"""
+SELECT Distinct ?anno ?annotatedAt"""
 
 ANNOTATIONS_SELECT_COUNT = """
 SELECT count(DISTINCT ?anno)"""
 
 ANNOTATIONS_ORDER = """
-ORDER BY ?anno"""
+ORDER BY DESC(?annotatedAt)"""
 
 ANNOTATIONS_FOR_DATA_TYPE = """
+?anno oa:annotatedAt ?annotatedAt .
 ?anno oa:hasTarget ?target .
 ?target rdf:type ?dataType ."""
 
 ANNOTATIONS_FOR_DOMAIN = """
+?anno oa:annotatedAt ?annotatedAt .
 ?anno oa:hasBody ?domainOfInterest .
 ?domainOfInterest rdf:type oa:SemanticTag ."""
 
 ANNOTATIONS_FOR_MOTIVATION = """
+?anno oa:annotatedAt ?annotatedAt .
 ?anno oa:motivatedBy ?motivation"""
 
 ANNOTATIONS_FOR_ORGANIZATION = """
+?anno oa:annotatedAt ?annotatedAt .
 ?anno oa:annotatedBy ?organization .
 ?organization rdf:type foaf:Organization .
 ?organization foaf:name ?organizationName ."""
@@ -86,17 +90,21 @@ ANNOTATIONS_FOR_REGION = """
 """  # TODO
 
 ANNOTATIONS_FOR_STATUS = """
+?anno oa:annotatedAt ?annotatedAt .
 ?anno oa:hasTarget ?target ."""
 
 ANNOTATIONS_FOR_TARGET = """
+?anno oa:annotatedAt ?annotatedAt .
 ?anno oa:hasTarget ?target ."""
 
 ANNOTATIONS_FOR_TITLE = """
+?anno oa:annotatedAt ?annotatedAt .
 ?anno oa:hasBody ?cit .
 ?cit cito:hasCitedEntity ?paper .
 ?paper text:query (dcterm:title '%s' 10) ."""
 
 ANNOTATIONS_FOR_USER = """
+?anno oa:annotatedAt ?annotatedAt .
 ?anno oa:annotatedBy ?person .
 ?person foaf:accountName ?userName"""
 
@@ -151,26 +159,12 @@ def _do__open_search(query_attr, graph, triples):
 
 
 def _populate_annotations(graph, triples, depth=3):
-    graphs = {}
+    ret = []
     for row in triples:
         tmp_g = Graph()
-        date = None
         for subj in _extract_subject(graph, row[0], depth):
             tmp_g.add(subj)
-            if subj[1] == URIRef('http://www.w3.org/ns/oa#annotatedAt'):
-                date = subj[2]
-        if date != None:
-            graphs[date] = tmp_g
-    keys = graphs.keys()
-    keys.sort()
-    ret = []
-    # TODO get newestFirst from the user
-    newestFirst = True
-    for key in keys:
-        if newestFirst:
-            ret.insert(0, graphs.get(key))
-        else:
-            ret.append(graphs.get(key))
+        ret.append(tmp_g)
     return ret
 
 
