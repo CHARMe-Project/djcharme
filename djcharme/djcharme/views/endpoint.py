@@ -269,7 +269,7 @@ def advance_status(request):
     '''
         Advance the status of an annotation
     '''
-    if isPOST(request) and 'application/json' in content_type(request):
+    if isPOST(request) and 'application/ld+json' in content_type(request):
         params = json.loads(request.body)
         LOGGING.info("advancing %s to state:%s", str(params.get('annotation')),
                      str(params.get('toState')))
@@ -295,7 +295,7 @@ def advance_status(request):
         return mm_render_to_response_error(request, '405.html', 405)
     else:
         messages.add_message(request, messages.ERROR,
-                             "Message must contain application/json")
+                             "Message must contain application/ld+json")
         return mm_render_to_response_error(request, '400.html', 400)
 
 

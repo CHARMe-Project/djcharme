@@ -118,6 +118,7 @@ ANNO_SUBMITTED = 'submitted'
 ANNO_INVALID = 'invalid'
 ANNO_STABLE = 'stable'
 ANNO_RETIRED = 'retired'
+GRAPH_NAMES = [ANNO_SUBMITTED, ANNO_INVALID, ANNO_STABLE, ANNO_RETIRED]
 
 NODE_URI = 'http://localhost/'
 AGENT_URI = 'agentID'
@@ -329,12 +330,13 @@ def change_annotation_state(resource_id, new_graph, request):
         annotation.
 
     """
+    _validate_graph_name(new_graph)
     old_graph = find_annotation_graph(resource_id)
     if old_graph == None:
         raise NotFoundError(("Annotation %s not found" % resource_id))
     if old_graph == new_graph:
         return
-    if old_graph == "invalid" or old_graph == "retired":
+    if old_graph == ANNO_INVALID or old_graph == ANNO_RETIRED:
         raise UserError(("Current annotation status of %s is final. Status " \
                          "has not been updated." % old_graph))
     old_g = generate_graph(CharmeMiddleware.get_store(), old_graph)
@@ -373,6 +375,24 @@ def change_annotation_state(resource_id, new_graph, request):
         except Exception as ex:
             raise ParseError(str(ex))
     return new_g
+
+
+def _validate_graph_name(graph_name):
+    """
+    Check that the graph name is valid.
+
+    Args:
+        graph_name (str): The graph name to validate
+    """
+    if graph_name in GRAPH_NAMES:
+        return
+    names = ''
+    for name in GRAPH_NAMES:
+        if names != '':
+            names = names + ', '
+        names = names + name
+    raise UserError(("The status of %s is not valid. It must be one of %s" %
+                     (graph_name, names)))
 
 
 def _is_my_annotation(graph, resource_id, username):

@@ -21,9 +21,9 @@ from djcharme.node.actions import (OA, FORMAT_MAP, find_annotation_graph,
                                    insert_rdf, ANNO_SUBMITTED, DATA,
                                    _collect_annotations, find_resource_by_id,
                                    change_annotation_state, PAGE)
-from djcharme.views import (isPOST, content_type, validate_mime_format,
-                            isOPTIONS, http_accept, get_format,
-                            check_mime_format, get_depth)
+from djcharme.views import (isDELETE, isPOST, content_type,
+                            validate_mime_format, isOPTIONS, http_accept,
+                            get_format, check_mime_format, get_depth)
 
 
 LOGGING = logging.getLogger(__name__)
@@ -178,7 +178,8 @@ def _advance_status(request):
     '''
         Advance the status of an annotation
     '''
-    if isPOST(request) and 'application/json' in content_type(request):
+    if isPOST(request) and ('application/ld+json' in content_type(request) or
+                            'application/json' in content_type(request)):
         params = json.loads(request.body)
         if not params.has_key('annotation') or not params.has_key('toState'):
             messages.add_message(request, messages.ERROR,
@@ -186,31 +187,48 @@ def _advance_status(request):
             return mm_render_to_response_error(request, '400.html', 400)
         LOGGING.info("advancing %s to state:%s", str(params.get('annotation')),
                      str(params.get('toState')))
-        tmp_g = change_annotation_state(params.get('annotation'),
-                                        params.get('toState'), request)
-        if tmp_g == None:
-            return HttpResponse()
-        else:
-            return HttpResponse(tmp_g.serialize())
+        change_annotation_state(params.get('annotation'),
+                                params.get('toState'), request)
+        return HttpResponse(status=204)
     elif not isPOST(request):
         messages.add_message(request, messages.ERROR,
                              "Message must be a POST")
         return mm_render_to_response_error(request, '405.html', 405)
     else:
         messages.add_message(request, messages.ERROR,
-                             "Message must contain application/json")
+                             "Message must contain application/ld+json")
         return mm_render_to_response_error(request, '400.html', 400)
 
+
+@csrf_exempt
 def process_resource(request, resource_id):
     """
         Process the resource dependent on the mime format.
     """
     try:
+        if isDELETE(request):
+            return _delete(request, resource_id)
         return _process_resource(request, resource_id)
     except Exception as ex:
         LOGGING.error("process_resource - unexpected error: %s", str(ex))
         messages.add_message(request, messages.ERROR, str(ex))
         return mm_render_to_response_error(request, '500.html', 500)
+
+
+def _delete(request, resource_id):
+    """
+        Delete the resource, move it to the 'retired' graph.
+    """
+    LOGGING.info("advancing %s to state:retired", str(resource_id))
+    try:
+        change_annotation_state(resource_id, 'retired', request)
+    except NotFoundError as ex:
+        messages.add_message(request, messages.ERROR, str(ex))
+        return mm_render_to_response_error(request, '404.html', 404)
+    except SecurityError as ex:
+        messages.add_message(request, messages.ERROR, str(ex))
+        return mm_render_to_response_error(request, '403.html', 403)
+    return HttpResponse(status=204)
 
 
 def _process_resource(request, resource_id):
