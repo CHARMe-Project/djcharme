@@ -121,15 +121,22 @@ ANNO_RETIRED = 'retired'
 GRAPH_NAMES = [ANNO_SUBMITTED, ANNO_INVALID, ANNO_STABLE, ANNO_RETIRED]
 
 NODE_URI = 'http://localhost/'
-AGENT_URI = 'agentID'
-ANNO_URI = 'annoID'
-BODY_URI = 'bodyID'
+TARGET_URI = 'targetID'
+REPLACEMENT_URIS = ['agentID', 'annoID', 'bodyID', TARGET_URI,
+                    'subsetSelectorID']
+REPLACEMENT_URIS_MULTIVALUED = ['variableID', 'spatialExtentID',
+                                'temporalExtentID', 'verticalExtentID']
+
 CH_NODE = 'chnode'
 
 RESOURCE = 'resource'
 DATA = 'data'
 PAGE = 'page'
 
+ALLOWED_CREATE_TARGET_TYPE = [URIRef(OA + 'Composite'),
+                              URIRef('http://www.charme.org.uk/def/' \
+                                     'DatasetSubset'),
+                              URIRef(OA + 'SpecificResource')]
 
 def format_graph_iri(graph, baseurl='http://dummyhost'):
     '''
@@ -271,13 +278,11 @@ def _format_resource_uri_ref(resource_id):
                                 resource_id))
 
 
-def _format_node_uri_ref(uriref, agent_uri, anno_uri, body_uri):
+def _format_node_uri_ref(uriref, generated_uris):
     '''
         Rewrite a URIRef according to the node configuration
         * uriref:rdflib.URIRef
-        * agent_uri:String as hexadecimal
-        * anno_uri:String as hexadecimal
-        * body_uri:String as hexadecimal
+        * generated_uris:dict of generated URIs
     '''
     if isinstance(uriref, URIRef) and NODE_URI in uriref:
         uriref = URIRef(uriref.replace(NODE_URI,
@@ -288,15 +293,12 @@ def _format_node_uri_ref(uriref, agent_uri, anno_uri, body_uri):
         uriref = URIRef(uriref.replace(CH_NODE + ':',
                                        getattr(settings, 'NODE_URI', NODE_URI)
                                        + '/'))
-    if isinstance(uriref, URIRef) and AGENT_URI in uriref:
-        uriref = URIRef(uriref.replace(AGENT_URI, "%s/%s" %
-                                       (RESOURCE, agent_uri)))
-    if isinstance(uriref, URIRef) and ANNO_URI in uriref:
-        uriref = URIRef(uriref.replace(ANNO_URI, "%s/%s" %
-                                       (RESOURCE, anno_uri)))
-    if isinstance(uriref, URIRef) and BODY_URI in uriref:
-        uriref = URIRef(uriref.replace(BODY_URI, "%s/%s" %
-                                       (RESOURCE, body_uri)))
+
+    if isinstance(uriref, URIRef):
+        for key in generated_uris.keys():
+            if key in uriref:
+                uriref = URIRef(uriref.replace(key, "%s/%s" %
+                                               (RESOURCE, generated_uris[key])))
     return uriref
 
 
@@ -304,16 +306,48 @@ def _format_submitted_annotation(graph):
     '''
         Formats the graph according to the node configuration
     '''
-    agent_uri = uuid.uuid4().hex
-    anno_uri = uuid.uuid4().hex
-    body_uri = uuid.uuid4().hex
+    generated_uris = {}
+    for id_ in REPLACEMENT_URIS:
+        generated_uris[id_] = uuid.uuid4().hex
 
+    target_id_found = False
+    target_id_valid = False
     for subject, pred, obj in graph:
         graph.remove((subject, pred, obj))
-        subject = _format_node_uri_ref(subject, agent_uri, anno_uri, body_uri)
-        pred = _format_node_uri_ref(pred, agent_uri, anno_uri, body_uri)
-        obj = _format_node_uri_ref(obj, agent_uri, anno_uri, body_uri)
+        # The use of TARGET_URI is only allowed for specific types
+        if ((isinstance(subject, URIRef) and TARGET_URI in subject) or
+            (isinstance(obj, URIRef) and TARGET_URI in obj)):
+            target_id_found = True
+            if (pred == URIRef(RDF + 'type') and
+                (obj in ALLOWED_CREATE_TARGET_TYPE)):
+                target_id_valid = True
+        for value in REPLACEMENT_URIS_MULTIVALUED:
+            if value in subject:
+                bits = subject.split(CH_NODE + ':')
+                if len(bits) > 1:
+                    key = bits[1]
+                    if key not in generated_uris.keys():
+                        generated_uris[key] = uuid.uuid4().hex
+            if value in obj:
+                bits = subject.split(CH_NODE + ':')
+                if len(bits) > 1:
+                    key = bits[1]
+                    if key not in generated_uris.keys():
+                        generated_uris[key] = uuid.uuid4().hex
+
+        subject = _format_node_uri_ref(subject, generated_uris)
+        pred = _format_node_uri_ref(pred, generated_uris)
+        obj = _format_node_uri_ref(obj, generated_uris)
         graph.add((subject, pred, obj))
+
+    if target_id_found and not target_id_valid:
+        types = ""
+        for type_ in ALLOWED_CREATE_TARGET_TYPE:
+            if types != "":
+                types = types + ', '
+            types = types + type_
+        raise UserError((TARGET_URI + ' may only be used for ' + types +
+                         ' target types'))
 
 
 def change_annotation_state(resource_id, new_graph, request):
