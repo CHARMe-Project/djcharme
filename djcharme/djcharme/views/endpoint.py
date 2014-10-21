@@ -22,10 +22,10 @@ from djcharme.exception import NotFoundError
 from djcharme.exception import SecurityError
 from djcharme.exception import SerializeError, StoreConnectionError
 from djcharme.exception import UserError
-from djcharme.node.actions import OA, FORMAT_MAP, \
-    ANNO_SUBMITTED, insert_rdf, find_resource_by_id, RESOURCE, \
+from djcharme.node.actions import  insert_rdf, find_resource_by_id, \
     _collect_annotations, change_annotation_state, find_annotation_graph, \
     generate_graph, rdf_format_from_mime
+from djcharme.node.constants import OA, FORMAT_MAP, RESOURCE, SUBMITTED
 from djcharme.views import isGET, isPOST, isPUT, isDELETE, \
     isHEAD, isPATCH, content_type
 
@@ -253,7 +253,7 @@ def index(request, graph='stable'):
 
 def insert(request):
     '''
-        Inserts in the triplestore a new annotation under the "ANNO_SUBMITTED"
+        Inserts in the triplestore a new annotation under the "SUBMITTED"
         graph
     '''
     req_format = _validate_format(request)
@@ -261,7 +261,7 @@ def insert(request):
     if request.method == 'POST':
         triples = request.body
         anno_uri = insert_rdf(triples, req_format, request.user, request.client,
-                              graph=ANNO_SUBMITTED)
+                              graph=SUBMITTED)
         return HttpResponse(anno_uri)
 
 

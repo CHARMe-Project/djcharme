@@ -14,7 +14,7 @@ from rdflib.graph import Graph
 
 from djcharme.charme_middleware import CharmeMiddleware
 from djcharme.local_settings import SPARQL_DATA
-from djcharme.node.actions import ANNO_SUBMITTED
+from djcharme.node.constants import SUBMITTED
 from djcharme.test import _dump_store, \
     turtle_usecase2_data_citing
 from djcharme.views.node_gate import insert
@@ -27,7 +27,7 @@ class Test(unittest.TestCase):
         self.factory = RequestFactory()
 
     def tearDown(self):
-        identifier = '%s/%s' % (SPARQL_DATA, ANNO_SUBMITTED)
+        identifier = '%s/%s' % (SPARQL_DATA, SUBMITTED)
         g = Graph(store=self.store, identifier=identifier)
         for res in g:
             g.remove(res)

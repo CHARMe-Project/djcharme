@@ -1,4 +1,4 @@
-from djcharme.node.actions import FORMAT_MAP
+from djcharme.node.constants import FORMAT_MAP
 
 
 FORMAT = 'format'

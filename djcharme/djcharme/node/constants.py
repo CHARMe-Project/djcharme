@@ -1,0 +1,86 @@
+'''
+BSD Licence
+Copyright (c) 2014, Science & Technology Facilities Council (STFC)
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without modification,
+are permitted provided that the following conditions are met:
+
+    * Redistributions of source code must retain the above copyright notice,
+        this list of conditions and the following disclaimer.
+    * Redistributions in binary form must reproduce the above copyright notice,
+        this list of conditions and the following disclaimer in the
+        documentation and/or other materials provided with the distribution.
+    * Neither the name of the Science & Technology Facilities Council (STFC)
+        nor the names of its contributors may be used to endorse or promote
+        products derived from this software without specific prior written
+        permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
+ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
+ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+'''
+from rdflib import URIRef
+from rdflib.namespace import Namespace
+
+
+CONTENT_JSON = 'application/ld+json'
+CONTENT_RDF = 'application/rdf+xml'
+CONTENT_TURTLE = 'text/turtle'
+
+# order is important
+FORMAT_MAP = {'json-ld': CONTENT_JSON,
+              'xml': CONTENT_RDF,
+              'rdf': CONTENT_RDF,
+              'turtle': CONTENT_TURTLE,
+              'ttl': CONTENT_TURTLE}
+
+CH_NS = "http://charm.eu/ch#"
+# Create a namespace object for the CHARMe namespace.
+RDF = Namespace("http://www.w3.org/1999/02/22-rdf-syntax-ns#")
+OA = Namespace("http://www.w3.org/ns/oa#")
+FOAF = Namespace("http://xmlns.com/foaf/0.1/")
+PROV = Namespace("http://www.w3.org/ns/prov#")
+CH = Namespace(CH_NS)
+
+SUBMITTED = 'submitted'
+INVALID = 'invalid'
+STABLE = 'stable'
+RETIRED = 'retired'
+GRAPH_NAMES = [SUBMITTED, STABLE, RETIRED, INVALID]
+
+NODE_URI = 'http://localhost/'
+TARGET_URI = 'targetID'
+ANNO_URI = 'annoID'
+REPLACEMENT_URIS = ['agentID', ANNO_URI, 'bodyID', TARGET_URI,
+                    'subsetSelectorID']
+REPLACEMENT_URIS_MULTIVALUED = ['variableID', 'spatialExtentID',
+                                'temporalExtentID', 'verticalExtentID']
+
+CH_NODE = 'chnode'
+
+RESOURCE = 'resource'
+DATA = 'data'
+PAGE = 'page'
+
+ALLOWED_CREATE_TARGET_TYPE = [URIRef(OA + 'Composite'),
+                              URIRef('http://www.charme.org.uk/def/' \
+                                     'DatasetSubset'),
+                              URIRef(OA + 'SpecificResource')]
+
+
+
+
+
+
+
+
+
+

@@ -40,7 +40,6 @@ from django.conf import settings
 from django.db.models import ObjectDoesNotExist
 from rdflib import Graph, URIRef, Literal
 from rdflib.graph import ConjunctiveGraph
-from rdflib.namespace import Namespace
 
 from djcharme.charme_middleware import CharmeMiddleware
 from djcharme.exception import NotFoundError
@@ -49,94 +48,22 @@ from djcharme.exception import SecurityError
 from djcharme.exception import StoreConnectionError
 from djcharme.exception import UserError
 from djcharme.node import _extract_subject
+from djcharme.node.constants import ANNO_URI, NODE_URI, TARGET_URI, \
+    REPLACEMENT_URIS, REPLACEMENT_URIS_MULTIVALUED
+from djcharme.node.constants import FOAF, RDF, PROV, OA, CH_NODE
+from djcharme.node.constants import FORMAT_MAP, ALLOWED_CREATE_TARGET_TYPE, \
+    RESOURCE
+from djcharme.node.constants import GRAPH_NAMES, SUBMITTED, INVALID, RETIRED
 
 
 LOGGING = logging.getLogger(__name__)
 
-'''
-SELECT_ANNOTATION = """
-    PREFIX an: <http://charm.eu/data/anno/>
-    SELECT ?s ?p ?o
-    WHERE {
-        an:%s ?p ?o
-    }
-"""
-
-SELECT_ANNOTATIONS = """
-PREFIX charm: <http://charm.eu/ch#>
-SELECT * WHERE {
-    ?s a charm:anno .
-    ?s ?p ?o
-}
-"""
-
-DESCRIBE_ANNOTATIONS = """
-PREFIX charm: <http://charm.eu/ch#>
-DESCRIBE ?s
-WHERE {
-  ?s a charm:anno .
-}
-"""
-
-DESCRIBE_ANNOTATION = """
-    PREFIX an: <http://charm.eu/data/anno/>
-    DESCRIBE an:%s
-"""
-
-CONSTRUCT_ANNOTATION = """
-PREFIX an: <http://charm.eu/data/anno/>
-prefix oa: <http://www.w3.org/ns/oa#>
-prefix charm: <http://charm.eu/ch#>
-
-CONSTRUCT { an:%s ?p ?o .}
-
-WHERE {
- an:%s ?p ?o .
-}
-"""
-'''
-FORMAT_MAP = {'json-ld': 'application/ld+json',
-              'xml': 'application/rdf+xml',
-              'rdf': 'application/rdf+xml',
-              'turtle': 'text/turtle',
-              'ttl': 'text/turtle'}
 
 def rdf_format_from_mime(mimetype):
     for key, value in FORMAT_MAP.iteritems():
         if mimetype == value:
             return key
 
-CH_NS = "http://charm.eu/ch#"
-# Create a namespace object for the CHARMe namespace.
-RDF = Namespace("http://www.w3.org/1999/02/22-rdf-syntax-ns#")
-OA = Namespace("http://www.w3.org/ns/oa#")
-FOAF = Namespace("http://xmlns.com/foaf/0.1/")
-PROV = Namespace("http://www.w3.org/ns/prov#")
-CH = Namespace(CH_NS)
-
-ANNO_SUBMITTED = 'submitted'
-ANNO_INVALID = 'invalid'
-ANNO_STABLE = 'stable'
-ANNO_RETIRED = 'retired'
-GRAPH_NAMES = [ANNO_SUBMITTED, ANNO_INVALID, ANNO_STABLE, ANNO_RETIRED]
-
-NODE_URI = 'http://localhost/'
-TARGET_URI = 'targetID'
-REPLACEMENT_URIS = ['agentID', 'annoID', 'bodyID', TARGET_URI,
-                    'subsetSelectorID']
-REPLACEMENT_URIS_MULTIVALUED = ['variableID', 'spatialExtentID',
-                                'temporalExtentID', 'verticalExtentID']
-
-CH_NODE = 'chnode'
-
-RESOURCE = 'resource'
-DATA = 'data'
-PAGE = 'page'
-
-ALLOWED_CREATE_TARGET_TYPE = [URIRef(OA + 'Composite'),
-                              URIRef('http://www.charme.org.uk/def/' \
-                                     'DatasetSubset'),
-                              URIRef(OA + 'SpecificResource')]
 
 def format_graph_iri(graph, baseurl='http://dummyhost'):
     '''
@@ -203,7 +130,7 @@ def insert_rdf(data, mimetype, user, client, graph=None, store=None):
         if (res[1] == URIRef(RDF + 'type')
             and res[2] == URIRef(OA + 'Annotation')):
             anno_uri = res[0]
-            prov = _get_prov(anno_uri, user, client)
+            prov = _get_prov(anno_uri, user, client)[0]
             for triple in prov:
                 try:
                     final_g.add(triple)
@@ -216,54 +143,175 @@ def insert_rdf(data, mimetype, user, client, graph=None, store=None):
     return anno_uri
 
 
-def _get_prov(anno, user, client):
+def modify_rdf(request, mimetype):
+    """
+    Modify an annotation in the triplestore.
+
+    Args:
+        request (WSGIRequest): The http request
+        mimetype (str): The document mimetype
+
+    Return:
+        a URIRef containing the URI of the modified annotation
+
+    """
+    LOGGING.debug("modify_rdf(request, " + str(mimetype) + ")")
+    store = CharmeMiddleware.get_store()
+    tmp_g = Graph()
+    data = request.body
+    # Necessary as RDFlib does not contain the json-ld lib
+    try:
+        tmp_g.parse(data=data, format=mimetype)
+    except SyntaxError as ex:
+        try:
+            raise ParseError(str(ex))
+        except UnicodeDecodeError:
+            raise ParseError(ex.__dict__["_why"])
+
+    original_uri = _get_annotation_uri_from_graph(tmp_g)
+    # replace original uri in tmp graph
+    for res in tmp_g:
+        if res[0] == original_uri:
+            tmp_g.remove(res)
+            new_res = (URIRef('%s:%s' % (CH_NODE, ANNO_URI)), res[1], res[2])
+            tmp_g.add(new_res)
+
+    activity_uri = URIRef((getattr(settings, 'NODE_URI', NODE_URI)
+                  + '/%s/%s' % (RESOURCE, uuid.uuid4().hex)))
+    # retire original
+    if (change_annotation_state(original_uri, RETIRED, request, activity_uri)
+        == None):
+        raise UserError(("Current annotation status of %s is final. Data " \
+                         "has not been updated." % RETIRED))
+
+    _format_submitted_annotation(tmp_g)
+    final_g = generate_graph(store, SUBMITTED)
+
+    for nspace in tmp_g.namespaces():
+        final_g.store.bind(str(nspace[0]), nspace[1])
+    anno_uri = ''
+    for res in tmp_g:
+        if (res[1] == URIRef(RDF + 'type')
+            and res[2] == URIRef(OA + 'Annotation')):
+            anno_uri = res[0]
+            prov, annotated_at, person_uri = _get_prov(anno_uri, request.user,
+                                                      request.client)
+            for triple in prov:
+                try:
+                    final_g.add(triple)
+                except Exception as ex:
+                    raise ParseError(str(ex))
+            modify_prov = _get_modify_prov(anno_uri, original_uri, annotated_at,
+                                           activity_uri, person_uri)
+            for triple in modify_prov:
+                try:
+                    final_g.add(triple)
+                except Exception as ex:
+                    raise ParseError(str(ex))
+        try:
+            final_g.add(res)
+        except Exception as ex:
+            raise ParseError(str(ex))
+    return anno_uri
+
+
+def _get_annotation_uri_from_graph(graph):
+    """
+    Get the URI of the annotation from the given graph.
+
+    Args:
+        graph (rdflib.graph.Graph): The graph containing the annotation
+
+    Return:
+        a URIRef containing the URI of the annotation
+
+    """
+    for res in graph:
+        if (res[1] == URIRef(RDF + 'type')
+            and res[2] == URIRef(OA + 'Annotation')):
+            return res[0]
+
+
+def _get_prov(annotation_uri, user, client):
     """
     Get the provenance data for the annotation.
 
     Args:
-        anno(URIRef): The annotation uri.
-        user(User): The user details.
-        client(client): The Client object from a request
+        annotation_uri (URIRef): The URI of the annotation
+        user (User): The user details.
+        client (client): The Client object from a request
 
     Returns:
-        a list of triples.
+        a list of triples
+        a URIRef containing the annotated at time
+        a URIRef containing the person URI
 
     """
-    person_uri = (getattr(settings, 'NODE_URI', NODE_URI)
-                  + '/%s/%s' % (RESOURCE, uuid.uuid4().hex))
+    person_uri = URIRef((getattr(settings, 'NODE_URI', NODE_URI)
+                  + '/%s/%s' % (RESOURCE, uuid.uuid4().hex)))
     triples = []
-    triples.append((anno, URIRef(OA + 'annotatedAt'),
-                    Literal(datetime.utcnow())))
-    triples.append((anno, URIRef(OA + 'annotatedBy'), URIRef(person_uri)))
-    triples.append((URIRef(person_uri), URIRef(RDF + 'type'),
+    annotated_at = Literal(datetime.utcnow())
+    triples.append((annotation_uri, URIRef(OA + 'annotatedAt'), annotated_at))
+    triples.append((annotation_uri, URIRef(OA + 'annotatedBy'), person_uri))
+    triples.append((person_uri, URIRef(RDF + 'type'),
                     URIRef(FOAF + 'Person')))
-    triples.append((URIRef(person_uri),
-                    URIRef(FOAF + 'accountName'),
+    triples.append((person_uri, URIRef(FOAF + 'accountName'),
                     Literal(user.username)))
     if user.last_name != None and len(user.last_name) > 0:
-        triples.append((URIRef(person_uri),
-                        URIRef(FOAF + 'familyName'),
+        triples.append((person_uri, URIRef(FOAF + 'familyName'),
                         Literal(user.last_name)))
     if user.first_name != None and len(user.first_name) > 0:
-        triples.append((URIRef(person_uri),
-                        URIRef(FOAF + 'givenName'),
+        triples.append((person_uri, URIRef(FOAF + 'givenName'),
                         Literal(user.first_name)))
     try:
         show_email = user.userprofile.show_email
     except ObjectDoesNotExist:
         show_email = False
     if show_email and user.email != None and len(user.email) > 0:
-        triples.append((URIRef(person_uri),
-                        URIRef(FOAF + 'mbox'),
-                        Literal(user.email)))
+        triples.append((person_uri, URIRef(FOAF + 'mbox'), Literal(user.email)))
     if client.name != None and len(client.name) > 0:
-        triples.append((anno, URIRef(OA + 'annotatedBy'),
+        triples.append((annotation_uri, URIRef(OA + 'annotatedBy'),
                         URIRef(client.url)))
         triples.append((URIRef(client.url), URIRef(RDF + 'type'),
                         URIRef(FOAF + 'Organization')))
         triples.append((URIRef(client.url), URIRef(FOAF + 'name'),
                         Literal(client.name)))
 
+    return (triples, annotated_at, person_uri)
+
+
+def _get_modify_prov(annotation_uri, original_anno_uri, annotated_at,
+                     activity_uri, person_uri):
+    """
+    Get the provenance data for the annotation.
+
+    Args:
+        annotation_uri (URIRef): The URI of the annotation
+        original_anno_uri (URIRef): The uri of the original annotation.
+        annotated_at (Literal): The time the annotation was created
+        activity_uri (URIRef): The URI of the Activity
+        person_uri (URIRef): The URI of the person
+
+    Returns:
+        a list of triples.
+
+    """
+    triples = []
+    triples.append((annotation_uri, URIRef(PROV + 'wasGeneratedBy'),
+                    activity_uri))
+    triples.append((annotation_uri, URIRef(PROV + 'wasRevisionOf'),
+                    original_anno_uri))
+
+    triples.append((activity_uri, URIRef(RDF + 'type'),
+                    URIRef(PROV + 'Activity')))
+    triples.append((activity_uri, URIRef(PROV + 'invalidated'),
+                    original_anno_uri))
+    triples.append((activity_uri, URIRef(PROV + 'generated'), annotation_uri))
+
+    triples.append((activity_uri, URIRef(PROV + 'wasStartedAt'), annotated_at))
+    triples.append((activity_uri, URIRef(PROV + 'wasStartedBy'), person_uri))
+    triples.append((activity_uri, URIRef(PROV + 'wasEndedAt'), annotated_at))
+    triples.append((activity_uri, URIRef(PROV + 'wasEndedBy'), person_uri))
     return triples
 
 
@@ -274,8 +322,7 @@ def _format_resource_uri_ref(resource_id):
     if resource_id.startswith('http:') or resource_id.startswith('https:'):
         return URIRef(resource_id)
     return URIRef('%s/%s/%s' % (getattr(settings, 'NODE_URI', NODE_URI),
-                                RESOURCE,
-                                resource_id))
+                                RESOURCE, resource_id))
 
 
 def _format_node_uri_ref(uriref, generated_uris):
@@ -350,51 +397,55 @@ def _format_submitted_annotation(graph):
                          ' target types'))
 
 
-def change_annotation_state(resource_id, new_graph, request):
+def change_annotation_state(annotation_uri, new_graph, request,
+                            activity_uri=None):
     """
     Advance the status of an annotation.
 
     Args:
-        annotation_id (str): The id of the annotation.
+        annotation_uri (URIRef): The URI of the annotation.
         new_graph (str): The name of the graph/state to move the annotation to.
         request (WSGIRequest): The incoming request.
+        activity_uri (URIRef): The uri of the Activity
 
     Returns:
         graph (rdflib.graph.Graph): The new graph containing the updated
         annotation.
 
     """
+    LOGGING.debug("change_annotation_state(%s, %s, request, %s)",
+                  annotation_uri, new_graph, activity_uri)
+    annotation_uri = _format_resource_uri_ref(annotation_uri)
     _validate_graph_name(new_graph)
-    old_graph = find_annotation_graph(resource_id)
+    old_graph = find_annotation_graph(annotation_uri)
     if old_graph == None:
-        raise NotFoundError(("Annotation %s not found" % resource_id))
+        raise NotFoundError(("Annotation %s not found" % annotation_uri))
     if old_graph == new_graph:
         return
-    if old_graph == ANNO_INVALID or old_graph == ANNO_RETIRED:
+    if old_graph == INVALID or old_graph == RETIRED:
         raise UserError(("Current annotation status of %s is final. Status " \
                          "has not been updated." % old_graph))
     old_g = generate_graph(CharmeMiddleware.get_store(), old_graph)
     user = request.user
-    if not _is_my_annotation(old_g, resource_id, user.username):
+    if not _is_my_annotation(old_g, annotation_uri, user.username):
         if not _is_moderator(request):
             raise SecurityError(("You do not have the required permission " \
                                  "to update the status of annotation %s" %
-                                 resource_id))
+                                 annotation_uri))
 
     new_g = generate_graph(CharmeMiddleware.get_store(), new_graph)
     # Move the people
-    for res in _get_people(old_g, resource_id):
+    for res in _get_people(old_g, annotation_uri):
         old_g.remove(res)
         new_g.add(res)
     # Copy the organization
-    for res in _get_organization(old_g, resource_id):
+    for res in _get_organization(old_g, annotation_uri):
         new_g.add(res)
     # Copy the software
-    for res in _get_software(old_g, resource_id):
+    for res in _get_software(old_g, annotation_uri):
         new_g.add(res)
     # Move the annotation
-    for res in old_g.triples((_format_resource_uri_ref(resource_id), None,
-                              None)):
+    for res in old_g.triples((annotation_uri, None, None)):
         old_g.remove(res)
         # We are only allowed one annotatedAt per annotation
         if res[1] == URIRef(OA + 'annotatedAt'):
@@ -402,12 +453,18 @@ def change_annotation_state(resource_id, new_graph, request):
         new_g.add(res)
 
     # Add new prov data
-    prov = _get_prov(URIRef(resource_id), user, request.client)
+    prov = _get_prov(annotation_uri, user, request.client)[0]
     for triple in prov:
         try:
             new_g.add(triple)
         except Exception as ex:
             raise ParseError(str(ex))
+
+    # If provided add activity
+    if activity_uri != None:
+        new_g.add((annotation_uri, URIRef(PROV + 'wasInvalidatedBy'),
+                   activity_uri))
+
     return new_g
 
 
@@ -421,6 +478,7 @@ def _validate_graph_name(graph_name):
     if graph_name in GRAPH_NAMES:
         return
     names = ''
+    # prepare error message
     for name in GRAPH_NAMES:
         if names != '':
             names = names + ', '
@@ -429,13 +487,13 @@ def _validate_graph_name(graph_name):
                      (graph_name, names)))
 
 
-def _is_my_annotation(graph, resource_id, username):
+def _is_my_annotation(graph, annotation_uri, username):
     """
     Check to see if this annotation was edited by the user.
 
     Args:
         graph (rdflib.graph.Graph): The graph containing the annotation.
-        annotation_id (str): The id of the annotation.
+        annotation_uri (URIRef): The URI of the annotation.
         userername (str): The name of the user to check
 
     Returns:
@@ -443,8 +501,7 @@ def _is_my_annotation(graph, resource_id, username):
         Person object of the annotation.
 
     """
-    for res in graph.triples((_format_resource_uri_ref(resource_id),
-                              URIRef(OA + 'annotatedBy'),
+    for res in graph.triples((annotation_uri, URIRef(OA + 'annotatedBy'),
                               None)):
         for res2 in graph.triples((res[2], URIRef(FOAF + 'accountName'), None)):
             if str(res2[2]) == username:
@@ -467,21 +524,21 @@ def _is_moderator(request):
     return "moderator" in groups
 
 
-def _get_people(graph, annotation_id):
+def _get_people(graph, annotation_uri):
     """
     Get the list of people associated with the annotation in the graph.
 
     Args:
         graph (rdflib.graph.Graph): The graph containing the annotation.
-        annotation_id (str): The id of the annotation.
+        annotation_uri (URIRef): The URI of the annotation.
 
     Returns:
         list[tuple] The list of people associated with the annotation.
 
     """
     people = []
-    for res in graph.triples((_format_resource_uri_ref(annotation_id),
-                              URIRef(OA + 'annotatedBy'), None)):
+    for res in graph.triples((annotation_uri, URIRef(OA + 'annotatedBy'),
+                              None)):
         for res2 in graph.triples((res[2], URIRef(RDF + 'type'),
                                    URIRef(FOAF + 'Person'))):
             for res3 in graph.triples((res2[0], None, None)):
@@ -489,21 +546,21 @@ def _get_people(graph, annotation_id):
     return people
 
 
-def _get_organization(graph, annotation_id):
+def _get_organization(graph, annotation_uri):
     """
     Get the list of organizations associated with the annotation in the graph.
 
     Args:
         graph (rdflib.graph.Graph): The graph containing the annotation.
-        annotation_id (str): The id of the annotation.
+        annotation_uri (URIRef): The URI of the annotation.
 
     Returns:
         list[tuple] The list of organizations associated with the annotation.
 
     """
     organization = []
-    for res in graph.triples((_format_resource_uri_ref(annotation_id),
-                              URIRef(OA + 'annotatedBy'), None)):
+    for res in graph.triples((annotation_uri, URIRef(OA + 'annotatedBy'),
+                              None)):
         for res2 in graph.triples((res[2], URIRef(RDF + 'type'),
                                    URIRef(FOAF + 'Organization'))):
             for res3 in graph.triples((res2[0], None, None)):
@@ -511,21 +568,21 @@ def _get_organization(graph, annotation_id):
     return organization
 
 
-def _get_software(graph, annotation_id):
+def _get_software(graph, annotation_uri):
     """
     Get the list of software associated with the annotation in the graph.
 
     Args:
         graph (rdflib.graph.Graph): The graph containing the annotation.
-        annotation_id (str): The id of the annotation.
+        annotation_uri (URIRef): The URI of the annotation.
 
     Returns:
         list[tuple] The list of software associated with the annotation.
 
     """
     software = []
-    for res in graph.triples((_format_resource_uri_ref(annotation_id),
-                              URIRef(OA + 'serializedBy'), None)):
+    for res in graph.triples((annotation_uri, URIRef(OA + 'serializedBy'),
+                              None)):
         for res2 in graph.triples((res[2], URIRef(RDF + 'type'),
                                    URIRef(PROV + 'SoftwareAgent'))):
             for res3 in graph.triples((res2[0], None, None)):
@@ -545,7 +602,7 @@ def find_annotation_graph(resource_id):
 
     """
     triple = (_format_resource_uri_ref(resource_id), None, None)
-    for graph in [ANNO_SUBMITTED, ANNO_STABLE, ANNO_RETIRED, ANNO_INVALID]:
+    for graph in GRAPH_NAMES:
         new_g = generate_graph(CharmeMiddleware.get_store(), graph)
         if triple in new_g:
             return graph

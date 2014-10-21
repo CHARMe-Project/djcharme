@@ -43,7 +43,8 @@ from rdflib.term import URIRef
 
 from djcharme.charme_middleware import CharmeMiddleware
 from djcharme.node import _extract_subject
-from djcharme.node.actions import generate_graph, ANNO_STABLE
+from djcharme.node.actions import generate_graph
+from djcharme.node.constants import STABLE
 
 
 LOGGING = logging.getLogger(__name__)
@@ -232,12 +233,12 @@ def _get_graph(query_attr):
     """
     Get the graph based on the value of the attribute 'status'.
 
-    If the users has not set a value for 'status' the use the ANNO_STABLE graph
+    If the users has not set a value for 'status' the use the STABLE graph
 
     Args:
         query_attr (dict): The query parameters from the users request.
     """
-    graph_name = str(query_attr.get('status', ANNO_STABLE))
+    graph_name = str(query_attr.get('status', STABLE))
     return generate_graph(CharmeMiddleware.get_store(), graph_name)
 
 

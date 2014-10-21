@@ -12,7 +12,8 @@ from rdflib.graph import Graph
 
 from djcharme.charme_middleware import CharmeMiddleware
 from djcharme.local_settings import SPARQL_DATA
-from djcharme.node.actions import format_graph_iri, FORMAT_MAP
+from djcharme.node.actions import format_graph_iri
+from djcharme.node.constants import FORMAT_MAP
 from djcharme.test import turtle_usecase1
 from djcharme.views.endpoint import endpoint
 from djcharme.views.node_gate import insert

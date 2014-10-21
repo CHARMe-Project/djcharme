@@ -21,6 +21,7 @@ MY_SITE.domain = getattr(settings, 'SITE_DOMAIN')
 MY_SITE.name = getattr(settings, 'SITE_NAME')
 MY_SITE.save()
 
+
 def get_resource(file_name):
     return os.path.join(__path__[0], 'resources', file_name)
 

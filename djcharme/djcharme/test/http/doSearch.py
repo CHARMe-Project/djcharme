@@ -15,9 +15,8 @@ from rdflib.graph import Graph
 
 from djcharme import settings
 from djcharme.charme_middleware import CharmeMiddleware
-from djcharme.node.actions import FORMAT_MAP, ANNO_STABLE, ANNO_SUBMITTED
-from djcharme.test import _prepare_get, test_insert_anotation, turtle_usecase1, \
-    extract_annotation_uri
+from djcharme.node.constants import SUBMITTED
+from djcharme.test import _prepare_get, test_insert_anotation, turtle_usecase1
 from djcharme.views.search import get_description, do_search
 
 
@@ -58,7 +57,7 @@ class Test(unittest.TestCase):
                           content_type='text/turtle',
                           data=turtle_usecase1)
 
-        params = {'title': 'L*', 'status': ANNO_SUBMITTED, 'format': 'json-ld'}
+        params = {'title': 'L*', 'status': SUBMITTED, 'format': 'json-ld'}
         request = _prepare_get(self.factory, '/search/atom?%s' %
                                urlencode(params))
         request.META['HTTP_ACCEPT'] = "application/atom+xml"
@@ -68,7 +67,7 @@ class Test(unittest.TestCase):
                       response.content, "Error!")
 
         params = {'title': 'L*'}
-        params = {'title': 'L*', 'status': ANNO_SUBMITTED, 'format': 'xml'}
+        params = {'title': 'L*', 'status': SUBMITTED, 'format': 'xml'}
         request = _prepare_get(self.factory, '/search/atom?%s' %
                                urlencode(params))
         request.META['HTTP_ACCEPT'] = "application/atom+xml"

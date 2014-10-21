@@ -6,7 +6,8 @@ Created on 18 Nov 2013
 from httplib import HTTPConnection
 
 from djcharme import settings, HTTP_PROXY, HTTP_PROXY_PORT
-from djcharme.node.actions import ANNO_STABLE, insert_rdf, ANNO_SUBMITTED
+from djcharme.node.actions import insert_rdf
+from djcharme.node.constants import SUBMITTED
 
 
 def get_document(source, headers={}, host='data.datacite.org', proxy=None,
@@ -47,7 +48,7 @@ def load_doi(doi, graph, user):
                                 proxy_port=getattr(settings, HTTP_PROXY_PORT))
 
         insert_rdf(response, 'xml', user,
-                   graph=ANNO_SUBMITTED).serialize(format='turtle')
+                   graph=SUBMITTED).serialize(format='turtle')
     except Exception as ex:
         # pass
         print ex

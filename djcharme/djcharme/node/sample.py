@@ -11,7 +11,8 @@ from provider.oauth2.models import Client
 from rdflib.plugins.parsers.notation3 import BadSyntax
 
 from djcharme import get_resource
-from djcharme.node.actions import insert_rdf, ANNO_SUBMITTED
+from djcharme.node.actions import insert_rdf
+from djcharme.node.constants import SUBMITTED
 
 
 LOGGING = logging.getLogger(__name__)
@@ -138,7 +139,7 @@ def load_sample():
 
             try:
                 insert_rdf(annotation, 'turtle', user, client,
-                                   graph=ANNO_SUBMITTED)
+                                   graph=SUBMITTED)
             except BadSyntax as ex:
                 LOGGING.warn(ex)
                 continue

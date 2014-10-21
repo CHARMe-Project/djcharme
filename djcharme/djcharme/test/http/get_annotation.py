@@ -5,20 +5,21 @@ Created on 25 Jul 2013
 '''
 
 
-from djcharme.views.node_gate import process_page, process_resource, \
-    process_data
-from djcharme.charme_middleware import CharmeMiddleware
-from djcharme.test import turtle_usecase1, test_insert_anotation, \
-    extract_annotation_uri, _prepare_get
+import logging
+import unittest
+
 from django.contrib.auth.models import User
 from django.test.client import RequestFactory
-
 from rdflib.graph import Graph
 
-import unittest
-import logging
 from djcharme import settings
-from djcharme.node.actions import FORMAT_MAP
+from djcharme.charme_middleware import CharmeMiddleware
+from djcharme.node.constants import FORMAT_MAP
+from djcharme.test import turtle_usecase1, test_insert_anotation, \
+    extract_annotation_uri, _prepare_get
+from djcharme.views.node_gate import process_page, process_resource, \
+    process_data
+
 
 LOGGING = logging.getLogger(__name__)
 

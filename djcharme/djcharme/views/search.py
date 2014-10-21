@@ -43,8 +43,9 @@ from rdflib.plugin import PluginException
 
 from djcharme import mm_render_to_response_error
 from djcharme.charme_middleware import CharmeMiddleware
-from djcharme.node.actions import FORMAT_MAP
+from djcharme.node.constants import FORMAT_MAP
 from djcharme.node.search import get_multi_value_parameter_names
+
 
 LOGGING = logging.getLogger(__name__)
 

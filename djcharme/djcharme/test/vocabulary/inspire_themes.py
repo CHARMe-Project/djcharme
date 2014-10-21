@@ -5,7 +5,6 @@ Created on 19 Nov 2013
 '''
 import unittest
 from rdflib.plugins.stores.sparqlstore import SPARQLUpdateStore
-from rdflib.graph import Graph
 from djcharme.node.doi import get_document
 from urllib import urlencode
 

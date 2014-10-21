@@ -4,13 +4,16 @@ Created on 31 May 2013
 @author: mnagni
 '''
 import unittest
-from djcharme.node.actions import insert_rdf,\
-    _format_node_uri_ref, ANNO_SUBMITTED
+
 from rdflib.graph import Graph
 from rdflib.term import URIRef
-from djcharme.local_settings import SPARQL_DATA
+
 from djcharme.charme_middleware import CharmeMiddleware
+from djcharme.local_settings import SPARQL_DATA
+from djcharme.node.actions import insert_rdf, _format_node_uri_ref
+from djcharme.node.constants import SUBMITTED
 from djcharme.test import turtle_data, jsonld_data, rdf_data
+
 
 class Test(unittest.TestCase):
 
@@ -37,7 +40,7 @@ class Test(unittest.TestCase):
             self.g.remove(res)
 
     def test_insert_turtle(self):
-        tmp_g = insert_rdf(turtle_data, 'turtle', graph=ANNO_SUBMITTED)
+        tmp_g = insert_rdf(turtle_data, 'turtle', graph=SUBMITTED)
         final_doc = tmp_g.serialize()
         print tmp_g.serialize()
         self.assertFalse('localhost' in final_doc, "Error ingesting turtle")
@@ -48,7 +51,7 @@ class Test(unittest.TestCase):
         self.assertFalse('chnode:bodyID' in final_doc, "Error ingesting turtle")
         
     def test_insert_jsonld(self):
-        tmp_g = insert_rdf(jsonld_data, 'json-ld', graph=ANNO_SUBMITTED)
+        tmp_g = insert_rdf(jsonld_data, 'json-ld', graph=SUBMITTED)
         final_doc = tmp_g.serialize()
         print tmp_g.serialize()        
         self.assertFalse('localhost' in final_doc, "Error ingesting jsonld")
@@ -58,7 +61,7 @@ class Test(unittest.TestCase):
         self.assertFalse('localhost/annoID' in final_doc, "Error ingesting jsonld")  
     
     def test_insert_rdf(self):
-        tmp_g = insert_rdf(rdf_data, 'xml', graph=ANNO_SUBMITTED)
+        tmp_g = insert_rdf(rdf_data, 'xml', graph=SUBMITTED)
         final_doc = tmp_g.serialize()
         print tmp_g.serialize()
         self.assertFalse('localhost' in final_doc, "Error ingesting rdf")

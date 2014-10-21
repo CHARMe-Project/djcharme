@@ -13,9 +13,8 @@ from rdflib.graph import Graph
 
 from djcharme import settings
 from djcharme.charme_middleware import CharmeMiddleware
-from djcharme.node.actions import FORMAT_MAP
-from djcharme.test import turtle_usecase1, test_insert_anotation, rdf_usecase1, \
-    turtle_semantic, turtle_citation
+from djcharme.node.constants import FORMAT_MAP
+from djcharme.test import test_insert_anotation, turtle_semantic
 
 
 class Test(unittest.TestCase):

@@ -60,6 +60,9 @@ urlpatterns = patterns('',
 
     # Accepts external new annotation
     url(r'^insert/annotation', node_gate.insert, name='node_gate.insert'),
+    
+    # Modify an annotation
+    url(r'^modify/annotation', node_gate.modify, name='node_gate.modify'),
 
     # Annotation status management
     url(r'^advance_status/', node_gate.advance_status,

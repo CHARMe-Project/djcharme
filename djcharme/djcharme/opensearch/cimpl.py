@@ -44,7 +44,7 @@ from ceda_markup.opensearch.osquery import OSQuery
 from ceda_markup.opensearch.template.atom import OSAtomResponse
 from ceda_markup.opensearch.template.osresponse import OSEngineResponse, Result
 
-from djcharme.node.actions import CH_NODE, FOAF, RDF, ANNO_STABLE
+from djcharme.node.constants import CH_NODE, FOAF, RDF, STABLE
 from djcharme.node.search import annotation_resource, get_suggestions, \
     get_search_results
 from djcharme.views import check_mime_format
@@ -335,7 +335,7 @@ class COSQuery(OSQuery):
         params.append(OSParam("organization", "name",
                               namespace=FOAF, default=''))
         params.append(OSParam("status", "status",
-                              namespace=CH_NODE, default=ANNO_STABLE))
+                              namespace=CH_NODE, default=STABLE))
         params.append(OSParam("target", "target",
                               namespace=CH_NODE, default=''))
         params.append(OSParam("title", "title",
