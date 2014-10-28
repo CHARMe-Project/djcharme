@@ -67,6 +67,11 @@ SELECT count(DISTINCT ?anno)"""
 ANNOTATIONS_ORDER = """
 ORDER BY DESC(?annotatedAt)"""
 
+ANNOTATIONS_FOR_BODY_TYPE = """
+?anno oa:annotatedAt ?annotatedAt .
+?anno oa:hasBody ?body .
+?body rdf:type ?bodyType ."""
+
 ANNOTATIONS_FOR_DATA_TYPE = """
 ?anno oa:annotatedAt ?annotatedAt .
 ?anno oa:hasTarget ?target .
@@ -109,7 +114,8 @@ ANNOTATIONS_FOR_USER = """
 ?anno oa:annotatedBy ?person .
 ?person foaf:accountName ?userName"""
 
-ANNOTATION_CLAUSES = {'dataType':ANNOTATIONS_FOR_DATA_TYPE,
+ANNOTATION_CLAUSES = {'bodyType':ANNOTATIONS_FOR_BODY_TYPE,
+                      'dataType':ANNOTATIONS_FOR_DATA_TYPE,
                       'domainOfInterest':ANNOTATIONS_FOR_DOMAIN,
                       'motivation':ANNOTATIONS_FOR_MOTIVATION,
                       'organization':ANNOTATIONS_FOR_ORGANIZATION,
@@ -283,6 +289,11 @@ def get_suggestions(parameter_names, query_attr):
                         _get_where_for_parameter_name(query_attr,
                                                       parameter_name))
     for parameter_name in parameter_name_list:
+        if parameter_name == "bodyType" or parameter_name == "*":
+            result, count = _get_body_types(graph, "bodyType", where_clause,
+                                            limit, offset)
+            results.append(result)
+            total_results = total_results + count
         if parameter_name == "dataType" or parameter_name == "*":
             result, count = _get_data_types(graph, "dataType", where_clause,
                                             limit, offset)
@@ -305,6 +316,30 @@ def get_suggestions(parameter_names, query_attr):
             results.append(result)
             total_results = total_results + count
     return results, total_results
+
+
+def _get_body_types(graph, parameter_name, where_clause, limit, offset):
+    statement = (PREFIX +
+    """
+    SELECT Distinct ?bodyType
+    WHERE {
+    {%s}
+    ?anno oa:hasBody ?body .
+    ?body rdf:type ?bodyType .
+    }
+    ORDER BY ?bodyType
+    LIMIT %s
+    %s""" % (where_clause, limit, offset))
+    count_statement = (PREFIX +
+    """
+    SELECT  count (Distinct ?bodyType)
+    WHERE {
+    {%s}
+    ?anno oa:hasBody ?body .
+    ?body rdf:type ?bodyType .
+    }""") % where_clause
+    return _do_query(graph, parameter_name, statement, count_statement,
+                     "http://www.w3.org/2004/02/skos/core#prefLabel")
 
 
 def _get_data_types(graph, parameter_name, where_clause, limit, offset):

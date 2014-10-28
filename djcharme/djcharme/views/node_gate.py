@@ -61,9 +61,9 @@ def index(request, graph='stable'):
     try:
         tmp_g = _collect_annotations(graph)
     except StoreConnectionError as ex:
+        LOGGING.error("Internal error. " + str(ex))
         messages.add_message(request, messages.ERROR, ex)
-        return mm_render_to_response_error(request, '503.html', 503)
-
+        return mm_render_to_response_error(request, '500.html', 500)
 
     req_format = validate_mime_format(request)
 
@@ -140,6 +140,10 @@ def _insert(request):
             LOGGING.debug("insert parsing error: %s", str(ex))
             messages.add_message(request, messages.ERROR, str(ex))
             return mm_render_to_response_error(request, '400.html', 400)
+        except StoreConnectionError as ex:
+            LOGGING.error("Internal error. " + str(ex))
+            messages.add_message(request, messages.ERROR, ex)
+            return mm_render_to_response_error(request, '500.html', 500)
         return HttpResponse(anno_uri, content_type=return_format)
 
 
@@ -194,6 +198,10 @@ def _modify(request):
             LOGGING.debug("modify parsing error: %s", str(ex))
             messages.add_message(request, messages.ERROR, str(ex))
             return mm_render_to_response_error(request, '400.html', 400)
+        except StoreConnectionError as ex:
+            LOGGING.error("Internal error. " + str(ex))
+            messages.add_message(request, messages.ERROR, ex)
+            return mm_render_to_response_error(request, '500.html', 500)
         return HttpResponse(anno_uri, content_type=return_format)
 
 

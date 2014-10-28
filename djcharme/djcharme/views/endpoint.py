@@ -231,9 +231,9 @@ def index(request, graph='stable'):
     try:
         tmp_g = _collect_annotations(graph)
     except StoreConnectionError as ex:
+        LOGGING.error("Internal error. " + str(ex))
         messages.add_message(request, messages.ERROR, ex)
         return mm_render_to_response_error(request, '503.html', 503)
-
 
     req_format = _validate_format(request)
 

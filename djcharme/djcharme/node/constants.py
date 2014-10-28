@@ -42,7 +42,7 @@ FORMAT_MAP = {'json-ld': CONTENT_JSON,
               'turtle': CONTENT_TURTLE,
               'ttl': CONTENT_TURTLE}
 
-CH_NS = "http://charm.eu/ch#"
+CH_NS = "http://purl.org/voc/charme#"
 # Create a namespace object for the CHARMe namespace.
 RDF = Namespace("http://www.w3.org/1999/02/22-rdf-syntax-ns#")
 OA = Namespace("http://www.w3.org/ns/oa#")

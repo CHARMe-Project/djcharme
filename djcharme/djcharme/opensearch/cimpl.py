@@ -326,6 +326,8 @@ class COSQuery(OSQuery):
                               default=str(START_INDEX_DEFAULT)))
         params.append(OSParam("q", "searchTerms",
                               namespace=OS_NAMESPACE, default=''))
+        params.append(OSParam("bodyType", "type",
+                              namespace=RDF, default=''))
         params.append(OSParam("dataType", "type",
                               namespace=RDF, default=''))
         params.append(OSParam("domainOfInterest", "domainOfInterest",

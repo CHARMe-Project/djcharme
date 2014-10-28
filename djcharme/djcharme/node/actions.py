@@ -36,6 +36,7 @@ import logging
 from urllib2 import URLError
 import uuid
 
+from SPARQLWrapper.SPARQLExceptions import EndPointNotFound
 from django.conf import settings
 from django.db.models import ObjectDoesNotExist
 from rdflib import Graph, URIRef, Literal
@@ -134,12 +135,17 @@ def insert_rdf(data, mimetype, user, client, graph=None, store=None):
             for triple in prov:
                 try:
                     final_g.add(triple)
+                except EndPointNotFound as ex:
+                    raise StoreConnectionError("Cannot insert triple. "
+                                               + str(ex))
                 except Exception as ex:
-                    raise ParseError(str(ex))
+                    raise ParseError("Cannot insert triple. " + str(ex))
         try:
             final_g.add(res)
+        except EndPointNotFound as ex:
+            raise StoreConnectionError("Cannot insert triple. " + str(ex))
         except Exception as ex:
-            raise ParseError(str(ex))
+            raise ParseError("Cannot insert triple. " + str(ex))
     return anno_uri
 
 
@@ -200,18 +206,23 @@ def modify_rdf(request, mimetype):
                 try:
                     final_g.add(triple)
                 except Exception as ex:
-                    raise ParseError(str(ex))
+                    raise ParseError("Cannot insert triple. " + str(ex))
             modify_prov = _get_modify_prov(anno_uri, original_uri, annotated_at,
                                            activity_uri, person_uri)
             for triple in modify_prov:
                 try:
                     final_g.add(triple)
+                except EndPointNotFound as ex:
+                    raise StoreConnectionError("Cannot insert triple. "
+                                               + str(ex))
                 except Exception as ex:
-                    raise ParseError(str(ex))
+                    raise ParseError("Cannot insert triple. " + str(ex))
         try:
             final_g.add(res)
+        except EndPointNotFound as ex:
+            raise StoreConnectionError("Cannot insert triple. " + str(ex))
         except Exception as ex:
-            raise ParseError(str(ex))
+            raise StoreConnectionError("Cannot insert triple. " + str(ex))
     return anno_uri
 
 
@@ -657,6 +668,8 @@ def _collect_annotations(graph_name):
             tmp_g.add(res)
     except URLError as ex:
         raise StoreConnectionError("Cannot open a connection with triple store"
-                                   " \n" + str(ex))
-
+                                   "\n" + str(ex))
+    except EndPointNotFound as ex:
+        raise StoreConnectionError("Cannot open a connection with triple store"
+                                   "\n" + str(ex))
     return tmp_g
