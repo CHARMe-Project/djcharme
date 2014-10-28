@@ -60,7 +60,7 @@ urlpatterns = patterns('',
 
     # Accepts external new annotation
     url(r'^insert/annotation', node_gate.insert, name='node_gate.insert'),
-    
+
     # Modify an annotation
     url(r'^modify/annotation', node_gate.modify, name='node_gate.modify'),
 
@@ -102,8 +102,14 @@ urlpatterns = patterns('',
     # Facets
     url(r'^facets/test', facets.test_facets, name='test_facets'),
 
+    # Server version
+    url(r'^version', node_gate.version),
+
     # Index pages
     url(r'^index/(\w+)', node_gate.index, name='charme.index.id'),
     url(r'^index', node_gate.index, name='index'),
+
+    # Anything else
     url(r'^', main_gui.welcome, name='charme.welcome'),
+
 )

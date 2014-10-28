@@ -34,6 +34,7 @@ from rdflib.namespace import Namespace
 CONTENT_JSON = 'application/ld+json'
 CONTENT_RDF = 'application/rdf+xml'
 CONTENT_TURTLE = 'text/turtle'
+CONTENT_TEXT = 'text/plain'
 
 # order is important
 FORMAT_MAP = {'json-ld': CONTENT_JSON,

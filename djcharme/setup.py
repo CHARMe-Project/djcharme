@@ -32,19 +32,19 @@ setup(
 
     # Adds dependencies
     install_requires=['Django==1.6.5',
-                      'SPARQLWrapper==1.6.1',
+                      'SPARQLWrapper==1.6.4',
                       'ceda-markup==0.1.0',
                       'cedatheme_mf54==1.0.0',
                       'django-classy-tags==0.5.1',
                       'django-cookie-law==1.0.1',
                       'django-oauth2-provider==0.2.7-dev',
-                      'html5lib==0.95',
+                      'html5lib==0.999',
                       'isodate==0.5.0',
                       'ordereddict==1.1',
                       'py-bcrypt==0.4',
-                      'pyparsing==1.5.7',
-                      'rdflib==4.1-dev',
-                      'rdflib-jsonld==0.1',
+                      'pyparsing==2.0.3',
+                      'rdflib==4.1.2',
+                      'rdflib-jsonld==0.2',
                       'shortuuid==0.4.2'
                       ],
 )
