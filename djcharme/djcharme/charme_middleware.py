@@ -91,7 +91,7 @@ class CharmeMiddleware(object):
     __osEngine = None
 
     DEFAULT_OPTIONS_HDR_RESPONSE = {
-        'Access-Control-Allow-Methods': 'GET, OPTIONS, POST',
+        'Access-Control-Allow-Methods': 'GET, OPTIONS, POST, DELETE',
         'Access-Control-Allow-Headers': 'X-CSRFToken, X-Requested-With, ' \
             'x-requested-with, Content-Type, Content-Length, Authorization',
         'Access-Control-Max-Age': 10,
