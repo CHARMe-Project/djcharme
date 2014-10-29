@@ -97,12 +97,9 @@ def index(request, graph='stable'):
     req_format = validate_mime_format(request)
 
     if req_format is not None:
-        LOGGING.debug("Annotations %s",
-                      str(__serialize(tmp_g, req_format=req_format)))
         return HttpResponse(__serialize(tmp_g, req_format=req_format))
     elif 'text/html' in http_accept(request):
         states = {}
-        LOGGING.debug("Annotations %s", str(tmp_g.serialize()))
         for subject, pred, obj in tmp_g.triples((None, None, OA['Annotation'])):
             states[subject] = find_annotation_graph(subject)
 
