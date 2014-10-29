@@ -320,17 +320,32 @@ def _process_resource(request, resource_id):
         Process the resource dependent on the mime format.
     """
     if validate_mime_format(request) is not None:
-        getformat = get_format(request)
         path = "/%s/%s" % (DATA, resource_id)
-        if getformat is not None:
-            path = "%s/?format=%s" % (path, getformat)
+        path = _process_resource_parameters(request, path)
         LOGGING.info("Redirecting to %s", str(path))
         return HttpResponseSeeOther(path)
 
     if 'text/html' in http_accept(request):
+        path = '/%s/%s' % (PAGE, resource_id)
+        path = _process_resource_parameters(request, path)
         LOGGING.info("Redirecting to /%s/%s", str(PAGE), str(resource_id))
-        return HttpResponseSeeOther('/%s/%s' % (PAGE, resource_id))
+        return HttpResponseSeeOther(path)
     return HttpResponseNotFound()
+
+
+def _process_resource_parameters(request, path):
+    """
+        Add depth and format parameters onto the path
+    """
+    depth = get_depth(request)
+    format_ = get_format(request)
+    if format_ is not None:
+        path = "%s/?format=%s" % (path, format_)
+        if get_depth is not None:
+            path = "%s&depth=%s" % (path, depth)
+    elif depth is not None:
+        path = "%s/?depth=%s" % (path, depth)
+    return path
 
 
 def process_data(request, resource_id):
