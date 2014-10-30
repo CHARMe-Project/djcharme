@@ -47,7 +47,7 @@ from djcharme.exception import SecurityError
 from djcharme.exception import StoreConnectionError
 from djcharme.exception import UserError
 from djcharme.node.actions import find_annotation_graph, _collect_annotations, \
-    find_resource_by_id, change_annotation_state
+    find_resource_by_id, change_annotation_state, get_vocab
 from djcharme.node.actions import insert_rdf, modify_rdf
 from djcharme.node.constants import OA, FORMAT_MAP, CONTENT_JSON, CONTENT_RDF, \
     CONTENT_TEXT, DATA, PAGE, SUBMITTED, RETIRED
@@ -406,3 +406,30 @@ def version(request):
 
     """
     return HttpResponse(__version__, content_type=CONTENT_TEXT)
+
+
+def vocab(request):
+    """
+    Get the chame vocab.
+
+    Args:
+        request (WSGIRequest): The request from the user
+
+    """
+    tmp_g = None
+    try:
+        tmp_g = get_vocab()
+    except StoreConnectionError as ex:
+        LOGGING.error("Internal error. " + str(ex))
+        messages.add_message(request, messages.ERROR, ex)
+        return mm_render_to_response_error(request, '500.html', 500)
+
+    req_format = validate_mime_format(request)
+    if req_format is None or 'text/html' in http_accept(request):
+        req_format = CONTENT_JSON
+    if req_format is not None:
+        return HttpResponse(__serialize(tmp_g, req_format=req_format))
+
+    messages.add_message(request, messages.ERROR, "Format not accepted")
+    return mm_render_to_response_error(request, '400.html', 400)
+

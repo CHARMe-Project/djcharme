@@ -105,6 +105,9 @@ urlpatterns = patterns('',
     # Server version
     url(r'^version', node_gate.version),
 
+    # Vocab
+    url(r'^vocab', node_gate.vocab),
+
     # Index pages
     url(r'^index/(\w+)', node_gate.index, name='charme.index.id'),
     url(r'^index', node_gate.index, name='index'),

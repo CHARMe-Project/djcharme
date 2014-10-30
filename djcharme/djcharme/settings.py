@@ -282,7 +282,8 @@ SECURITY_FILTER = [
     ("admin", ("GET", "POST")),
     ("/token/validate/", ("GET",)),
     ("/token/test", ("GET",)),
-    ("/version", ("GET",))
+    ("/version", ("GET",)),
+    ("/vocab", ("GET",))
 ]
 
 REDIRECT_FIELD_NAME = 'next'

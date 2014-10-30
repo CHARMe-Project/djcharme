@@ -673,3 +673,11 @@ def _collect_annotations(graph_name):
         raise StoreConnectionError("Cannot open a connection with triple store"
                                    "\n" + str(ex))
     return tmp_g
+
+
+def get_vocab():
+    """
+        Returns a graph containing all the vocab triples
+    """
+    return generate_graph(CharmeMiddleware.get_store(), "vocab")
+

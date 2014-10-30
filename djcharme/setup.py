@@ -38,7 +38,7 @@ setup(
                       'django-classy-tags==0.5.1',
                       'django-cookie-law==1.0.1',
                       'django-oauth2-provider==0.2.7-dev',
-                      'html5lib==0.95',
+                      'html5lib==0.999',
                       'isodate==0.5.0',
                       'ordereddict==1.1',
                       'py-bcrypt==0.4',
