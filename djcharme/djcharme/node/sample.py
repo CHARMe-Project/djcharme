@@ -7,12 +7,12 @@ import csv
 import logging
 
 from django.contrib.auth.models import User
-from provider.oauth2.models import Client
-from rdflib.plugins.parsers.notation3 import BadSyntax
-
 from djcharme import get_resource
+from djcharme.exception import ParseError
 from djcharme.node.actions import insert_rdf
 from djcharme.node.constants import SUBMITTED
+from provider.oauth2.models import Client
+from rdflib.plugins.parsers.notation3 import BadSyntax
 
 
 LOGGING = logging.getLogger(__name__)
@@ -141,5 +141,8 @@ def load_sample():
                 insert_rdf(annotation, 'turtle', user, client,
                                    graph=SUBMITTED)
             except BadSyntax as ex:
+                LOGGING.warn(ex)
+                continue
+            except ParseError as ex:
                 LOGGING.warn(ex)
                 continue
