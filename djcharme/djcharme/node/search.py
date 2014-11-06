@@ -75,7 +75,9 @@ ANNOTATIONS_FOR_BODY_TYPE = """
 ANNOTATIONS_FOR_DATA_TYPE = """
 ?anno oa:annotatedAt ?annotatedAt .
 ?anno oa:hasTarget ?target .
-?target rdf:type ?dataType ."""
+?target rdf:type ?dataType .
+OPTIONAL {?target oa:item ?item .
+?item rdf:type ?itemType}"""
 
 ANNOTATIONS_FOR_DOMAIN = """
 ?anno oa:annotatedAt ?annotatedAt .
@@ -101,7 +103,8 @@ ANNOTATIONS_FOR_STATUS = """
 
 ANNOTATIONS_FOR_TARGET = """
 ?anno oa:annotatedAt ?annotatedAt .
-?anno oa:hasTarget ?target ."""
+?anno oa:hasTarget ?target .
+OPTIONAL {?target oa:item ?item}"""
 
 ANNOTATIONS_FOR_TITLE = """
 ?anno oa:annotatedAt ?annotatedAt .
@@ -225,11 +228,11 @@ def _get_offset(query_attr):
 
     """
     limit = _get_limit(query_attr)
-    LOGGING.debug("Using limit: %s", str(limit))
+    LOGGING.debug("Using limit: %s", limit)
     offset = (int(query_attr.get('startPage', 1)) - 1) * limit
     offset = offset + int(query_attr.get('startIndex', 1)) - 1
     if offset > 0:
-        LOGGING.debug("Using offset: %s", str(offset))
+        LOGGING.debug("Using offset: %s", offset)
         return " OFFSET " + str(offset)
     else:
         return ""
@@ -273,7 +276,7 @@ def get_suggestions(parameter_names, query_attr):
             searchTerm - The parameter name that was searched for
 
     """
-    LOGGING.debug("get_suggestions(%s, query_attr)", str(parameter_names))
+    LOGGING.debug("get_suggestions(%s, query_attr)", parameter_names)
     graph = _get_graph(query_attr)
     limit = _get_limit(query_attr)
     offset = _get_offset(query_attr)
@@ -350,20 +353,52 @@ def _get_data_types(graph, parameter_name, where_clause, limit, offset):
     {%s}
     ?anno oa:hasTarget ?target .
     ?target rdf:type ?dataType .
+    FILTER (?dataType != oa:Composite)
     }
-    ORDER BY ?dataType
-    LIMIT %s
-    %s""" % (where_clause, limit, offset))
-    count_statement = (PREFIX +
+    """ % (where_clause))
+    result1, count = _do_query(graph, parameter_name, statement, None,
+                     "http://www.w3.org/2004/02/skos/core#prefLabel")
+
+    statement = (PREFIX +
     """
-    SELECT  count (Distinct ?dataType)
+    SELECT Distinct ?itemType
     WHERE {
     {%s}
     ?anno oa:hasTarget ?target .
-    ?target rdf:type ?dataType .
-    }""") % where_clause
-    return _do_query(graph, parameter_name, statement, count_statement,
+    ?target oa:item ?item .
+    ?item rdf:type ?itemType .
+    }
+    ORDER BY ?itemType
+    """ % (where_clause))
+    result2, count = _do_query(graph, parameter_name, statement, None,
                      "http://www.w3.org/2004/02/skos/core#prefLabel")
+
+    result = {'searchTerm': parameter_name}
+    # Combine the graphs
+    tmp_graph = result1['graph']
+    for res in result2['graph']:
+        tmp_graph.add(res)
+
+    count = len(tmp_graph)
+    result['count'] = count
+
+    # filter on limit and offset
+    statement = (PREFIX +
+    """
+    SELECT ?s ?p ?o
+    WHERE {
+    ?s ?p ?o
+    }
+    ORDER BY ?s
+    LIMIT %s
+    %s""" % (limit, offset))
+    triples = tmp_graph.query(statement)
+    result['graph'] = Graph()
+    for res in triples:
+        result['graph'].add(res)
+    LOGGING.debug("_get_data_types returning %s triples out of %s for %s",
+                  len(result['graph']), result['count'], parameter_name)
+    return result, count
 
 
 def _get_domains_of_interest(graph, parameter_name, where_clause, limit,
@@ -445,7 +480,10 @@ def _do_query(graph, parameter_name, statement, count_statement,
               labelType):
     LOGGING.debug("_do_query %s", statement)
     result = {'searchTerm': parameter_name}
-    result['count'] = _get_count(graph.query(count_statement))
+    if count_statement != None:
+        result['count'] = _get_count(graph.query(count_statement))
+    else:
+        result['count'] = -1
     triples = graph.query(statement)
     result['graph'] = Graph()
     url = urlparse(labelType)
@@ -466,8 +504,7 @@ def _do_query(graph, parameter_name, statement, count_statement,
                 obj = row[0]
         result['graph'].add((URIRef(row[0]), URIRef(labelType), Literal(obj)))
     LOGGING.debug("_do_query returning %s triples out of %s for %s",
-                  str(len(result['graph'])), str(result['count']),
-                  str(parameter_name))
+                  len(result['graph']), result['count'], parameter_name)
     return result, result['count']
 
 
@@ -497,7 +534,7 @@ def get_search_results(query_attr):
     results = _do__open_search(query_attr, graph, triples)
     total_results = _get_count(graph.query(statement_count))
     LOGGING.debug("get_search_results returning %s triples out of %s",
-                  str(len(results)), str(total_results))
+                  len(results), total_results)
     return results, total_results
 
 
@@ -544,7 +581,6 @@ def _get_where_for_parameter_name(query_attr, parameter_name):
     # TODO remove split when I can work out to handle the parameter being
     # returned as a list.
     values = values.split()
-
     where_clause = '{' + ANNOTATION_CLAUSES[parameter_name] + ' FILTER ('
     first_term = True
     for value in values:
@@ -556,6 +592,16 @@ def _get_where_for_parameter_name(query_attr, parameter_name):
         if parameter_name == 'title' or parameter_name == 'userName':
             where_clause = where_clause + "'" + value + "'"
         else:
+            where_clause = where_clause + "<" + URIRef(value) + '>'
+        # special case for composite
+        if parameter_name == 'target':
+            where_clause = where_clause + ' || '
+            where_clause = where_clause + '?' + "item="
+            where_clause = where_clause + "<" + URIRef(value) + '>'
+        # special case for composite
+        if parameter_name == 'dataType':
+            where_clause = where_clause + ' || '
+            where_clause = where_clause + '?' + "itemType="
             where_clause = where_clause + "<" + URIRef(value) + '>'
     where_clause = where_clause + ')} '
 
