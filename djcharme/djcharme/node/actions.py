@@ -39,15 +39,13 @@ import uuid
 from SPARQLWrapper.SPARQLExceptions import EndPointNotFound
 from django.conf import settings
 from django.db.models import ObjectDoesNotExist
-from rdflib import Graph, URIRef, Literal
-from rdflib.graph import ConjunctiveGraph
-
 from djcharme.charme_middleware import CharmeMiddleware
 from djcharme.exception import NotFoundError
 from djcharme.exception import ParseError
 from djcharme.exception import SecurityError
 from djcharme.exception import StoreConnectionError
 from djcharme.exception import UserError
+from djcharme.models import  OrganizationUser
 from djcharme.node import _extract_subject
 from djcharme.node.constants import ANNO_URI, NODE_URI, TARGET_URI, \
     REPLACEMENT_URIS, REPLACEMENT_URIS_MULTIVALUED
@@ -55,12 +53,24 @@ from djcharme.node.constants import FOAF, RDF, PROV, OA, CH_NODE
 from djcharme.node.constants import FORMAT_MAP, ALLOWED_CREATE_TARGET_TYPE, \
     RESOURCE
 from djcharme.node.constants import GRAPH_NAMES, SUBMITTED, INVALID, RETIRED
+from rdflib import Graph, URIRef, Literal
+from rdflib.graph import ConjunctiveGraph
 
 
 LOGGING = logging.getLogger(__name__)
 
 
 def rdf_format_from_mime(mimetype):
+    """
+    Get the RDF type based on the mime type.
+
+    Args:
+        mimetype (str): The mime type
+
+    Return:
+        a string containing the RDF type associated with the mime type.
+
+    """
     for key, value in FORMAT_MAP.iteritems():
         if mimetype == value:
             return key
@@ -92,6 +102,13 @@ def generate_graph(store, graph):
     return Graph(store=store, identifier=format_graph_iri(graph))
 
 
+def get_vocab():
+    """
+        Returns a graph containing all the vocab triples
+    """
+    return generate_graph(CharmeMiddleware.get_store(), "vocab")
+
+
 def insert_rdf(data, mimetype, user, client, graph=None, store=None):
     '''
         Inserts an RDF/json-ld document into the triplestore
@@ -109,7 +126,8 @@ def insert_rdf(data, mimetype, user, client, graph=None, store=None):
             if none use the return of get_store()
         * return:str - The URI of the new annotation
     '''
-    LOGGING.debug("insert_rdf(data, mimetype, user, graph, store)")
+    LOGGING.debug("insert_rdf(data, %s, %s, client, graph, store)", mimetype,
+                  user)
     if store is None:
         store = CharmeMiddleware.get_store()
     tmp_g = Graph()
@@ -126,12 +144,25 @@ def insert_rdf(data, mimetype, user, client, graph=None, store=None):
 
     for nspace in tmp_g.namespaces():
         final_g.store.bind(str(nspace[0]), nspace[1])
+    timestamp = Literal(datetime.utcnow())
+
+    # add the person
+    person_uri, triples = _create_person(user)
+    for triple in triples:
+        try:
+            final_g.add(triple)
+        except EndPointNotFound as ex:
+            raise StoreConnectionError("Cannot insert triple. " + str(ex))
+        except Exception as ex:
+            raise ParseError("Cannot insert triple. " + str(ex))
+
+    # add the rest
     anno_uri = ''
     for res in tmp_g:
         if (res[1] == URIRef(RDF + 'type')
             and res[2] == URIRef(OA + 'Annotation')):
             anno_uri = res[0]
-            prov = _get_prov(anno_uri, user, client)[0]
+            prov = _get_prov(anno_uri, person_uri, client, timestamp)
             for triple in prov:
                 try:
                     final_g.add(triple)
@@ -161,7 +192,8 @@ def modify_rdf(request, mimetype):
         a URIRef containing the URI of the modified annotation
 
     """
-    LOGGING.debug("modify_rdf(request, " + str(mimetype) + ")")
+    LOGGING.debug("modify_rdf(request, %s)", mimetype)
+    modification_time = Literal(datetime.utcnow())
     store = CharmeMiddleware.get_store()
     tmp_g = Graph()
     data = request.body
@@ -185,8 +217,8 @@ def modify_rdf(request, mimetype):
     activity_uri = URIRef((getattr(settings, 'NODE_URI', NODE_URI)
                   + '/%s/%s' % (RESOURCE, uuid.uuid4().hex)))
     # retire original
-    if (change_annotation_state(original_uri, RETIRED, request, activity_uri)
-        == None):
+    if (_change_annotation_state(original_uri, RETIRED, request, activity_uri,
+                                 modification_time) == None):
         raise UserError(("Current annotation status of %s is final. Data " \
                          "has not been updated." % RETIRED))
 
@@ -195,21 +227,34 @@ def modify_rdf(request, mimetype):
 
     for nspace in tmp_g.namespaces():
         final_g.store.bind(str(nspace[0]), nspace[1])
+
+    # add the person
+    person_uri, triples = _create_person(request.user)
+    for triple in triples:
+        try:
+            final_g.add(triple)
+        except EndPointNotFound as ex:
+            raise StoreConnectionError("Cannot insert triple. " + str(ex))
+        except Exception as ex:
+            raise ParseError("Cannot insert triple. " + str(ex))
+
+    # add the rest
     anno_uri = ''
     for res in tmp_g:
         if (res[1] == URIRef(RDF + 'type')
             and res[2] == URIRef(OA + 'Annotation')):
             anno_uri = res[0]
-            prov, annotated_at, person_uri = _get_prov(anno_uri, request.user,
-                                                      request.client)
+            prov = _get_prov(anno_uri, person_uri, request.client,
+                             modification_time)
             for triple in prov:
                 try:
                     final_g.add(triple)
                 except Exception as ex:
                     raise ParseError("Cannot insert triple. " + str(ex))
-            modify_prov = _get_modify_prov(anno_uri, original_uri, annotated_at,
-                                           activity_uri, person_uri)
-            for triple in modify_prov:
+            modify_activity = _get_modify_activity(anno_uri, original_uri,
+                                                   modification_time,
+                                                   activity_uri, person_uri)
+            for triple in modify_activity:
                 try:
                     final_g.add(triple)
                 except EndPointNotFound as ex:
@@ -243,27 +288,48 @@ def _get_annotation_uri_from_graph(graph):
             return res[0]
 
 
-def _get_prov(annotation_uri, user, client):
+def _get_prov(annotation_uri, person_uri, client, timestamp):
     """
     Get the provenance data for the annotation.
 
     Args:
         annotation_uri (URIRef): The URI of the annotation
-        user (User): The user details.
+        person_uri (URIRef): The URI of a person
         client (client): The Client object from a request
-
+        timestamp (Literal(datetime)) The time the annotation was updated
     Returns:
         a list of triples
-        a URIRef containing the annotated at time
+
+    """
+    triples = []
+    triples.append((annotation_uri, URIRef(OA + 'annotatedAt'),
+                    timestamp))
+    triples.append((annotation_uri, URIRef(OA + 'annotatedBy'), person_uri))
+    if client.name != None and len(client.name) > 0:
+        triples.append((annotation_uri, URIRef(OA + 'annotatedBy'),
+                        URIRef(client.url)))
+        triples.append((URIRef(client.url), URIRef(RDF + 'type'),
+                        URIRef(FOAF + 'Organization')))
+        triples.append((URIRef(client.url), URIRef(FOAF + 'name'),
+                        Literal(client.name)))
+
+    return triples
+
+
+def _create_person(user):
+    """
+    Create a persons triples.
+
+    Args:
+        user (User): The user details.
+    Returns:
         a URIRef containing the person URI
+        a list of triples
 
     """
     person_uri = URIRef((getattr(settings, 'NODE_URI', NODE_URI)
                   + '/%s/%s' % (RESOURCE, uuid.uuid4().hex)))
     triples = []
-    annotated_at = Literal(datetime.utcnow())
-    triples.append((annotation_uri, URIRef(OA + 'annotatedAt'), annotated_at))
-    triples.append((annotation_uri, URIRef(OA + 'annotatedBy'), person_uri))
     triples.append((person_uri, URIRef(RDF + 'type'),
                     URIRef(FOAF + 'Person')))
     triples.append((person_uri, URIRef(FOAF + 'accountName'),
@@ -280,26 +346,20 @@ def _get_prov(annotation_uri, user, client):
         show_email = False
     if show_email and user.email != None and len(user.email) > 0:
         triples.append((person_uri, URIRef(FOAF + 'mbox'), Literal(user.email)))
-    if client.name != None and len(client.name) > 0:
-        triples.append((annotation_uri, URIRef(OA + 'annotatedBy'),
-                        URIRef(client.url)))
-        triples.append((URIRef(client.url), URIRef(RDF + 'type'),
-                        URIRef(FOAF + 'Organization')))
-        triples.append((URIRef(client.url), URIRef(FOAF + 'name'),
-                        Literal(client.name)))
 
-    return (triples, annotated_at, person_uri)
+    return (person_uri, triples)
 
 
-def _get_modify_prov(annotation_uri, original_anno_uri, annotated_at,
+
+def _get_modify_activity(annotation_uri, original_anno_uri, timestamp,
                      activity_uri, person_uri):
     """
-    Get the provenance data for the annotation.
+    Get the triples for a modify activity.
 
     Args:
         annotation_uri (URIRef): The URI of the annotation
         original_anno_uri (URIRef): The uri of the original annotation.
-        annotated_at (Literal): The time the annotation was created
+        timestamp (Literal): The time of the activity
         activity_uri (URIRef): The URI of the Activity
         person_uri (URIRef): The URI of the person
 
@@ -319,9 +379,35 @@ def _get_modify_prov(annotation_uri, original_anno_uri, annotated_at,
                     original_anno_uri))
     triples.append((activity_uri, URIRef(PROV + 'generated'), annotation_uri))
 
-    triples.append((activity_uri, URIRef(PROV + 'wasStartedAt'), annotated_at))
+    triples.append((activity_uri, URIRef(PROV + 'wasStartedAt'), timestamp))
     triples.append((activity_uri, URIRef(PROV + 'wasStartedBy'), person_uri))
-    triples.append((activity_uri, URIRef(PROV + 'wasEndedAt'), annotated_at))
+    triples.append((activity_uri, URIRef(PROV + 'wasEndedAt'), timestamp))
+    triples.append((activity_uri, URIRef(PROV + 'wasEndedBy'), person_uri))
+    return triples
+
+
+def _get_deleted_activity(annotation_uri, timestamp, activity_uri, person_uri):
+    """
+    Get the triples for a delete activity.
+
+    Args:
+        annotation_uri (URIRef): The uri of the annotation.
+        timestamp (Literal): The time of the activity
+        activity_uri (URIRef): The URI of the Activity
+        person_uri (URIRef): The URI of the person
+
+    Returns:
+        a list of triples.
+
+    """
+    triples = []
+    triples.append((activity_uri, URIRef(RDF + 'type'),
+                    URIRef(PROV + 'Activity')))
+    triples.append((activity_uri, URIRef(PROV + 'invalidated'),
+                    URIRef(annotation_uri)))
+    triples.append((activity_uri, URIRef(PROV + 'wasStartedAt'), timestamp))
+    triples.append((activity_uri, URIRef(PROV + 'wasStartedBy'), person_uri))
+    triples.append((activity_uri, URIRef(PROV + 'wasEndedAt'), timestamp))
     triples.append((activity_uri, URIRef(PROV + 'wasEndedBy'), person_uri))
     return triples
 
@@ -408,8 +494,57 @@ def _format_submitted_annotation(graph):
                          ' target types'))
 
 
-def change_annotation_state(annotation_uri, new_graph, request,
-                            activity_uri=None):
+def change_annotation_state(annotation_uri, new_graph, request):
+    """
+    Advance the status of an annotation.
+
+    Args:
+        annotation_uri (URIRef): The URI of the annotation.
+        new_graph (str): The name of the graph/state to move the annotation to.
+        request (WSGIRequest): The incoming request.
+
+    Returns:
+        graph (rdflib.graph.Graph): The new graph containing the updated
+        annotation.
+
+    """
+    LOGGING.debug("change_annotation_state(%s, %s, request)",
+                  annotation_uri, new_graph)
+
+    activity_uri = URIRef((getattr(settings, 'NODE_URI', NODE_URI)
+                           + '/%s/%s' % (RESOURCE, uuid.uuid4().hex)))
+    timestamp = Literal(datetime.utcnow())
+
+    new_g = _change_annotation_state(annotation_uri, new_graph, request,
+                                     activity_uri, timestamp)
+
+    # add the person
+    person_uri, triples = _create_person(request.user)
+    for triple in triples:
+        try:
+            new_g.add(triple)
+        except EndPointNotFound as ex:
+            raise StoreConnectionError("Cannot insert triple. " + str(ex))
+        except Exception as ex:
+            raise ParseError("Cannot insert triple. " + str(ex))
+
+    # If we are retiring include extra metadata
+    if new_graph == INVALID or new_graph == RETIRED:
+        deleted_prov = _get_deleted_activity(annotation_uri, timestamp,
+                                         activity_uri, person_uri)
+        for triple in deleted_prov:
+            try:
+                new_g.add(triple)
+            except Exception as ex:
+                raise ParseError("Cannot insert triple. " + str(ex))
+
+    # TODO add extra prov for change to submitted
+    # TODO add extra prov for change to stable
+    return new_g
+
+
+def _change_annotation_state(annotation_uri, new_graph, request, activity_uri,
+                             timestamp):
     """
     Advance the status of an annotation.
 
@@ -424,8 +559,7 @@ def change_annotation_state(annotation_uri, new_graph, request,
         annotation.
 
     """
-    LOGGING.debug("change_annotation_state(%s, %s, request, %s)",
-                  annotation_uri, new_graph, activity_uri)
+    # lets do some initial validation
     annotation_uri = _format_resource_uri_ref(annotation_uri)
     _validate_graph_name(new_graph)
     old_graph = find_annotation_graph(annotation_uri)
@@ -436,46 +570,11 @@ def change_annotation_state(annotation_uri, new_graph, request,
     if old_graph == INVALID or old_graph == RETIRED:
         raise UserError(("Current annotation status of %s is final. Status " \
                          "has not been updated." % old_graph))
-    old_g = generate_graph(CharmeMiddleware.get_store(), old_graph)
-    user = request.user
-    if not _is_my_annotation(old_g, annotation_uri, user.username):
-        if not _is_moderator(request):
-            raise SecurityError(("You do not have the required permission " \
-                                 "to update the status of annotation %s" %
-                                 annotation_uri))
-
-    new_g = generate_graph(CharmeMiddleware.get_store(), new_graph)
-    # Move the people
-    for res in _get_people(old_g, annotation_uri):
-        old_g.remove(res)
-        new_g.add(res)
-    # Copy the organization
-    for res in _get_organization(old_g, annotation_uri):
-        new_g.add(res)
-    # Copy the software
-    for res in _get_software(old_g, annotation_uri):
-        new_g.add(res)
-    # Move the annotation
-    for res in old_g.triples((annotation_uri, None, None)):
-        old_g.remove(res)
-        # We are only allowed one annotatedAt per annotation
-        if res[1] == URIRef(OA + 'annotatedAt'):
-            continue
-        new_g.add(res)
-
-    # Add new prov data
-    prov = _get_prov(annotation_uri, user, request.client)[0]
-    for triple in prov:
-        try:
-            new_g.add(triple)
-        except Exception as ex:
-            raise ParseError(str(ex))
-
-    # If provided add activity
-    if activity_uri != None:
+    new_g = _move_annotation(annotation_uri, new_graph, old_graph, request,
+                             timestamp)
+    if new_graph == INVALID or new_graph == RETIRED:
         new_g.add((annotation_uri, URIRef(PROV + 'wasInvalidatedBy'),
                    activity_uri))
-
     return new_g
 
 
@@ -498,6 +597,76 @@ def _validate_graph_name(graph_name):
                      (graph_name, names)))
 
 
+def _move_annotation(annotation_uri, new_graph, old_graph, request, timestamp):
+    """
+    Move an annotation from one graph to another.
+
+    Args:
+        annotation_uri (URIRef): The URI of the annotation.
+        new_graph (str): The name of the graph to move the annotation to.
+        old_graph (str): The name of the graph to move the annotation from.
+        request (WSGIRequest): The incoming request.
+        timestamp (Literal): The time of the move
+
+    Returns:
+        graph (rdflib.graph.Graph): The new graph containing the updated
+        annotation.
+
+    """
+    # First check permissions
+    old_g = generate_graph(CharmeMiddleware.get_store(), old_graph)
+    if not _is_update_allowed(old_g, annotation_uri, request):
+        raise SecurityError(("You do not have the required permission to " \
+                             "update the status of annotation %s" %
+                             annotation_uri))
+
+    new_g = generate_graph(CharmeMiddleware.get_store(), new_graph)
+    # Move the people
+    for res in _get_people(old_g, annotation_uri):
+        old_g.remove(res)
+        new_g.add(res)
+    # Copy the organization
+    for res in _get_organization(old_g, annotation_uri):
+        new_g.add(res)
+    # Copy the software
+    for res in _get_software(old_g, annotation_uri):
+        new_g.add(res)
+    # Move the annotation
+    for res in old_g.triples((annotation_uri, None, None)):
+        old_g.remove(res)
+        # We are only allowed one annotatedAt per annotation
+        if res[1] == URIRef(OA + 'annotatedAt'):
+            continue
+        new_g.add(res)
+    # Add new annotatedAt
+    new_g.add((annotation_uri, URIRef(OA + 'annotatedAt'), timestamp))
+
+    return new_g
+
+
+def _is_update_allowed(graph, annotation_uri, request):
+    """
+    Check if this user is allowed to update this annotation.
+
+    Args:
+        graph (rdflib.graph.Graph): The graph containing the annotation.
+        annotation_uri (URIRef): The URI of the annotation.
+        request (WSGIRequest): The incoming request.
+
+    Returns:
+        boolean True if the user is allowed to update this annotation.
+
+    """
+    if _is_my_annotation(graph, annotation_uri, request.user.username):
+        return True
+    if _is_organization_admin(request, annotation_uri):
+        return True
+    if _is_moderator(request):
+        return True
+
+    return False
+
+
 def _is_my_annotation(graph, annotation_uri, username):
     """
     Check to see if this annotation was edited by the user.
@@ -516,7 +685,40 @@ def _is_my_annotation(graph, annotation_uri, username):
                               None)):
         for res2 in graph.triples((res[2], URIRef(FOAF + 'accountName'), None)):
             if str(res2[2]) == username:
+                LOGGING.debug("User %s is the owner of this annotation %s",
+                              username, annotation_uri)
                 return True
+    return False
+
+
+def _is_organization_admin(request, annotation_uri):
+    """
+    Check to see if this user is an admin for the organization at which the
+    annotation was created.
+
+    Args:
+        request (WSGIRequest): The incoming request.
+        annotation_uri (URIRef): The URI of the annotation.
+
+    Returns:
+        boolean True if the user is listed as a admin for the organization.
+
+    """
+    user_id = request.user.id
+    organization_id = (request.client.organizationclient_set.
+                       values_list('organization', flat=True))
+    if len(organization_id) < 1:
+        LOGGING.warn("No organization found for client %s", request.client)
+        return False
+    # there should only be one
+    organization_id = organization_id[0]
+    organization_users = (OrganizationUser.objects.filter(user=user_id).
+                          filter(organization=organization_id))
+    for organization_user in organization_users:
+        if organization_user.role == 'admin':
+            LOGGING.debug("User %s is an admin for this annotation: %s",
+                          request.user.username, annotation_uri)
+            return True
     return False
 
 
@@ -532,7 +734,10 @@ def _is_moderator(request):
 
     """
     groups = request.user.groups.values_list('name', flat=True)
-    return "moderator" in groups
+    if "moderator" in groups:
+        LOGGING.debug("User %s is a moderator", request.user.username)
+        return True
+    return False
 
 
 def _get_people(graph, annotation_uri):
@@ -627,7 +832,7 @@ def find_resource_by_id(resource_id, depth=None):
     '''
     graph = ConjunctiveGraph(store=CharmeMiddleware.get_store())
     uri_ref = _format_resource_uri_ref(resource_id)
-    LOGGING.debug("Looking resource %s", str(uri_ref))
+    LOGGING.debug("Looking resource %s", uri_ref)
     return _extract_subject(graph, uri_ref, depth)
 
 
@@ -674,10 +879,4 @@ def _collect_annotations(graph_name):
                                    "\n" + str(ex))
     return tmp_g
 
-
-def get_vocab():
-    """
-        Returns a graph containing all the vocab triples
-    """
-    return generate_graph(CharmeMiddleware.get_store(), "vocab")
 
