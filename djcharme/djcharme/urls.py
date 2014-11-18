@@ -1,8 +1,7 @@
 from django.conf.urls import patterns, include, url
 from django.contrib import admin
-from django.contrib.auth.views import login
 from django.contrib.auth import views as auth_views
-
+from django.contrib.auth.views import login
 from djcharme.charme_security_model import LoginForm
 from djcharme.views import node_gate, compose, endpoint, main_gui, search, \
     registration, facets, views
@@ -98,6 +97,9 @@ urlpatterns = patterns('',
     url(r'^token/response', registration.token_response,
         name='token_response'),
     url(r'^token/userinfo', registration.userinfo, name='userinfo'),
+
+    # Conditions of use
+    url(r'^conditionsofuse/$', main_gui.conditions_of_use),
 
     # Facets
     url(r'^facets/test', facets.test_facets, name='test_facets'),

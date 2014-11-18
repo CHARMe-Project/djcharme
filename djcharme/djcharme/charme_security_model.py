@@ -31,8 +31,14 @@ class UserForm(Form):
                                  required=True)
     email = EmailField(required=False)
     show_email = BooleanField(required=False)
+    conditions_of_use = BooleanField(required=False)
 
     def clean(self):
+        if not self.cleaned_data.get('conditions_of_use'):
+            raise ValidationError(
+                "You must accept the conditions of use."
+            )
+        
         if (self.cleaned_data.get('password')
             != self.cleaned_data.get('confirm_password')):
             raise ValidationError(

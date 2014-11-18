@@ -275,6 +275,7 @@ SECURITY_FILTER = [
     ("/accounts/login", ("GET", "POST")),
     ("/accounts/password/reset", ("GET", "POST")),
     ("/accounts/registration", ("GET", "POST")),
+    ("/conditionsofuse", ("GET")),
     ("/data", ("GET")),
     ("/page", ("GET")),
     ("/resource", ("GET")),

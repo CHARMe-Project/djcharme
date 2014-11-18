@@ -55,6 +55,17 @@
 					<td class=error>{{ user_form.confirm_password.errors }}</td>
 				</tr>
 				<tr>
+					<td><label>{% trans "Accept conditions of use:" noop %}</label></td>
+					<td>{{ user_form.conditions_of_use }}</td>
+					<td class=error>{{ user_form.conditions_of_use.errors }}</td>
+				</tr>
+				<tr>
+					<td><a href="/conditionsofuse/">Conditions Of Use</a></td>
+					<td></td>
+					<td></td>
+				</tr>
+				
+				<tr>
 					<td></td>
 					<td style="text-align: right;"><input type="submit"
 						value="Create account"></td>
