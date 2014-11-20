@@ -31,6 +31,7 @@ Created on 12 Apr 2013
 
 @author: mnagni
 '''
+import base64
 from datetime import datetime
 import logging
 from urllib2 import URLError
@@ -53,6 +54,7 @@ from djcharme.node.constants import FOAF, RDF, PROV, OA, CH_NODE
 from djcharme.node.constants import FORMAT_MAP, ALLOWED_CREATE_TARGET_TYPE, \
     RESOURCE
 from djcharme.node.constants import GRAPH_NAMES, SUBMITTED, INVALID, RETIRED
+from rdflib import BNode
 from rdflib import Graph, URIRef, Literal
 from rdflib.graph import ConjunctiveGraph
 
@@ -128,6 +130,32 @@ def insert_rdf(data, mimetype, user, client, graph=None, store=None):
     '''
     LOGGING.debug("insert_rdf(data, %s, %s, client, graph, store)", mimetype,
                   user)
+    try:
+        return _insert_rdf(data, mimetype, user, client, graph, store)
+    except ParseError as ex:
+        raise ParseError(str(ex))
+    except EndPointNotFound as ex:
+        LOGGING.error("EndPointNotFound error while inserting triple. %s", ex)
+        raise StoreConnectionError("Cannot insert triple. " + str(ex))
+
+
+def _insert_rdf(data, mimetype, user, client, graph, store):
+    '''
+        Inserts an RDF/json-ld document into the triplestore
+        - string **data**
+            a document
+        - string **mimetype**
+            the document mimetype
+        - User **user**
+            the User object from a request
+        - Client **client**
+            the Client object from a request
+        - string **graph**
+            the graph name
+        - rdflib.Store **store**
+            if none use the return of get_store()
+        * return:str - The URI of the new annotation
+    '''
     if store is None:
         store = CharmeMiddleware.get_store()
     tmp_g = Graph()
@@ -136,6 +164,7 @@ def insert_rdf(data, mimetype, user, client, graph=None, store=None):
         tmp_g.parse(data=data, format=mimetype)
     except SyntaxError as ex:
         try:
+            LOGGING.info("Syntax error while parsing triple. %s", ex)
             raise ParseError(str(ex))
         except UnicodeDecodeError:
             raise ParseError(ex.__dict__["_why"])
@@ -149,12 +178,7 @@ def insert_rdf(data, mimetype, user, client, graph=None, store=None):
     # add the person
     person_uri, triples = _create_person(user)
     for triple in triples:
-        try:
-            final_g.add(triple)
-        except EndPointNotFound as ex:
-            raise StoreConnectionError("Cannot insert triple. " + str(ex))
-        except Exception as ex:
-            raise ParseError("Cannot insert triple. " + str(ex))
+        _add(final_g, triple)
 
     # add the rest
     anno_uri = ''
@@ -164,19 +188,8 @@ def insert_rdf(data, mimetype, user, client, graph=None, store=None):
             anno_uri = res[0]
             prov = _get_prov(anno_uri, person_uri, client, timestamp)
             for triple in prov:
-                try:
-                    final_g.add(triple)
-                except EndPointNotFound as ex:
-                    raise StoreConnectionError("Cannot insert triple. "
-                                               + str(ex))
-                except Exception as ex:
-                    raise ParseError("Cannot insert triple. " + str(ex))
-        try:
-            final_g.add(res)
-        except EndPointNotFound as ex:
-            raise StoreConnectionError("Cannot insert triple. " + str(ex))
-        except Exception as ex:
-            raise ParseError("Cannot insert triple. " + str(ex))
+                _add(final_g, triple)
+        _add(final_g, res)
     return anno_uri
 
 
@@ -193,6 +206,29 @@ def modify_rdf(request, mimetype):
 
     """
     LOGGING.debug("modify_rdf(request, %s)", mimetype)
+    try:
+        return _modify_rdf(request, mimetype)
+    except UserError as ex:
+        raise UserError(ex)
+    except ParseError as ex:
+        raise ParseError(str(ex))
+    except EndPointNotFound as ex:
+        LOGGING.error("EndPointNotFound error while modifying triple. %s", ex)
+        raise StoreConnectionError("Cannot insert triple. " + str(ex))
+
+
+def _modify_rdf(request, mimetype):
+    """
+    Modify an annotation in the triplestore.
+
+    Args:
+        request (WSGIRequest): The http request
+        mimetype (str): The document mimetype
+
+    Return:
+        a URIRef containing the URI of the modified annotation
+
+    """
     modification_time = Literal(datetime.utcnow())
     store = CharmeMiddleware.get_store()
     tmp_g = Graph()
@@ -231,12 +267,7 @@ def modify_rdf(request, mimetype):
     # add the person
     person_uri, triples = _create_person(request.user)
     for triple in triples:
-        try:
-            final_g.add(triple)
-        except EndPointNotFound as ex:
-            raise StoreConnectionError("Cannot insert triple. " + str(ex))
-        except Exception as ex:
-            raise ParseError("Cannot insert triple. " + str(ex))
+        _add(final_g, triple)
 
     # add the rest
     anno_uri = ''
@@ -247,27 +278,13 @@ def modify_rdf(request, mimetype):
             prov = _get_prov(anno_uri, person_uri, request.client,
                              modification_time)
             for triple in prov:
-                try:
-                    final_g.add(triple)
-                except Exception as ex:
-                    raise ParseError("Cannot insert triple. " + str(ex))
+                _add(final_g, triple)
             modify_activity = _get_modify_activity(anno_uri, original_uri,
                                                    modification_time,
                                                    activity_uri, person_uri)
             for triple in modify_activity:
-                try:
-                    final_g.add(triple)
-                except EndPointNotFound as ex:
-                    raise StoreConnectionError("Cannot insert triple. "
-                                               + str(ex))
-                except Exception as ex:
-                    raise ParseError("Cannot insert triple. " + str(ex))
-        try:
-            final_g.add(res)
-        except EndPointNotFound as ex:
-            raise StoreConnectionError("Cannot insert triple. " + str(ex))
-        except Exception as ex:
-            raise StoreConnectionError("Cannot insert triple. " + str(ex))
+                _add(final_g, triple)
+        _add(final_g, res)
     return anno_uri
 
 
@@ -510,7 +527,7 @@ def change_annotation_state(annotation_uri, new_graph, request):
     """
     LOGGING.debug("change_annotation_state(%s, %s, request)",
                   annotation_uri, new_graph)
-
+    annotation_uri = _format_resource_uri_ref(annotation_uri)
     activity_uri = URIRef((getattr(settings, 'NODE_URI', NODE_URI)
                            + '/%s/%s' % (RESOURCE, uuid.uuid4().hex)))
     timestamp = Literal(datetime.utcnow())
@@ -522,21 +539,16 @@ def change_annotation_state(annotation_uri, new_graph, request):
     person_uri, triples = _create_person(request.user)
     for triple in triples:
         try:
-            new_g.add(triple)
+            _add(new_g, triple)
         except EndPointNotFound as ex:
             raise StoreConnectionError("Cannot insert triple. " + str(ex))
-        except Exception as ex:
-            raise ParseError("Cannot insert triple. " + str(ex))
 
     # If we are retiring include extra metadata
     if new_graph == INVALID or new_graph == RETIRED:
         deleted_prov = _get_deleted_activity(annotation_uri, timestamp,
                                          activity_uri, person_uri)
         for triple in deleted_prov:
-            try:
-                new_g.add(triple)
-            except Exception as ex:
-                raise ParseError("Cannot insert triple. " + str(ex))
+            _add(new_g, triple)
 
     # TODO add extra prov for change to submitted
     # TODO add extra prov for change to stable
@@ -573,8 +585,8 @@ def _change_annotation_state(annotation_uri, new_graph, request, activity_uri,
     new_g = _move_annotation(annotation_uri, new_graph, old_graph, request,
                              timestamp)
     if new_graph == INVALID or new_graph == RETIRED:
-        new_g.add((annotation_uri, URIRef(PROV + 'wasInvalidatedBy'),
-                   activity_uri))
+        _add(new_g, (annotation_uri, URIRef(PROV + 'wasInvalidatedBy'),
+                     activity_uri))
     return new_g
 
 
@@ -623,23 +635,23 @@ def _move_annotation(annotation_uri, new_graph, old_graph, request, timestamp):
     new_g = generate_graph(CharmeMiddleware.get_store(), new_graph)
     # Move the people
     for res in _get_people(old_g, annotation_uri):
-        old_g.remove(res)
-        new_g.add(res)
+        _remove(old_g, res)
+        _add(new_g, res)
     # Copy the organization
     for res in _get_organization(old_g, annotation_uri):
-        new_g.add(res)
+        _add(new_g, res)
     # Copy the software
     for res in _get_software(old_g, annotation_uri):
-        new_g.add(res)
+        _add(new_g, res)
     # Move the annotation
     for res in old_g.triples((annotation_uri, None, None)):
-        old_g.remove(res)
+        _remove(old_g, res)
         # We are only allowed one annotatedAt per annotation
         if res[1] == URIRef(OA + 'annotatedAt'):
             continue
-        new_g.add(res)
+        _add(new_g, res)
     # Add new annotatedAt
-    new_g.add((annotation_uri, URIRef(OA + 'annotatedAt'), timestamp))
+    _add(new_g, ((annotation_uri, URIRef(OA + 'annotatedAt'), timestamp)))
 
     return new_g
 
@@ -879,4 +891,130 @@ def _collect_annotations(graph_name):
                                    "\n" + str(ex))
     return tmp_g
 
+
+def _add(graph, spo):
+    """
+    Add a triple to the graph.
+
+    """
+    if getattr(settings, 'STRABON', False):
+        _add_strabon(spo, graph)
+    else:
+        graph.add(spo)
+
+
+def _add_strabon(spo, context=None):
+    """
+    Add a triple to the store of triples.
+
+    This is an upated version of the add method from sparqlstore for use with
+    strabon.
+
+    """
+    from rdflib.plugins.stores.sparqlstore import SPARQLUpdateStore
+    sparqlstore = SPARQLUpdateStore(queryEndpoint=getattr(settings,
+                                                          'SPARQL_QUERY'),
+                                    update_endpoint=getattr(settings,
+                                                            'SPARQL_UPDATE'),
+                                    postAsEncoded=False)
+    sparqlstore.bind("rdf", "http://www.w3.org/1999/02/22-rdf-syntax-ns#")
+    sparqlstore.bind("oa", "http://www.w3.org/ns/oa#")
+    sparqlstore.bind("chnode", getattr(settings, 'NODE_URI',
+                                       'http://localhost'))
+
+    sparqlstore.headers["Content-type"] = "application/x-www-form-urlencoded"
+    credentials = "%s:%s" % (getattr(settings, 'SPARQL_USERNAME'),
+                                     getattr(settings, 'SPARQL_PASSWORD'))
+    credentials64 = base64.encodestring(credentials.encode('utf-8'))
+    sparqlstore.headers["Authorization"] = ("Basic %s" % credentials64)
+
+    if not sparqlstore.connection:
+        raise "UpdateEndpoint is not set - call 'open'"
+
+    (subject, predicate, obj) = spo
+    if (isinstance(subject, BNode) or
+        isinstance(predicate, BNode) or
+        isinstance(obj, BNode)):
+        raise Exception("SPARQLStore does not support Bnodes! See " \
+                        "http://www.w3.org/TR/sparql11-query/#BGPsparqlBNodes")
+
+    triple = "%s %s %s " % (subject.n3(), predicate.n3(), obj.n3())
+    if context is not None:
+        q = "INSERT DATA { GRAPH %s { %s } } }}" % (
+            context.identifier.n3(), triple)
+    else:
+        q = "INSERT DATA { %s } }}" % triple
+    q = 'view=HTML&format=HTML&handle=plain&submit=Update&query=%s' % q
+    r = sparqlstore._do_update(q)
+    content = r.read()  # we expect no content
+    if r.status not in (200, 204):
+        sparqlstore.close()
+        raise Exception("Could not update: %d %s\n%s" % (
+            r.status, r.reason, content))
+    sparqlstore.close()
+
+
+def _remove(graph, spo):
+    """
+    Remove a triple from the graph.
+
+    """
+#     graph.remove(spo)
+    if getattr(settings, 'STRABON', False):
+        _remove_strabon(spo, graph)
+    else:
+        graph.remove(spo)
+
+
+def _remove_strabon(spo, context):
+    """
+    Remove a triple from the store.
+
+    This is an upated version of the remove method from sparqlstore for use with
+    strabon.
+
+    """
+    from rdflib.plugins.stores.sparqlstore import SPARQLUpdateStore
+    from rdflib import Variable
+    sparqlstore = SPARQLUpdateStore(queryEndpoint=getattr(settings,
+                                                          'SPARQL_QUERY'),
+                                    update_endpoint=getattr(settings,
+                                                            'SPARQL_UPDATE'),
+                                    postAsEncoded=False)
+    sparqlstore.bind("rdf", "http://www.w3.org/1999/02/22-rdf-syntax-ns#")
+    sparqlstore.bind("oa", "http://www.w3.org/ns/oa#")
+    sparqlstore.bind("chnode", getattr(settings, 'NODE_URI',
+                                       'http://localhost'))
+
+    sparqlstore.headers["Content-type"] = "application/x-www-form-urlencoded"
+    credentials = "%s:%s" % (getattr(settings, 'SPARQL_USERNAME'),
+                                     getattr(settings, 'SPARQL_PASSWORD'))
+    credentials64 = base64.encodestring(credentials.encode('utf-8'))
+    sparqlstore.headers["Authorization"] = ("Basic %s" % credentials64)
+
+    if not sparqlstore.connection:
+        raise "UpdateEndpoint is not set - call 'open'"
+
+    (subject, predicate, obj) = spo
+    if not subject:
+        subject = Variable("S")
+    if not predicate:
+        predicate = Variable("P")
+    if not obj:
+        obj = Variable("O")
+
+    triple = "%s %s %s ." % (subject.n3(), predicate.n3(), obj.n3())
+    if context is not None:
+        q = "DELETE { GRAPH %s { %s } } WHERE { GRAPH %s { %s } } }}" % (
+            context.identifier.n3(), triple,
+            context.identifier.n3(), triple)
+    else:
+        q = "DELETE { %s } WHERE { %s } }}" % (triple, triple)
+    q = 'view=HTML&format=HTML&handle=plain&submit=Update&query=%s' % q
+    r = sparqlstore._do_update(q)
+    content = r.read()  # we expect no content
+    if r.status not in (200, 204):
+        raise Exception("Could not update: %d %s\n%s" % (
+            r.status, r.reason, content))
+    sparqlstore.close()
 
