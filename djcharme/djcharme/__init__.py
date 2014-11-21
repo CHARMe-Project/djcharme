@@ -1,10 +1,39 @@
-__version__ = '0.6.1'
+'''
+BSD Licence
+Copyright (c) 2014, Science & Technology Facilities Council (STFC)
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without modification,
+are permitted provided that the following conditions are met:
+
+    * Redistributions of source code must retain the above copyright notice,
+        this list of conditions and the following disclaimer.
+    * Redistributions in binary form must reproduce the above copyright notice,
+        this list of conditions and the following disclaimer in the
+        documentation and/or other materials provided with the distribution.
+    * Neither the name of the Science & Technology Facilities Council (STFC)
+        nor the names of its contributors may be used to endorse or promote
+        products derived from this software without specific prior written
+        permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
+ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
+ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+'''
+__version__ = '0.6.2'
 
 
 import os
 
 from django.conf import settings
-from django.contrib.sites.models import Site
 from django.core.context_processors import csrf
 from django.core.exceptions import ObjectDoesNotExist
 from django.http.response import Http404
@@ -15,11 +44,6 @@ from django.template.context import RequestContext
 LOAD_SAMPLE = 'LOAD_SAMPLE'
 HTTP_PROXY = 'HTTP_PROXY'
 HTTP_PROXY_PORT = 'HTTP_PROXY_PORT'
-
-MY_SITE = Site.objects.get(pk=getattr(settings, 'SITE_ID'))
-MY_SITE.domain = getattr(settings, 'SITE_DOMAIN')
-MY_SITE.name = getattr(settings, 'SITE_NAME')
-MY_SITE.save()
 
 
 def get_resource(file_name):

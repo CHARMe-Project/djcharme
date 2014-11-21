@@ -46,6 +46,7 @@ from djcharme.exception import ParseError
 from djcharme.exception import SecurityError
 from djcharme.exception import StoreConnectionError
 from djcharme.exception import UserError
+from djcharme.models import  Organization
 from djcharme.models import  OrganizationUser
 from djcharme.node import _extract_subject
 from djcharme.node.constants import ANNO_URI, NODE_URI, TARGET_URI, \
@@ -322,13 +323,14 @@ def _get_prov(annotation_uri, person_uri, client, timestamp):
     triples.append((annotation_uri, URIRef(OA + 'annotatedAt'),
                     timestamp))
     triples.append((annotation_uri, URIRef(OA + 'annotatedBy'), person_uri))
-    if client.name != None and len(client.name) > 0:
+    organization = _get_organization_for_client(client)
+    if organization != None:
         triples.append((annotation_uri, URIRef(OA + 'annotatedBy'),
                         URIRef(client.url)))
         triples.append((URIRef(client.url), URIRef(RDF + 'type'),
                         URIRef(FOAF + 'Organization')))
         triples.append((URIRef(client.url), URIRef(FOAF + 'name'),
-                        Literal(client.name)))
+                        Literal(organization)))
 
     return triples
 
@@ -720,7 +722,7 @@ def _is_organization_admin(request, annotation_uri):
     organization_id = (request.client.organizationclient_set.
                        values_list('organization', flat=True))
     if len(organization_id) < 1:
-        LOGGING.warn("No organization found for client %s", request.client)
+        LOGGING.warn("No organization found for client %s", request.client.url)
         return False
     # there should only be one
     organization_id = organization_id[0]
@@ -794,6 +796,30 @@ def _get_organization(graph, annotation_uri):
             for res3 in graph.triples((res2[0], None, None)):
                 organization.append(res3)
     return organization
+
+
+def _get_organization_for_client(client):
+    """
+    Get the name of the organization associated with the client.
+
+    Args:
+        client (client): The Client object from a request
+
+    Returns:
+        str The name of the organization or None.
+
+    """
+    organization_id = (client.organizationclient_set.
+                       values_list('organization', flat=True))
+    if len(organization_id) < 1:
+        LOGGING.warn("No organization found for client %s", client.url)
+        return None
+    # there should only be one
+    organization_id = organization_id[0]
+    organizations = (Organization.objects.filter(id=organization_id))
+    for organization in organizations:
+        return organization.name
+    return None
 
 
 def _get_software(graph, annotation_uri):
