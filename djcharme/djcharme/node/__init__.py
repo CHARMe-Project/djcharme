@@ -34,9 +34,9 @@ from rdflib.graph import Graph
 def _collect_all(graph, cache_graph, uri_ref, depth=None):
     for res in graph.triples((uri_ref, None, None)):
         cache_graph.add(res)
-        if depth is None or depth > 0:
+        if depth is None or depth > 1:
             new_depth = depth
-            if new_depth > 0:  # if fixed depth decrease the depth by one
+            if new_depth > 1:  # if fixed depth decrease the depth by one
                 new_depth = new_depth - 1
             _collect_all(graph, cache_graph, res[2], new_depth)
 
