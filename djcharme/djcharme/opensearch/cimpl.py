@@ -328,6 +328,8 @@ class COSQuery(OSQuery):
                               namespace=OS_NAMESPACE, default=''))
         params.append(OSParam("bodyType", "type",
                               namespace=RDF, default=''))
+        params.append(OSParam("citingType", "type",
+                              namespace=RDF, default=''))
         params.append(OSParam("dataType", "type",
                               namespace=RDF, default=''))
         params.append(OSParam("domainOfInterest", "domainOfInterest",

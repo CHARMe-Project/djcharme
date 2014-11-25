@@ -44,6 +44,6 @@ def setUp():
     responses = [COSAtomResponse()]
     os_short_name = "CHARMe Search"
     os_description = "Use CHARMe Search to search for annotations"
-    os_tags = "bodyType dataType domainOfInterest motivation organization region"
+    os_tags = "bodyType citingType dataType domainOfInterest motivation organization region"
     os = OpenSearchDescription(os_short_name, os_description, os_tags=os_tags)
     return OSEngine(query, responses, os)

@@ -72,6 +72,11 @@ ANNOTATIONS_FOR_BODY_TYPE = """
 ?anno oa:hasBody ?body .
 ?body rdf:type ?bodyType ."""
 
+ANNOTATIONS_FOR_CITING_TYPE = """
+?anno oa:annotatedAt ?annotatedAt .
+?anno cito:hasCitingEntity ?citingEntity .
+?citingEntity rdf:type ?citingType ."""
+
 ANNOTATIONS_FOR_DATA_TYPE = """
 ?anno oa:annotatedAt ?annotatedAt .
 ?anno oa:hasTarget ?target .
@@ -118,6 +123,7 @@ ANNOTATIONS_FOR_USER = """
 ?person foaf:accountName ?userName"""
 
 ANNOTATION_CLAUSES = {'bodyType':ANNOTATIONS_FOR_BODY_TYPE,
+                      'citingType':ANNOTATIONS_FOR_CITING_TYPE,
                       'dataType':ANNOTATIONS_FOR_DATA_TYPE,
                       'domainOfInterest':ANNOTATIONS_FOR_DOMAIN,
                       'motivation':ANNOTATIONS_FOR_MOTIVATION,
@@ -297,6 +303,11 @@ def get_suggestions(parameter_names, query_attr):
                                             limit, offset)
             results.append(result)
             total_results = total_results + count
+        if parameter_name == "citingType" or parameter_name == "*":
+            result, count = _get_citing_types(graph, "citingType", where_clause,
+                                            limit, offset)
+            results.append(result)
+            total_results = total_results + count
         if parameter_name == "dataType" or parameter_name == "*":
             result, count = _get_data_types(graph, "dataType", where_clause,
                                             limit, offset)
@@ -340,6 +351,30 @@ def _get_body_types(graph, parameter_name, where_clause, limit, offset):
     {%s}
     ?anno oa:hasBody ?body .
     ?body rdf:type ?bodyType .
+    }""") % where_clause
+    return _do_query(graph, parameter_name, statement, count_statement,
+                     "http://www.w3.org/2004/02/skos/core#prefLabel")
+
+
+def _get_citing_types(graph, parameter_name, where_clause, limit, offset):
+    statement = (PREFIX +
+    """
+    SELECT Distinct ?citingType
+    WHERE {
+    {%s}
+    ?anno cito:hasCitingEntity ?citingEntity .
+    ?citingEntity rdf:type ?citingType .
+    }
+    ORDER BY ?citingType
+    LIMIT %s
+    %s""" % (where_clause, limit, offset))
+    count_statement = (PREFIX +
+    """
+    SELECT  count (Distinct ?citingType)
+    WHERE {
+    {%s}
+    ?anno cito:hasCitingEntity ?citingEntity .
+    ?citingEntity rdf:type ?citingType .
     }""") % where_clause
     return _do_query(graph, parameter_name, statement, count_statement,
                      "http://www.w3.org/2004/02/skos/core#prefLabel")
@@ -523,6 +558,7 @@ def get_search_results(query_attr):
     where_clause = _get_where_clause(query_attr)
 
     statement = PREFIX + ANNOTATIONS_SELECT + where_clause + ANNOTATIONS_ORDER
+    print statement
     if _get_limit(query_attr) > 0:
         statement = statement + ' LIMIT ' + str(_get_limit(query_attr))
     if _get_offset(query_attr) != None:
