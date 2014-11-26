@@ -362,6 +362,7 @@ def _get_citing_types(graph, parameter_name, where_clause, limit, offset):
     SELECT Distinct ?citingType
     WHERE {
     {%s}
+    ?anno oa:annotatedAt ?annotatedAt .
     ?anno cito:hasCitingEntity ?citingEntity .
     ?citingEntity rdf:type ?citingType .
     }
@@ -373,6 +374,7 @@ def _get_citing_types(graph, parameter_name, where_clause, limit, offset):
     SELECT  count (Distinct ?citingType)
     WHERE {
     {%s}
+    ?anno oa:annotatedAt ?annotatedAt .
     ?anno cito:hasCitingEntity ?citingEntity .
     ?citingEntity rdf:type ?citingType .
     }""") % where_clause
