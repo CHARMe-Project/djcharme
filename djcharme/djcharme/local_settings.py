@@ -82,6 +82,7 @@ LOAD_SAMPLE = False
 
 STATIC_URL = SITE_PREFIX + "/static/"
 
+# triple store settings
 _format_sparql_url = lambda service: 'http://%s:%s/%s/%s' % (SPARQL_HOST_NAME,
                                                              SPARQL_PORT,
                                                              SPARQL_DATASET,
@@ -99,6 +100,7 @@ GRAPH_STORE_RW_PATH = '/%s/%s' % (SPARQL_DATASET, 'data')
 
 NODE_URI = 'http://localhost:8000'
 
+# Email settings used when resetting passwords
 EMAIL_HOST = "localhost"
 EMAIL_PORT = 25
 EMAIL_HOST_USER = ""

@@ -37,8 +37,6 @@ DEBUG = True
 SESSION_EXPIRE_AT_BROWSER_CLOSE = True
 
 SITE_ID = 1
-SITE_NAME = 'Example Site Name'
-SITE_DOMAIN = 'example.com'
 
 SITE_PREFIX = ''
 

@@ -112,10 +112,9 @@ ANNOTATIONS_FOR_TARGET = """
 OPTIONAL {?target oa:item ?item}"""
 
 ANNOTATIONS_FOR_TITLE = """
-?anno oa:annotatedAt ?annotatedAt .
-?anno oa:hasBody ?cit .
-?cit cito:hasCitedEntity ?paper .
-?paper text:query (dcterm:title '%s' 10) ."""
+?paper text:query (dcterm:title '%s' 100) .
+?anno cito:hasCitingEntity ?paper ;
+      oa:annotatedAt ?annotatedAt ."""
 
 ANNOTATIONS_FOR_USER = """
 ?anno oa:annotatedAt ?annotatedAt .
@@ -560,7 +559,6 @@ def get_search_results(query_attr):
     where_clause = _get_where_clause(query_attr)
 
     statement = PREFIX + ANNOTATIONS_SELECT + where_clause + ANNOTATIONS_ORDER
-    print statement
     if _get_limit(query_attr) > 0:
         statement = statement + ' LIMIT ' + str(_get_limit(query_attr))
     if _get_offset(query_attr) != None:
