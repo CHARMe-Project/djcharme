@@ -441,7 +441,7 @@ def _get_domains_of_interest(graph, parameter_name, where_clause, limit,
                              offset):
     statement = (PREFIX +
     """
-    SELECT ?body ?domainOfInterest
+    SELECT DISTINCT ?body ?domainOfInterest
     WHERE {
     {%s}
     ?anno oa:hasBody ?body .
@@ -489,7 +489,7 @@ def _get_motivations(graph, parameter_name, where_clause, limit, offset):
 def _get_organizations(graph, parameter_name, where_clause, limit, offset):
     statement = (PREFIX +
     """
-    SELECT ?organization ?name
+    SELECT DISTINCT ?organization ?name
     WHERE {
     {%s}
     ?anno oa:annotatedBy ?organization .

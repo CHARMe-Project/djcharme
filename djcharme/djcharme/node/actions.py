@@ -129,8 +129,8 @@ def insert_rdf(data, mimetype, user, client, graph=None, store=None):
             if none use the return of get_store()
         * return:str - The URI of the new annotation
     '''
-    LOGGING.debug("insert_rdf(data, %s, %s, client, graph, store)", mimetype,
-                  user)
+    LOGGING.debug("insert_rdf(%s, %s, %s, client, graph, store)", data,
+                  mimetype, user)
     try:
         return _insert_rdf(data, mimetype, user, client, graph, store)
     except ParseError as ex:
@@ -210,7 +210,7 @@ def modify_rdf(request, mimetype):
     try:
         return _modify_rdf(request, mimetype)
     except UserError as ex:
-        raise UserError(ex)
+        raise UserError(str(ex))
     except ParseError as ex:
         raise ParseError(str(ex))
     except EndPointNotFound as ex:
@@ -475,8 +475,11 @@ def _format_submitted_annotation(graph):
 
     target_id_found = False
     target_id_valid = False
+    local_resource = getattr(settings, 'NODE_URI', NODE_URI) + '/'
     for subject, pred, obj in graph:
         graph.remove((subject, pred, obj))
+        if local_resource in subject:
+            LOGGING.warning("Found %s in in subject of submitted annotation)", subject)
         # The use of TARGET_URI is only allowed for specific types
         if ((isinstance(subject, URIRef) and TARGET_URI in subject) or
             (isinstance(obj, URIRef) and TARGET_URI in obj)):
@@ -492,7 +495,7 @@ def _format_submitted_annotation(graph):
                     if key not in generated_uris.keys():
                         generated_uris[key] = uuid.uuid4().hex
             if value in obj:
-                bits = subject.split(CH_NODE + ':')
+                bits = obj.split(CH_NODE + ':')
                 if len(bits) > 1:
                     key = bits[1]
                     if key not in generated_uris.keys():
