@@ -138,6 +138,9 @@ def insert(request):
     '''
     try:
         return _insert(request)
+    except UserError as ex:
+        messages.add_message(request, messages.ERROR, str(ex))
+        return mm_render_to_response_error(request, '400.html', 400)
     except Exception as ex:
         LOGGING.error("insert - unexpected error: %s", str(ex))
         messages.add_message(request, messages.ERROR, str(ex))

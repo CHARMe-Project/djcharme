@@ -469,17 +469,15 @@ def _format_submitted_annotation(graph):
     '''
         Formats the graph according to the node configuration
     '''
+    graph = _validate_submitted_annotation(graph)
     generated_uris = {}
     for id_ in REPLACEMENT_URIS:
         generated_uris[id_] = uuid.uuid4().hex
 
     target_id_found = False
     target_id_valid = False
-    local_resource = getattr(settings, 'NODE_URI', NODE_URI) + '/'
     for subject, pred, obj in graph:
         graph.remove((subject, pred, obj))
-        if local_resource in subject:
-            LOGGING.warning("Found %s in in subject of submitted annotation)", subject)
         # The use of TARGET_URI is only allowed for specific types
         if ((isinstance(subject, URIRef) and TARGET_URI in subject) or
             (isinstance(obj, URIRef) and TARGET_URI in obj)):
@@ -514,6 +512,32 @@ def _format_submitted_annotation(graph):
             types = types + type_
         raise UserError((TARGET_URI + ' may only be used for ' + types +
                          ' target types'))
+
+
+def _validate_submitted_annotation(graph):
+    """
+    Validate the graph.
+
+    Args:
+        graph (rdflib.graph.Graph): The graph containing an annotation.
+
+    Returns:
+        graph (rdflib.graph.Graph): The validated graph.
+    """
+    local_resource = getattr(settings, 'NODE_URI', NODE_URI) + '/'
+    for subject, pred, obj in graph:
+        if local_resource in subject:
+            # I consider this 'if' a bit of a hack to help out the plugin at the
+            # end of the project.
+            if (pred == URIRef(RDF + 'type') and
+                obj == URIRef(OA + 'Annotation')):
+                graph.remove((subject, pred, obj))
+                continue
+            # end
+            LOGGING.info("UserError Found %s in the subject of submitted " \
+                         "annotation)", subject)
+            raise UserError(str(subject) + " is not allowed as a subject")
+    return graph
 
 
 def change_annotation_state(annotation_uri, new_graph, request):
