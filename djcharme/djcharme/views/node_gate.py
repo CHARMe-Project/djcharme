@@ -290,6 +290,7 @@ def process_resource(request, resource_id):
     """
         Process the resource dependent on the mime format.
     """
+    print "1"
     try:
         if isDELETE(request):
             return _delete(request, resource_id)
@@ -307,6 +308,8 @@ def _is_report_to_moderator(request):
         Is this a report to moderator request?
     """
     path_bits = request.path.split('/')
+    if len(path_bits) < 4:
+        return False
     if path_bits[3] == 'reporttomoderator':
         return True
     return False
@@ -352,6 +355,7 @@ def _process_resource(request, resource_id):
     """
         Process the resource dependent on the mime format.
     """
+    print "2"
     if validate_mime_format(request) is not None:
         path = "/%s/%s" % (DATA, resource_id)
         path = _process_resource_parameters(request, path)

@@ -124,6 +124,7 @@ def report_to_moderator(request, resource_id):
     """
     LOGGING.debug("report_to_moderator(request, %s)", resource_id)
     annotation_uri = _format_resource_uri_ref(resource_id)
+    print annotation_uri
     graph_name = find_annotation_graph(annotation_uri)
     if graph_name == None:
         raise NotFoundError(("Annotation %s not found" % annotation_uri))
@@ -137,16 +138,16 @@ def report_to_moderator(request, resource_id):
 
     # create message
     message = ('You are receiving this email as you are registered as an ' \
-               'admin for %s by the CHARMe site %s\n\n%s\nhas been flagged ' \
-               'for moderation by ' %
-               (organization_name, getattr(settings, 'NODE_URI'), annotation_uri))
+               'admin for %s by the CHARMe site %s\n\nThe annotation\n%s\n' \
+               'has been flagged for moderation by ' %
+               (organization_name, getattr(settings, 'NODE_URI'),
+                annotation_uri))
     if request.user.first_name != "":
         message = "%s%s " % (message, request.user.first_name)
     if request.user.last_name != "":
-        message = "%s%s " % (message, request.user.last_name)
+        message = "%s%s" % (message, request.user.last_name)
     if request.user.first_name == "" and request.user.last_name == "":
-        print dir(request.user)
-        message = "%suser: %s " % (message, request.user.username)
+        message = "%suser: %s" % (message, request.user.username)
     if request.user.email != "":
         message = "%s, email: %s " % (message, request.user.email)
 
