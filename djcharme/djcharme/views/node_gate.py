@@ -47,12 +47,13 @@ from djcharme.exception import SecurityError
 from djcharme.exception import StoreConnectionError
 from djcharme.exception import UserError
 from djcharme.node.actions import find_annotation_graph, _collect_annotations, \
-    find_resource_by_id, change_annotation_state, get_vocab
+    find_resource_by_id, change_annotation_state, get_vocab, report_to_moderator
 from djcharme.node.actions import insert_rdf, modify_rdf
 from djcharme.node.constants import OA, FORMAT_MAP, CONTENT_JSON, CONTENT_RDF, \
     CONTENT_TEXT, DATA, PAGE, SUBMITTED, RETIRED
-from djcharme.views import isDELETE, isPOST, isOPTIONS, validate_mime_format, \
-    http_accept, get_depth, content_type, check_mime_format, get_format
+from djcharme.views import isDELETE, isPOST, isPUT, isOPTIONS, \
+    validate_mime_format, http_accept, get_depth, content_type, \
+    check_mime_format, get_format
 
 
 LOGGING = logging.getLogger(__name__)
@@ -292,11 +293,23 @@ def process_resource(request, resource_id):
     try:
         if isDELETE(request):
             return _delete(request, resource_id)
+        if _is_report_to_moderator(request):
+            return _report_to_moderator(request, resource_id)
         return _process_resource(request, resource_id)
     except Exception as ex:
         LOGGING.error("process_resource - unexpected error: %s", str(ex))
         messages.add_message(request, messages.ERROR, str(ex))
         return mm_render_to_response_error(request, '500.html', 500)
+
+
+def _is_report_to_moderator(request):
+    """
+        Is this a report to moderator request?
+    """
+    path_bits = request.path.split('/')
+    if path_bits[3] == 'reporttomoderator':
+        return True
+    return False
 
 
 def _delete(request, resource_id):
@@ -306,6 +319,26 @@ def _delete(request, resource_id):
     LOGGING.info("advancing %s to state:%s", str(resource_id), RETIRED)
     try:
         change_annotation_state(resource_id, RETIRED, request)
+    except NotFoundError as ex:
+        messages.add_message(request, messages.ERROR, str(ex))
+        return mm_render_to_response_error(request, '404.html', 404)
+    except SecurityError as ex:
+        messages.add_message(request, messages.ERROR, str(ex))
+        return mm_render_to_response_error(request, '403.html', 403)
+    return HttpResponse(status=204)
+
+
+def _report_to_moderator(request, resource_id):
+    """
+        Report the resource to the moderator.
+    """
+    LOGGING.info("reporting %s to moderator", str(resource_id))
+    if not isPUT(request):
+        messages.add_message(request, messages.ERROR,
+                             "Message must be a PUT")
+        return mm_render_to_response_error(request, '405.html', 405)
+    try:
+        report_to_moderator(request, resource_id)
     except NotFoundError as ex:
         messages.add_message(request, messages.ERROR, str(ex))
         return mm_render_to_response_error(request, '404.html', 404)

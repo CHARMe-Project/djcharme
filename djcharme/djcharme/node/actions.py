@@ -39,6 +39,8 @@ import uuid
 
 from SPARQLWrapper.SPARQLExceptions import EndPointNotFound
 from django.conf import settings
+from django.contrib.auth.models import User
+from django.core.mail import send_mail
 from django.db.models import ObjectDoesNotExist
 from djcharme.charme_middleware import CharmeMiddleware
 from djcharme.exception import NotFoundError
@@ -58,7 +60,6 @@ from djcharme.node.constants import GRAPH_NAMES, SUBMITTED, INVALID, RETIRED
 from rdflib import BNode
 from rdflib import Graph, URIRef, Literal
 from rdflib.graph import ConjunctiveGraph
-
 
 LOGGING = logging.getLogger(__name__)
 
@@ -110,6 +111,59 @@ def get_vocab():
         Returns a graph containing all the vocab triples
     """
     return generate_graph(CharmeMiddleware.get_store(), "vocab")
+
+
+def report_to_moderator(request, resource_id):
+    """
+    Report this annotation to the moderator of the site where it was created.
+
+    Args:
+        request (WSGIRequest): The incoming request.
+        resource_id(str): The id of the resource.
+
+    """
+    LOGGING.debug("report_to_moderator(request, %s)", resource_id)
+    annotation_uri = _format_resource_uri_ref(resource_id)
+    graph_name = find_annotation_graph(annotation_uri)
+    if graph_name == None:
+        raise NotFoundError(("Annotation %s not found" % annotation_uri))
+    graph = generate_graph(CharmeMiddleware.get_store(), graph_name)
+    organizations = _get_organization(graph, annotation_uri)
+    for res in organizations:
+        if res[1] == (URIRef(FOAF + 'name')):
+            organization_name = res[2]
+            break
+    email_addresses = _get_admin_email_addresses(organization_name)
+
+    # create message
+    message = ('You are receiving this email as you are registered as an ' \
+               'admin for %s by the CHARMe site %s\n\n%s\nhas been flagged ' \
+               'for moderation by ' %
+               (organization_name, getattr(settings, 'NODE_URI'), annotation_uri))
+    if request.user.first_name != "":
+        message = "%s%s " % (message, request.user.first_name)
+    if request.user.last_name != "":
+        message = "%s%s " % (message, request.user.last_name)
+    if request.user.first_name == "" and request.user.last_name == "":
+        print dir(request.user)
+        message = "%suser: %s " % (message, request.user.username)
+    if request.user.email != "":
+        message = "%s, email: %s " % (message, request.user.email)
+
+    # add reason for flagging annotation
+    if request.body != "":
+        message = "%s\n\nThe following reason was given:\n%s\n" % (message,
+                                                                   request.body)
+
+    # add signature
+    message = '%s\n\nRegards\nThe CHARMEe site team\n' % (message)
+
+    # send mails
+    from_address = getattr(settings, 'DEFAULT_FROM_EMAIL')
+    for address in email_addresses:
+        send_mail('An annotation has been flagged for moderation',
+                  message, from_address, [address])
+    return
 
 
 def insert_rdf(data, mimetype, user, client, graph=None, store=None):
@@ -536,7 +590,8 @@ def _validate_submitted_annotation(graph):
             # end
             LOGGING.info("UserError Found %s in the subject of submitted " \
                          "annotation)", subject)
-            raise UserError(str(subject) + " is not allowed as a subject")
+            raise UserError(str(subject) + " is not allowed as the subject " \
+                            "of a triple")
     return graph
 
 
@@ -779,6 +834,39 @@ def _is_moderator(request):
         LOGGING.debug("User %s is a moderator", request.user.username)
         return True
     return False
+
+
+def _get_admin_email_addresses(organization_name):
+    """
+    Get the list of admin email addresses associated with the organization.
+
+    Args:
+        organization_name (str): The name of the organization.
+
+    Returns:
+        [str] List of admin email addresses.
+
+    """
+    organizations = (Organization.objects.filter(name=organization_name))
+    if len(organizations) < 1:
+        LOGGING.warn("No data found for %s", organization_name)
+        return None
+    organization_ids = []
+    for organization in organizations:
+        organization_ids.append(organization.id)
+    # there should only be one
+    organization_id = organization_ids[0]
+    organization_users = (OrganizationUser.objects.filter(role='admin').
+                          filter(organization=organization_id))
+    if len(organization_users) < 1:
+        LOGGING.warn("No admin found for organization %s", organization_name)
+        return None
+    admins = []
+    for organization_user in organization_users:
+        users = User.objects.filter(username=organization_user.user)
+        for user in users:
+            admins.append(user.email)
+    return admins
 
 
 def _get_people(graph, annotation_uri):
