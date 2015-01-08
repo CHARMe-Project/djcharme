@@ -157,7 +157,7 @@ def report_to_moderator(request, resource_id):
                                                                    request.body)
 
     # add signature
-    message = '%s\n\nRegards\nThe CHARMEe site team\n' % (message)
+    message = '%s\n\nRegards\nThe CHARMe site team\n' % (message)
 
     # send mails
     from_address = getattr(settings, 'DEFAULT_FROM_EMAIL')
