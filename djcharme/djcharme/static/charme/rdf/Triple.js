@@ -4,7 +4,7 @@ define(["dojox/xml/parser", "dojox/grid/DataGrid", "dojo/store/Memory",
 		function(parser, DataGrid, Memory, ObjectStore, gridCells, lang, baseArray, JSON){
 			return {
 				describeAnnotation: function(xml, states, div_id){
-					var store = new Memory({ idProperty: "key" });
+					var store = new Memory({ idProperty: "annotation" });
 
 					var xmldom = parser.parse(xml);
 					var nsResolver = document.createNSResolver( xmldom.ownerDocument == null ? 
@@ -22,67 +22,26 @@ define(["dojox/xml/parser", "dojox/grid/DataGrid", "dojo/store/Memory",
 
 					var value = queryResult.iterateNext();
 					var storedAnnotation = '';
-					var keyValue = 0;
-		            while(value){            	
+		            while(value){
+		            	store.put({annotation:value.getAttribute('rdf:about')});
+		            	storedAnnotation = store.get(value.getAttribute('rdf:about'));
+		            	storedAnnotation.state = "None"
+		            	if (states_obj != null) {
+		            		storedAnnotation.state = states_obj[storedAnnotation.annotation];	
+		            	}		            	
 		            	var nodes = value.childNodes;
 		            	var child = "";
 		            	for(i=0; i<nodes.length; i++) {
 		            		child = nodes[i];
 		            		if (child.localName == "hasBody") {
-		            			storedAnnotation=getStoredAnnotation(store, value)
-		            			storedAnnotation.property = "hasBody"		            			
-			            		storedAnnotation.value = child.getAttribute('rdf:resource');
-				            	continue
-		            		} 
+		            			storedAnnotation.hasBody = child.getAttribute('rdf:resource')		            			
+		            		}
 		            		if (child.localName == "hasTarget") {
-		            			storedAnnotation=getStoredAnnotation(store, value)
-		            			storedAnnotation.property = "hasTarget"		            			
-		            			storedAnnotation.value = child.getAttribute('rdf:resource');
-				            	continue
-				            }
-		            		if (child.localName == "annotatedBy") {
-		            			storedAnnotation=getStoredAnnotation(store, value)
-		            			storedAnnotation.property = "annotatedBy"		            			
-			            		storedAnnotation.value = child.getAttribute('rdf:resource');
-				            	continue
-				            }
-		            		if (child.localName == "annotatedAt") {
-		            			storedAnnotation=getStoredAnnotation(store, value)
-		            			storedAnnotation.property = "annotatedAt"		            			
-				            	storedAnnotation.value = child.textContent;
-				            	continue
-				            }
-		            		if (child.localName == "accountName") {
-		            			storedAnnotation=getStoredAnnotation(store, value)
-		            			storedAnnotation.property = "accountName"		            			
-				            	storedAnnotation.value = child.textContent;
-				            	continue
-				            }
-		            		if (child.localName == "givenName") {
-		            			storedAnnotation=getStoredAnnotation(store, value)
-		            			storedAnnotation.property = "givenName"		            			
-				            	storedAnnotation.value = child.textContent;
-				            	continue
-				            }
-		            		if (child.localName == "familyName") {
-		            			storedAnnotation=getStoredAnnotation(store, value)
-		            			storedAnnotation.property = "familyName"		            			
-				            	storedAnnotation.value = child.textContent;
-				            	continue
-				            }
-		            		if (child.localName == "name") {
-		            			storedAnnotation=getStoredAnnotation(store, value)
-		            			storedAnnotation.property = "name"		            			
-				            	storedAnnotation.value = child.textContent;
-				            	keyValue++
-				            	continue
-				            }		            			
-		            		if (child.localName == "type") {
-		            			storedAnnotation=getStoredAnnotation(store, value)
-		            			storedAnnotation.property = "type"		            			
-				            	storedAnnotation.value = child.getAttribute('rdf:resource');
-				            	continue
-				            }		            		
+		            			storedAnnotation.hasTarget = child.getAttribute('rdf:resource');
+		            		}
+		            		if (storedAnnotation.hasBody && storedAnnotation.hasTarget) { 
+		            			break;
+		            		}
 		            	}
 		                value = queryResult.iterateNext();
 		            }
@@ -96,21 +55,22 @@ define(["dojox/xml/parser", "dojox/grid/DataGrid", "dojo/store/Memory",
 						structure: 
 						            [
 						             new gridCells.RowIndex({ width: "10%" }),
-						             {name: "Resource", field: "annotation", width: "100%",
+						             {name: "Annotation", field: "annotation", width: "100%",
 						            	 formatter: function(value) {  
 						            	 	return "<a href=\'" + value + "\'>" + value + "</a>"; 
 						             	 }
 						             },
-						             {name: "Property", field: "property", width: "100%",
+						             {name: "hasTarget", field: "hasTarget", width: "100%",
 						            	 formatter: function(value) {  
-					            	 		return value; 
+					            	 		return "<a href=\'" + value + "\'>" + value + "</a>"; 
 					             	 	}
 						             },
-						             {name: "Value", field: "value", width: "100%",
+						             {name: "hasBody", field: "hasBody", width: "100%",
 					            	 formatter: function(value) {  
 				            	 		return "<a href=\'" + value + "\'>" + value + "</a>"; 				             	 	
 						             	}
 						             },						             
+						             {name: "state", field: "state", width: "100%"}
 						            ],
 						selectionMode: "multiple"
 					 },div_id); 
@@ -123,15 +83,6 @@ define(["dojox/xml/parser", "dojox/grid/DataGrid", "dojo/store/Memory",
 						var msg = "You have selected row" + ((tmp.length > 1) ? "s ": " ");
 						node.innerHTML = msg + tmp.join(", ");
 					}
-					
-					function getStoredAnnotation(store,value){
-		            	keyValue++
-		            	store.put({key:keyValue});
-		            	storedAnnotation = store.get(keyValue);
-		            	storedAnnotation.annotation=value.getAttribute('rdf:about')
-		            	return storedAnnotation
-					}
-					
 					grid.on("SelectionChanged",
 					lang.hitch(this, reportSelection, document.getElementById("clicked")), true);
 				
