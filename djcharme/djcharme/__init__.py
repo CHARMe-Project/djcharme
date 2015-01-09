@@ -1,6 +1,6 @@
 '''
 BSD Licence
-Copyright (c) 2014, Science & Technology Facilities Council (STFC)
+Copyright (c) 2015, Science & Technology Facilities Council (STFC)
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification,
@@ -28,7 +28,7 @@ ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 '''
-__version__ = '0.6.7'
+__version__ = '0.7.0'
 
 
 import os
