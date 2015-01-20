@@ -109,7 +109,6 @@ class UserAdmin_(UserAdmin):
         Get the role of the user, they may have more than one role.
 
         """
-        print dir(obj)
         admin_ = False
         user = False
         for organizationuser in obj.organizationuser_set.iterator():

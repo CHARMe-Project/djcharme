@@ -124,7 +124,6 @@ def report_to_moderator(request, resource_id):
     """
     LOGGING.debug("report_to_moderator(request, %s)", resource_id)
     annotation_uri = _format_resource_uri_ref(resource_id)
-    print annotation_uri
     graph_name = find_annotation_graph(annotation_uri)
     if graph_name == None:
         raise NotFoundError(("Annotation %s not found" % annotation_uri))
