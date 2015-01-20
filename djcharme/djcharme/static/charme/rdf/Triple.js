@@ -107,9 +107,12 @@ define(["dojox/xml/parser", "dojox/grid/DataGrid", "dojo/store/Memory",
 					             	 	}
 						             },
 						             {name: "Value", field: "value", width: "100%",
-					            	 formatter: function(value) {  
-				            	 		return "<a href=\'" + value + "\'>" + value + "</a>"; 				             	 	
-						             	}
+						            	 formatter: function(value) {  
+						            		 if ((/^(f|ht)tps?:\/\//i.test(value)) || (/^doi:\/\//i.test(value))){
+						            			 return "<a href=\'" + value + "\'>" + value + "</a>";
+						            		 }
+						            		 return value; 				             	 	
+						            	 }
 						             },						             
 						            ],
 						selectionMode: "multiple"
