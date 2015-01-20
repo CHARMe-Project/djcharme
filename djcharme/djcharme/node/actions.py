@@ -1,6 +1,6 @@
 '''
 BSD Licence
-Copyright (c) 2014, Science & Technology Facilities Council (STFC)
+Copyright (c) 2015, Science & Technology Facilities Council (STFC)
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification,
@@ -581,13 +581,6 @@ def _validate_submitted_annotation(graph):
     local_resource = getattr(settings, 'NODE_URI', NODE_URI) + '/'
     for subject, pred, obj in graph:
         if local_resource in subject:
-            # I consider this 'if' a bit of a hack to help out the plugin at the
-            # end of the project.
-            if (pred == URIRef(RDF + 'type') and
-                obj == URIRef(OA + 'Annotation')):
-                graph.remove((subject, pred, obj))
-                continue
-            # end
             LOGGING.info("UserError Found %s in the subject of submitted " \
                          "annotation)", subject)
             raise UserError(str(subject) + " is not allowed as the subject " \
