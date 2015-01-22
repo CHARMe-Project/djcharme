@@ -431,7 +431,9 @@ def _process_page(request, resource_id=None):
         return process_resource(request, resource_id)
 
     tmp_g = find_resource_by_id(resource_id, get_depth(request))
-    context = {'results': tmp_g.serialize()}
+    xml =  tmp_g.serialize()
+    xml =xml.replace("'", "&apos;")
+    context = {'results': xml}
     return mm_render_to_response(request, context, 'viewer.html')
 
 
