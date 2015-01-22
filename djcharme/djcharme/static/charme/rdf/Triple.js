@@ -82,7 +82,19 @@ define(["dojox/xml/parser", "dojox/grid/DataGrid", "dojo/store/Memory",
 		            			storedAnnotation.property = "type"		            			
 				            	storedAnnotation.value = child.getAttribute('rdf:resource');
 				            	continue
-				            }		            		
+				            }
+		            		if (child.localName == "wasInvalidatedBy") {
+		            			storedAnnotation=getStoredAnnotation(store, value)
+		            			storedAnnotation.property = "wasInvalidatedBy"		            			
+				            	storedAnnotation.value = child.getAttribute('rdf:resource');
+				            	continue
+		            		}
+		            		if (child.localName == "wasRevisionOf") {
+		            			storedAnnotation=getStoredAnnotation(store, value)
+		            			storedAnnotation.property = "wasRevisionOf"		            			
+				            	storedAnnotation.value = child.getAttribute('rdf:resource');
+				            	continue
+		            		}		            		
 		            	}
 		                value = queryResult.iterateNext();
 		            }
