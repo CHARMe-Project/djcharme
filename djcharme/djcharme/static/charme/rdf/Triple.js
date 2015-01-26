@@ -77,6 +77,13 @@ define(["dojox/xml/parser", "dojox/grid/DataGrid", "dojo/store/Memory",
 				            	keyValue++
 				            	continue
 				            }		            			
+		            		if (child.localName == "title") {
+		            			storedAnnotation=getStoredAnnotation(store, value)
+		            			storedAnnotation.property = "title"		            			
+				            	storedAnnotation.value = child.textContent;
+				            	keyValue++
+				            	continue
+				            }
 		            		if (child.localName == "type") {
 		            			storedAnnotation=getStoredAnnotation(store, value)
 		            			storedAnnotation.property = "type"		            			
