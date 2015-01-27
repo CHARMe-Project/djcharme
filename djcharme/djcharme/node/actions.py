@@ -610,7 +610,7 @@ def change_annotation_state(annotation_uri, new_graph, request):
     timestamp = Literal(datetime.utcnow())
 
     new_g = _change_annotation_state(annotation_uri, new_graph, request,
-                                     activity_uri, timestamp)
+                                     activity_uri, timestamp, True)
 
     # add the person
     person_uri, triples = _create_person(request.user)
@@ -633,7 +633,7 @@ def change_annotation_state(annotation_uri, new_graph, request):
 
 
 def _change_annotation_state(annotation_uri, new_graph, request, activity_uri,
-                             timestamp):
+                             timestamp, delete_target=False):
     """
     Advance the status of an annotation.
 
@@ -642,6 +642,9 @@ def _change_annotation_state(annotation_uri, new_graph, request, activity_uri,
         new_graph (str): The name of the graph/state to move the annotation to.
         request (WSGIRequest): The incoming request.
         activity_uri (URIRef): The uri of the Activity
+        timestamp (Literal): The time of the change
+        delete_target (boolean): Physically delete the target if the annotation
+        is moved to the retired or invalid graph
 
     Returns:
         graph (rdflib.graph.Graph): The new graph containing the updated
@@ -659,6 +662,10 @@ def _change_annotation_state(annotation_uri, new_graph, request, activity_uri,
     if old_graph == INVALID or old_graph == RETIRED:
         raise UserError(("Current annotation status of %s is final. Status " \
                          "has not been updated." % old_graph))
+    if new_graph == INVALID or new_graph == RETIRED:
+        # we must do this before we move the annotation
+        if delete_target:
+            _delete_target(annotation_uri, old_graph, request)
     new_g = _move_annotation(annotation_uri, new_graph, old_graph, request,
                              timestamp)
     if new_graph == INVALID or new_graph == RETIRED:
@@ -731,6 +738,38 @@ def _move_annotation(annotation_uri, new_graph, old_graph, request, timestamp):
     _add(new_g, ((annotation_uri, URIRef(OA + 'annotatedAt'), timestamp)))
 
     return new_g
+
+
+def _delete_target(annotation_uri, graph_name, request):
+    """
+    Delete the targets associated with an annotation if they are no longer
+    referenced.
+
+    Args:
+        annotation_uri (URIRef): The URI of the annotation.
+        graph_name (str): The name of the graph to move the annotation from.
+        request (WSGIRequest): The incoming request.
+
+    """
+    # First check permissions
+    graph = generate_graph(CharmeMiddleware.get_store(), graph_name)
+    if not _is_update_allowed(graph, annotation_uri, request):
+        raise SecurityError(("You do not have the required permission to " \
+                             "update the status of annotation %s" %
+                             annotation_uri))
+
+    # Find all of the targets
+    for res in graph.triples((annotation_uri, OA['hasTarget'], None)):
+        # If this is the only reference to the target then delete it
+        count = 0
+        for x in graph.triples((None, None, res[2])):
+            count = count + 1
+        if count > 1:
+            continue
+
+        for target in  graph.triples((res[2], None, None)):
+            LOGGING.debug("permanently deleting target %s", target)
+            _remove(graph, target)
 
 
 def _is_update_allowed(graph, annotation_uri, request):
