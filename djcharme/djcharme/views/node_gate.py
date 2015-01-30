@@ -1,6 +1,6 @@
 '''
 BSD Licence
-Copyright (c) 2014, Science & Technology Facilities Council (STFC)
+Copyright (c) 2015, Science & Technology Facilities Council (STFC)
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification,
@@ -47,13 +47,16 @@ from djcharme.exception import SecurityError
 from djcharme.exception import StoreConnectionError
 from djcharme.exception import UserError
 from djcharme.node.actions import find_annotation_graph, _collect_annotations, \
-    find_resource_by_id, change_annotation_state, get_vocab, report_to_moderator
+    find_resource_by_id, format_resource_uri_ref, change_annotation_state, \
+    get_vocab, report_to_moderator
 from djcharme.node.actions import insert_rdf, modify_rdf
-from djcharme.node.constants import OA, FORMAT_MAP, CONTENT_JSON, CONTENT_RDF, \
-    CONTENT_TEXT, DATA, PAGE, SUBMITTED, RETIRED
+from djcharme.node.constants import OA, PROV, RDF, FORMAT_MAP, CONTENT_JSON, \
+    CONTENT_RDF, CONTENT_TEXT, DATA, PAGE, SUBMITTED, RETIRED
 from djcharme.views import isDELETE, isPOST, isPUT, isOPTIONS, \
     validate_mime_format, http_accept, get_depth, content_type, \
     check_mime_format, get_format
+
+from djcharme.views.resource import annotation, activity
 
 
 LOGGING = logging.getLogger(__name__)
@@ -430,9 +433,27 @@ def _process_page(request, resource_id=None):
     if 'text/html' not in http_accept(request):
         return process_resource(request, resource_id)
 
-    tmp_g = find_resource_by_id(resource_id, get_depth(request))
-    xml =  tmp_g.serialize()
-    xml =xml.replace("'", "&apos;")
+    depth = get_depth(request)
+    tmp_g = find_resource_by_id(resource_id, depth)
+
+    resource_uri = format_resource_uri_ref(resource_id)
+
+    # Check if the resource is an annotation
+    triples = tmp_g.triples((resource_uri, RDF['type'], OA['Annotation']))
+    for triple in triples:
+        if depth < 1:
+            tmp_g = find_resource_by_id(resource_id, 1)
+        return annotation(request, resource_uri, tmp_g)
+
+    # Check if the resource is an annotation
+    triples = tmp_g.triples((resource_uri, RDF['type'], PROV['Activity']))
+    for triple in triples:
+        if depth < 1:
+            tmp_g = find_resource_by_id(resource_id, 1)
+        return activity(request, resource_uri, tmp_g)
+
+    xml = tmp_g.serialize()
+    xml = xml.replace("'", "&apos;")
     context = {'results': xml}
     return mm_render_to_response(request, context, 'viewer.html')
 

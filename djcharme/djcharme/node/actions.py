@@ -123,7 +123,7 @@ def report_to_moderator(request, resource_id):
 
     """
     LOGGING.debug("report_to_moderator(request, %s)", resource_id)
-    annotation_uri = _format_resource_uri_ref(resource_id)
+    annotation_uri = format_resource_uri_ref(resource_id)
     graph_name = find_annotation_graph(annotation_uri)
     if graph_name == None:
         raise NotFoundError(("Annotation %s not found" % annotation_uri))
@@ -485,7 +485,7 @@ def _get_deleted_activity(annotation_uri, timestamp, activity_uri, person_uri):
     return triples
 
 
-def _format_resource_uri_ref(resource_id):
+def format_resource_uri_ref(resource_id):
     '''
         Returns the URIRef associated with the id for this specific node
     '''
@@ -604,13 +604,15 @@ def change_annotation_state(annotation_uri, new_graph, request):
     """
     LOGGING.debug("change_annotation_state(%s, %s, request)",
                   annotation_uri, new_graph)
-    annotation_uri = _format_resource_uri_ref(annotation_uri)
+    annotation_uri = format_resource_uri_ref(annotation_uri)
     activity_uri = URIRef((getattr(settings, 'NODE_URI', NODE_URI)
                            + '/%s/%s' % (RESOURCE, uuid.uuid4().hex)))
     timestamp = Literal(datetime.utcnow())
 
     new_g = _change_annotation_state(annotation_uri, new_graph, request,
                                      activity_uri, timestamp, True)
+    if new_g == None:
+        return
 
     # add the person
     person_uri, triples = _create_person(request.user)
@@ -652,13 +654,13 @@ def _change_annotation_state(annotation_uri, new_graph, request, activity_uri,
 
     """
     # lets do some initial validation
-    annotation_uri = _format_resource_uri_ref(annotation_uri)
+    annotation_uri = format_resource_uri_ref(annotation_uri)
     _validate_graph_name(new_graph)
     old_graph = find_annotation_graph(annotation_uri)
     if old_graph == None:
         raise NotFoundError(("Annotation %s not found" % annotation_uri))
     if old_graph == new_graph:
-        return
+        return None
     if old_graph == INVALID or old_graph == RETIRED:
         raise UserError(("Current annotation status of %s is final. Status " \
                          "has not been updated." % old_graph))
@@ -712,7 +714,7 @@ def _move_annotation(annotation_uri, new_graph, old_graph, request, timestamp):
     """
     # First check permissions
     old_g = generate_graph(CharmeMiddleware.get_store(), old_graph)
-    if not _is_update_allowed(old_g, annotation_uri, request):
+    if not is_update_allowed(old_g, annotation_uri, request):
         raise SecurityError(("You do not have the required permission to " \
                              "update the status of annotation %s" %
                              annotation_uri))
@@ -754,7 +756,7 @@ def _delete_body(annotation_uri, graph_name, request):
     """
     # First check permissions
     graph = generate_graph(CharmeMiddleware.get_store(), graph_name)
-    if not _is_update_allowed(graph, annotation_uri, request):
+    if not is_update_allowed(graph, annotation_uri, request):
         raise SecurityError(("You do not have the required permission to " \
                              "update the status of annotation %s" %
                              annotation_uri))
@@ -788,7 +790,7 @@ def _delete_target(annotation_uri, graph_name, request):
     """
     # First check permissions
     graph = generate_graph(CharmeMiddleware.get_store(), graph_name)
-    if not _is_update_allowed(graph, annotation_uri, request):
+    if not is_update_allowed(graph, annotation_uri, request):
         raise SecurityError(("You do not have the required permission to " \
                              "update the status of annotation %s" %
                              annotation_uri))
@@ -809,7 +811,7 @@ def _delete_target(annotation_uri, graph_name, request):
             _remove(graph, target)
 
 
-def _is_update_allowed(graph, annotation_uri, request):
+def is_update_allowed(graph, annotation_uri, request):
     """
     Check if this user is allowed to update this annotation.
 
@@ -870,8 +872,11 @@ def _is_organization_admin(request, annotation_uri):
 
     """
     user_id = request.user.id
-    organization_id = (request.client.organizationclient_set.
+    try:
+        organization_id = (request.client.organizationclient_set.
                        values_list('organization', flat=True))
+    except AttributeError as ex:
+        return False
     if len(organization_id) < 1:
         LOGGING.warn("No organization found for client %s", request.client.url)
         return False
@@ -1039,7 +1044,7 @@ def find_annotation_graph(resource_id):
         str The name of the graph or None.
 
     """
-    triple = (_format_resource_uri_ref(resource_id), None, None)
+    triple = (format_resource_uri_ref(resource_id), None, None)
     for graph in GRAPH_NAMES:
         new_g = generate_graph(CharmeMiddleware.get_store(), graph)
         if triple in new_g:
@@ -1053,7 +1058,7 @@ def find_resource_by_id(resource_id, depth=None):
         * return: an rdflib.Graph object
     '''
     graph = ConjunctiveGraph(store=CharmeMiddleware.get_store())
-    uri_ref = _format_resource_uri_ref(resource_id)
+    uri_ref = format_resource_uri_ref(resource_id)
     LOGGING.debug("Looking resource %s", uri_ref)
     return _extract_subject(graph, uri_ref, depth)
 

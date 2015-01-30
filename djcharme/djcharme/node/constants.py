@@ -1,6 +1,6 @@
 '''
 BSD Licence
-Copyright (c) 2014, Science & Technology Facilities Council (STFC)
+Copyright (c) 2015, Science & Technology Facilities Council (STFC)
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification,
@@ -49,6 +49,7 @@ RDF = Namespace("http://www.w3.org/1999/02/22-rdf-syntax-ns#")
 OA = Namespace("http://www.w3.org/ns/oa#")
 FOAF = Namespace("http://xmlns.com/foaf/0.1/")
 PROV = Namespace("http://www.w3.org/ns/prov#")
+CONTENT = Namespace("http://www.w3.org/2011/content#")
 CH = Namespace(CH_NS)
 
 SUBMITTED = 'submitted'

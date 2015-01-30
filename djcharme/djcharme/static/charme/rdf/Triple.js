@@ -28,6 +28,12 @@ define(["dojox/xml/parser", "dojox/grid/DataGrid", "dojo/store/Memory",
 		            	var child = "";
 		            	for(i=0; i<nodes.length; i++) {
 		            		child = nodes[i];
+		            		if (child.localName == "chars") {
+		            			storedAnnotation=getStoredAnnotation(store, value)
+		            			storedAnnotation.property = "chars"		            			
+					            storedAnnotation.value = child.textContent;
+				            	continue
+		            		}	
 		            		if (child.localName == "hasBody") {
 		            			storedAnnotation=getStoredAnnotation(store, value)
 		            			storedAnnotation.property = "hasBody"		            			

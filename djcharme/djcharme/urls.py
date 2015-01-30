@@ -4,7 +4,7 @@ from django.contrib.auth import views as auth_views
 from django.contrib.auth.views import login
 from djcharme.charme_security_model import LoginForm
 from djcharme.views import node_gate, compose, endpoint, main_gui, search, \
-    registration, facets, views
+    registration, resource, facets, views
 
 
 admin.autodiscover()
@@ -72,6 +72,8 @@ urlpatterns = patterns('',
         name='process_resource'),
     url(r'^data/(\w+)', node_gate.process_data, name='process_data'),
     url(r'^page/(\w+)', node_gate.process_page, name='process_page'),
+    url(r'^annotation/$', resource.annotation, name='annotation'),
+    url(r'^activity/$', resource.activity, name='activity'),
 
     # Annotation composition
     url(r'^compose/annotation', compose.compose_annotation,
