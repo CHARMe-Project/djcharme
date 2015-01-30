@@ -51,10 +51,6 @@ def annotation(request, resource_uri=None, graph=None):
         LOGGING.debug('method is POST')
         return _delete(request)
     else:  # GET
-
-        for triple in graph.triples((None, None, None)):
-            print triple
-
         context['uri'] = resource_uri
 
         triples = graph.triples((resource_uri, PROV['wasInvalidatedBy'], None))
