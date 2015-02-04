@@ -379,7 +379,7 @@ def _process_resource_parameters(request, path):
     format_ = get_format(request)
     if format_ is not None:
         path = "%s/?format=%s" % (path, format_)
-        if get_depth is not None:
+        if depth is not None:
             path = "%s&depth=%s" % (path, depth)
     elif depth is not None:
         path = "%s/?depth=%s" % (path, depth)
@@ -408,8 +408,10 @@ def _process_data(request, resource_id):
     req_format = validate_mime_format(request)
     if req_format is None:
         return process_resource(request, resource_id)
-
-    tmp_g = find_resource_by_id(resource_id, get_depth(request))
+    depth = get_depth(request)
+    if depth == None:
+        depth = 1
+    tmp_g = find_resource_by_id(resource_id, depth)
     return HttpResponse(tmp_g.serialize(format=req_format),
                         mimetype=FORMAT_MAP.get(req_format))
 
@@ -433,7 +435,6 @@ def _process_page(request, resource_id=None):
     if 'text/html' not in http_accept(request):
         return process_resource(request, resource_id)
 
-    depth = get_depth(request)
     tmp_g = find_resource_by_id(resource_id, 1)
 
     resource_uri = format_resource_uri_ref(resource_id)

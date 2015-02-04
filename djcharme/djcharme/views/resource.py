@@ -38,7 +38,7 @@ from djcharme.node.actions import change_annotation_state, is_update_allowed, \
     find_annotation_graph
 from djcharme.node.constants import  CITO, CONTENT, DC, DCTERMS, FOAF, \
     INVALID, OA, PROV, RDF, RETIRED, SKOS
-
+import datetime
 
 LOGGING = logging.getLogger(__name__)
 fred = 0
@@ -71,7 +71,9 @@ def annotation(request, resource_uri=None, graph=None):
 
         triples = graph.triples((resource_uri, OA['annotatedAt'], None))
         for triple in triples:
-            context['annotatedAt'] = triple[2]
+            at = datetime.datetime.strptime(triple[2], "%Y-%m-%dT%H:%M:%S.%f")
+            at = at.strftime("%H:%M %d %b %Y")
+            context['annotated_at'] = at
 
         triples = graph.triples((resource_uri, OA['annotatedBy'], None))
         for triple in triples:
@@ -89,7 +91,9 @@ def annotation(request, resource_uri=None, graph=None):
 
         triples = graph.triples((resource_uri, OA['serializedAt'], None))
         for triple in triples:
-            context['serialized_at'] = triple[2]
+            at = datetime.datetime.strptime(triple[2], "%Y-%m-%dT%H:%M:%S.%f")
+            at = at.strftime("%H:%M %d %b %Y")
+            context['serialized_at'] = at
 
         triples = graph.triples((resource_uri, OA['motivatedBy'], None))
         motivations = []
@@ -153,7 +157,8 @@ def annotation(request, resource_uri=None, graph=None):
         for triple in triples:
             context['cited_entity'] = triple[2]
 
-        triples = graph.triples((None, CITO['hasCitationCharacterization'], None))
+        triples = graph.triples((None, CITO['hasCitationCharacterization'],
+                                 None))
         for triple in triples:
             context['citation_characterization'] = triple[2]
 
@@ -201,7 +206,9 @@ def activity(request, resource_uri, graph):
 
     triples = graph.triples((resource_uri, PROV['wasEndedAt'], None))
     for triple in triples:
-        context['wasEndedAt'] = triple[2]
+            at = datetime.datetime.strptime(triple[2], "%Y-%m-%dT%H:%M:%S.%f")
+            at = at.strftime("%H:%M %d %b %Y")
+            context['wasEndedAt'] = at
 
     triples = graph.triples((resource_uri, PROV['wasEndedBy'], None))
     for triple in triples:

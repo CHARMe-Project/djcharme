@@ -49,7 +49,7 @@ def get_format(request):
 
 
 def get_depth(request):
-    depth = request.GET.get(DEPTH, 1)
+    depth = request.GET.get(DEPTH)
     if depth is not None:
         try:
             return int(depth)
