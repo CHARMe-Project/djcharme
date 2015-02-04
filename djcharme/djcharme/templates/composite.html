@@ -1,0 +1,22 @@
+{% extends "charme_base.html" %}
+
+{% load i18n %}
+
+{% block main %}
+
+<h2>Composite Resource {{ uri }}</h2>
+
+<div class=contactform id="composite">
+	<div class=accounts>
+		<table>
+			{% for item in items %}
+			<tr>
+				<td><label>{% trans "Item:" noop %}</label></td>
+				<td><a href={{item}}>{{ item }}</a></td>
+			</tr>
+			{% endfor %}
+		</table>
+	</div>
+</div>
+
+{% endblock %}

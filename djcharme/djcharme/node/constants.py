@@ -45,11 +45,15 @@ FORMAT_MAP = {'json-ld': CONTENT_JSON,
 
 CH_NS = "http://purl.org/voc/charme#"
 # Create a namespace object for the CHARMe namespace.
-RDF = Namespace("http://www.w3.org/1999/02/22-rdf-syntax-ns#")
-OA = Namespace("http://www.w3.org/ns/oa#")
-FOAF = Namespace("http://xmlns.com/foaf/0.1/")
-PROV = Namespace("http://www.w3.org/ns/prov#")
+CITO = Namespace("http://purl.org/spar/cito/")
 CONTENT = Namespace("http://www.w3.org/2011/content#")
+DC = Namespace("http://purl.org/dc/elements/1.1/")
+DCTERMS = Namespace("http://purl.org/dc/terms/")
+FOAF = Namespace("http://xmlns.com/foaf/0.1/")
+OA = Namespace("http://www.w3.org/ns/oa#")
+PROV = Namespace("http://www.w3.org/ns/prov#")
+RDF = Namespace("http://www.w3.org/1999/02/22-rdf-syntax-ns#")
+SKOS = Namespace("http://www.w3.org/2004/02/skos/core#")
 CH = Namespace(CH_NS)
 
 SUBMITTED = 'submitted'

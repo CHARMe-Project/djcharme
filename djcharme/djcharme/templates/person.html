@@ -1,0 +1,30 @@
+{% extends "charme_base.html" %}
+
+{% load i18n %}
+
+{% block main %}
+
+<h2>Person {{ uri }}</h2>
+
+<div class=contactform id="person">
+	<div class=accounts>
+		<table>
+			<tr>
+				<td><label>{% trans "First name:" noop %}</label></td>
+				<td>{{ first_name }}</td>
+			</tr>
+			<tr>
+				<td><label>{% trans "Last name:" noop %}</label></td>
+				<td><label>{{ last_name }}</label></td>
+			</tr>
+			{% if email %}
+			<tr>
+				<td><label>{% trans "Email:" noop %}</label></td>
+				<td>{{ email }}</td>
+			</tr>
+			{% endif %}
+		</table>
+	</div>
+</div>
+
+{% endblock %}

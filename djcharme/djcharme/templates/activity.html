@@ -6,42 +6,38 @@
 
 <h2>Activity {{ uri }}</h2>
 
-<div class=contactform id="annotation">
+<div class=contactform id="activity">
 	<div class=accounts>
-		<form method="post" action="{% url 'annotation' %}">
-			{% csrf_token %}
-			<table>
-				<tr>				
-					<td><label>{% trans "Invalidated annotation:" noop %}</label></td>
-					<td><a href={{ invalidated }}>{{ invalidated }}</td>
-				</tr>
+		<table>
+			<tr>
+				<td><label>{% trans "Invalidated annotation:" noop %}</label></td>
+				<td><a href={{invalidated}}>{{ invalidated }}</td>
+			</tr>
 
-				{% if generated %}
-				<tr>				
-					<td><label>{% trans "Generated annotation:" noop %}</label></td>
-					<td><a href={{ generated }}>{{ generated }}</td>
-				</tr>
-				{% endif %}
+			{% if generated %}
+			<tr>
+				<td><label>{% trans "Generated annotation:" noop %}</label></td>
+				<td><a href={{generated}}>{{ generated }}</td>
+			</tr>
+			{% endif %}
 
-				<tr>
-					<td><label>{% trans "At:" noop %}</label></td>
-					<td>{{ wasEndedAt }}</td>
-				</tr>
-				<tr>
-					<td><label>{% trans "Author's first name:" noop %}</label></td>
-					<td>{{ first_name }}</td>
-				</tr>
-				<tr>
-					<td><label>{% trans "Author's last name:" noop %}</label></td>
-					<td><label>{{ last_name }}</label></td>
-				</tr>
-				<tr>
-					<td><label>{% trans "Author's email:" noop %}</label></td>
-					<td>{{ email }}</td>
-				</tr>
-
-			</table>
-		</form>
+			<tr>
+				<td><label>{% trans "At:" noop %}</label></td>
+				<td>{{ wasEndedAt }}</td>
+			</tr>
+			<tr>
+				<td><label>{% trans "Author's first name:" noop %}</label></td>
+				<td>{{ first_name }}</td>
+			</tr>
+			<tr>
+				<td><label>{% trans "Author's last name:" noop %}</label></td>
+				<td><label>{{ last_name }}</label></td>
+			</tr>
+			<tr>
+				<td><label>{% trans "Author's email:" noop %}</label></td>
+				<td>{{ email }}</td>
+			</tr>
+		</table>
 	</div>
 </div>
 

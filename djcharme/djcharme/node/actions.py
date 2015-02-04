@@ -655,7 +655,7 @@ def _change_annotation_state(annotation_uri, new_graph, request, activity_uri,
     """
     # lets do some initial validation
     annotation_uri = format_resource_uri_ref(annotation_uri)
-    _validate_graph_name(new_graph)
+    validate_graph_name(new_graph)
     old_graph = find_annotation_graph(annotation_uri)
     if old_graph == None:
         raise NotFoundError(("Annotation %s not found" % annotation_uri))
@@ -677,7 +677,7 @@ def _change_annotation_state(annotation_uri, new_graph, request, activity_uri,
     return new_g
 
 
-def _validate_graph_name(graph_name):
+def validate_graph_name(graph_name):
     """
     Check that the graph name is valid.
 
@@ -1078,7 +1078,7 @@ def __query_annotations(graph, default_graph, pred=None, obj=None):
     return graph.query(query)
 
 
-def _collect_annotations(graph_name):
+def collect_annotations(graph_name):
     '''
         Returns a graph containing all the node annotations
         - string **graph_name**

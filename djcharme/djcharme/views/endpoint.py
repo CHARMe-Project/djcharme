@@ -1,6 +1,6 @@
 '''
 BSD Licence
-Copyright (c) 2014, Science & Technology Facilities Council (STFC)
+Copyright (c) 2015, Science & Technology Facilities Council (STFC)
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification,
@@ -40,22 +40,24 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.http.response import (HttpResponseRedirectBase,
                                   HttpResponseNotFound, HttpResponse)
-from rdflib.graph import ConjunctiveGraph
-from rdflib.term import URIRef
-
-from djcharme import mm_render_to_response, mm_render_to_response_error, \
-    settings
+from djcharme import mm_render_to_response_error, settings
 from djcharme.charme_middleware import CharmeMiddleware
 from djcharme.exception import NotFoundError
 from djcharme.exception import SecurityError
 from djcharme.exception import SerializeError, StoreConnectionError
 from djcharme.exception import UserError
 from djcharme.node.actions import  insert_rdf, find_resource_by_id, \
-    _collect_annotations, change_annotation_state, find_annotation_graph, \
+    collect_annotations, change_annotation_state, format_resource_uri_ref, \
     generate_graph, rdf_format_from_mime
-from djcharme.node.constants import OA, FORMAT_MAP, RESOURCE, SUBMITTED
-from djcharme.views import isGET, isPOST, isPUT, isDELETE, \
-    isHEAD, isPATCH, content_type
+from djcharme.node.constants import FOAF, OA, PROV, RDF, FORMAT_MAP, RESOURCE, \
+    SUBMITTED
+from djcharme.views import isGET, isPOST, isPUT, isDELETE, isHEAD, isPATCH, \
+    content_type
+from rdflib.graph import ConjunctiveGraph
+from rdflib.term import URIRef
+
+from djcharme.views.resource import agent, annotation, annotation_index, \
+    activity, composite, person, resource
 
 
 LOGGING = logging.getLogger(__name__)
@@ -247,7 +249,7 @@ def _validate_format(request):
 
 
 @login_required
-def index(request, graph='stable'):
+def index(request, graph='submitted'):
     '''
         Returns a tabular view of the stored annotations.
         *request: HTTPRequest - the client request
@@ -255,9 +257,14 @@ def index(request, graph='stable'):
         TDB - In a future implementation this actions should be supported by an
         OpenSearch implementation
     '''
+    try:
+        validate_graph_name(graph)
+    except UserError as ex:
+        messages.add_message(request, messages.ERROR, ex)
+        return mm_render_to_response_error(request, '400.html', 400)
     tmp_g = None
     try:
-        tmp_g = _collect_annotations(graph)
+        tmp_g = collect_annotations(graph)
     except StoreConnectionError as ex:
         LOGGING.error("Internal error. " + str(ex))
         messages.add_message(request, messages.ERROR, ex)
@@ -270,14 +277,8 @@ def index(request, graph='stable'):
                                             (tmp_g, req_format=req_format)))
         return HttpResponse(__serialize(tmp_g, req_format=req_format))
 
-    states = {}
     LOGGING.debug("Annotations %s", str(tmp_g.serialize()))
-    for subject, pred, obj in tmp_g.triples((None, None, OA['Annotation'])):
-        states[subject] = find_annotation_graph(subject)
-
-    context = {'results': tmp_g.serialize(), 'states': json.dumps(states)}
-    return mm_render_to_response(request, context, 'viewer.html')
-
+    return annotation_index(request, tmp_g, graph)
 
 def insert(request):
     '''
@@ -351,6 +352,34 @@ def process_page(request, resource_id=None):
     if 'text/html' not in request.META.get('HTTP_ACCEPT', None):
         process_resource(request, resource_id)
 
-    tmp_g = find_resource_by_id(resource_id)
-    context = {'results': tmp_g.serialize()}
-    return mm_render_to_response(request, context, 'viewer.html')
+    tmp_g = find_resource_by_id(resource_id, 1)
+
+    resource_uri = format_resource_uri_ref(resource_id)
+
+    # Check if the resource is an annotation
+    triples = tmp_g.triples((resource_uri, RDF['type'], OA['Annotation']))
+    for triple in triples:
+        return annotation(request, resource_uri, tmp_g)
+
+    # Check if the resource is a SoftwareAgent
+    triples = tmp_g.triples((resource_uri, RDF['type'], PROV['SoftwareAgent']))
+    for triple in triples:
+        return agent(request, resource_uri, tmp_g)
+
+    # Check if the resource is an activity
+    triples = tmp_g.triples((resource_uri, RDF['type'], PROV['Activity']))
+    for triple in triples:
+        return activity(request, resource_uri, tmp_g)
+
+    # Check if the resource is a person
+    triples = tmp_g.triples((resource_uri, RDF['type'], FOAF['Person']))
+    for triple in triples:
+        return person(request, resource_uri, tmp_g)
+
+    # Check if the resource is a composite
+    triples = tmp_g.triples((resource_uri, RDF['type'], OA['Composite']))
+    for triple in triples:
+        return composite(request, resource_uri, tmp_g)
+
+    return resource(request, resource_uri, tmp_g)
+

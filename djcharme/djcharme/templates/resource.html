@@ -1,0 +1,43 @@
+{% extends "charme_base.html" %}
+
+{% load i18n %}
+
+{% block main %}
+
+<h2>Resource {{ uri }}</h2>
+
+<div class=contactform id="resource">
+	<div class=accounts>
+		<table>
+			{% for type in types %}
+			<tr>
+				<td><label>{% trans "Type:" noop %}</label></td>
+				<td><a href={{type}}>{{ type }}</a></td>
+			</tr>
+			{% endfor %}
+			
+			{% for tag in tags %}
+			<tr>
+				<td><label>{% trans "Tag:" noop %}</label></td>
+				<td>{{ tag }}</td>
+			</tr>
+			{% endfor %}
+			
+			{% if format %}
+			<tr>
+				<td><label>{% trans "Format:" noop %}</label></td>
+				<td>{{ format }}</td>
+			</tr>
+			{% endif %}
+			
+			{% for t in text %}
+			<tr>
+				<td><label>{% trans "Text:" noop %}</label></td>
+				<td>{{ t }}</td>
+			</tr>
+			{% endfor %}
+		</table>
+	</div>
+</div>
+
+{% endblock %}

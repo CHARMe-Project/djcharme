@@ -38,25 +38,25 @@ from django.contrib import messages
 from django.http.response import (HttpResponseRedirectBase, HttpResponse,
                                   HttpResponseNotFound)
 from django.views.decorators.csrf import csrf_exempt
-
-from djcharme import mm_render_to_response, mm_render_to_response_error, \
+from djcharme import mm_render_to_response_error, \
     __version__
 from djcharme.exception import NotFoundError
 from djcharme.exception import ParseError
 from djcharme.exception import SecurityError
 from djcharme.exception import StoreConnectionError
 from djcharme.exception import UserError
-from djcharme.node.actions import find_annotation_graph, _collect_annotations, \
-    find_resource_by_id, format_resource_uri_ref, change_annotation_state, \
-    get_vocab, report_to_moderator
+from djcharme.node.actions import collect_annotations, find_resource_by_id, \
+    format_resource_uri_ref, change_annotation_state, get_vocab, \
+    report_to_moderator, validate_graph_name
 from djcharme.node.actions import insert_rdf, modify_rdf
-from djcharme.node.constants import OA, PROV, RDF, FORMAT_MAP, CONTENT_JSON, \
-    CONTENT_RDF, CONTENT_TEXT, DATA, PAGE, SUBMITTED, RETIRED
+from djcharme.node.constants import OA, FOAF, PROV, RDF, FORMAT_MAP, \
+    CONTENT_JSON, CONTENT_RDF, CONTENT_TEXT, DATA, PAGE, SUBMITTED, RETIRED
 from djcharme.views import isDELETE, isPOST, isPUT, isOPTIONS, \
     validate_mime_format, http_accept, get_depth, content_type, \
     check_mime_format, get_format
 
-from djcharme.views.resource import annotation, activity
+from djcharme.views.resource import agent, annotation, annotation_index, \
+    activity, composite, person, resource
 
 
 LOGGING = logging.getLogger(__name__)
@@ -82,7 +82,7 @@ def __serialize(graph, req_format=CONTENT_RDF):
     return graph.serialize(format=req_format)
 
 
-def index(request, graph='stable'):
+def index(request, graph='submitted'):
     '''
         Returns a tabular view of the stored annotations.
         - HTTPRequest **request** the client request
@@ -90,9 +90,14 @@ def index(request, graph='stable'):
         TODO: In a future implementation this actions should be supported by an
         OpenSearch implementation
     '''
+    try:
+        validate_graph_name(graph)
+    except UserError as ex:
+        messages.add_message(request, messages.ERROR, ex)
+        return mm_render_to_response_error(request, '400.html', 400)
     tmp_g = None
     try:
-        tmp_g = _collect_annotations(graph)
+        tmp_g = collect_annotations(graph)
     except StoreConnectionError as ex:
         LOGGING.error("Internal error. " + str(ex))
         messages.add_message(request, messages.ERROR, ex)
@@ -103,12 +108,7 @@ def index(request, graph='stable'):
     if req_format is not None:
         return HttpResponse(__serialize(tmp_g, req_format=req_format))
     elif 'text/html' in http_accept(request):
-        states = {}
-        for subject, pred, obj in tmp_g.triples((None, None, OA['Annotation'])):
-            states[subject] = find_annotation_graph(subject)
-
-        context = {'results': tmp_g.serialize(), 'states': json.dumps(states)}
-        return mm_render_to_response(request, context, 'viewer.html')
+        return annotation_index(request, tmp_g, graph)
 
     messages.add_message(request, messages.ERROR, "Format not accepted")
     return mm_render_to_response_error(request, '400.html', 400)
@@ -434,28 +434,36 @@ def _process_page(request, resource_id=None):
         return process_resource(request, resource_id)
 
     depth = get_depth(request)
-    tmp_g = find_resource_by_id(resource_id, depth)
+    tmp_g = find_resource_by_id(resource_id, 1)
 
     resource_uri = format_resource_uri_ref(resource_id)
 
     # Check if the resource is an annotation
     triples = tmp_g.triples((resource_uri, RDF['type'], OA['Annotation']))
     for triple in triples:
-        if depth < 1:
-            tmp_g = find_resource_by_id(resource_id, 1)
         return annotation(request, resource_uri, tmp_g)
 
-    # Check if the resource is an annotation
+    # Check if the resource is a SoftwareAgent
+    triples = tmp_g.triples((resource_uri, RDF['type'], PROV['SoftwareAgent']))
+    for triple in triples:
+        return agent(request, resource_uri, tmp_g)
+
+    # Check if the resource is an activity
     triples = tmp_g.triples((resource_uri, RDF['type'], PROV['Activity']))
     for triple in triples:
-        if depth < 1:
-            tmp_g = find_resource_by_id(resource_id, 1)
         return activity(request, resource_uri, tmp_g)
 
-    xml = tmp_g.serialize()
-    xml = xml.replace("'", "&apos;")
-    context = {'results': xml}
-    return mm_render_to_response(request, context, 'viewer.html')
+    # Check if the resource is a person
+    triples = tmp_g.triples((resource_uri, RDF['type'], FOAF['Person']))
+    for triple in triples:
+        return person(request, resource_uri, tmp_g)
+
+    # Check if the resource is a composite
+    triples = tmp_g.triples((resource_uri, RDF['type'], OA['Composite']))
+    for triple in triples:
+        return composite(request, resource_uri, tmp_g)
+
+    return resource(request, resource_uri, tmp_g)
 
 
 def version(request):

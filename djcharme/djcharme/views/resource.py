@@ -36,8 +36,8 @@ from django.http.response import HttpResponseRedirect
 from djcharme import mm_render_to_response
 from djcharme.node.actions import change_annotation_state, is_update_allowed, \
     find_annotation_graph
-from djcharme.node.constants import  CONTENT, FOAF, INVALID, OA, PROV, RDF, \
-    RETIRED
+from djcharme.node.constants import  CITO, CONTENT, DC, DCTERMS, FOAF, \
+    INVALID, OA, PROV, RDF, RETIRED, SKOS
 
 
 LOGGING = logging.getLogger(__name__)
@@ -65,7 +65,7 @@ def annotation(request, resource_uri=None, graph=None):
         for triple in triples:
             context['wasRevisionOf'] = triple[2]
 
-        triples = graph.triples((resource_uri, OA['title'], None))
+        triples = graph.triples((None, DCTERMS['title'], None))
         for triple in triples:
             context['title'] = triple[2]
 
@@ -77,7 +77,30 @@ def annotation(request, resource_uri=None, graph=None):
         for triple in triples:
             prov_triples = graph.triples((triple[2], FOAF['name'], None))
             for a_triple in prov_triples:
-                context['organization'] = a_triple[2]
+                context['organization_name'] = a_triple[2]
+                context['organization_uri'] = a_triple[0]
+
+        triples = graph.triples((resource_uri, OA['serializedBy'], None))
+        for triple in triples:
+            prov_triples = graph.triples((triple[2], FOAF['name'], None))
+            for a_triple in prov_triples:
+                context['agent_name'] = a_triple[2]
+                context['agent_uri'] = a_triple[0]
+
+        triples = graph.triples((resource_uri, OA['serializedAt'], None))
+        for triple in triples:
+            context['serialized_at'] = triple[2]
+
+        triples = graph.triples((resource_uri, OA['motivatedBy'], None))
+        motivations = []
+        for triple in triples:
+            motivations.append(triple[2])
+        context['motivations'] = motivations
+
+        # person
+        triples = graph.triples((None, RDF['type'], FOAF['Person']))
+        for triple in triples:
+            context['person'] = triple[0]
 
         triples = graph.triples((None, FOAF['givenName'], None))
         for triple in triples:
@@ -121,7 +144,20 @@ def annotation(request, resource_uri=None, graph=None):
             targets.append((triple[2], types, text))
         context['targets'] = targets
 
+        # citation
+        triples = graph.triples((None, CITO['hasCitingEntity'], None))
+        for triple in triples:
+            context['citing_entity'] = triple[2]
 
+        triples = graph.triples((None, CITO['hasCitedEntity'], None))
+        for triple in triples:
+            context['cited_entity'] = triple[2]
+
+        triples = graph.triples((None, CITO['hasCitationCharacterization'], None))
+        for triple in triples:
+            context['citation_characterization'] = triple[2]
+
+        # delete button
         graph_name = find_annotation_graph(resource_uri)
         update_allowed = is_update_allowed(graph, resource_uri, request)
         if graph_name != INVALID and graph_name != RETIRED and update_allowed:
@@ -135,6 +171,18 @@ def annotation(request, resource_uri=None, graph=None):
         context['resource_form'] = resource_form
 
         return mm_render_to_response(request, context, 'annotation.html')
+
+
+def annotation_index(request, tmp_g, graph_name):
+    LOGGING.debug('Annotation index request received')
+    context = {}
+    context['graph_name'] = graph_name
+
+    annotations = []
+    for subject, pred, obj in tmp_g.triples((None, None, OA['Annotation'])):
+        annotations.append(subject)
+    context['annotations'] = annotations
+    return mm_render_to_response(request, context, 'index.html')
 
 
 def activity(request, resource_uri, graph):
@@ -170,6 +218,86 @@ def activity(request, resource_uri, graph):
             context['email'] = a_triple[2]
 
     return mm_render_to_response(request, context, 'activity.html')
+
+
+def agent(request, resource_uri, graph):
+    LOGGING.debug('Agent request received')
+    context = {}
+
+    context['uri'] = resource_uri
+
+    triples = graph.triples((resource_uri, FOAF['name'], None))
+    for triple in triples:
+        context['name'] = triple[2]
+
+    return mm_render_to_response(request, context, 'agent.html')
+
+
+def composite(request, resource_uri, graph):
+    LOGGING.debug('Composite request received')
+    context = {}
+
+    context['uri'] = resource_uri
+
+    triples = graph.triples((resource_uri, OA['item'], None))
+    items = []
+    for triple in triples:
+        items.append(triple[2])
+    context['items'] = items
+
+    return mm_render_to_response(request, context, 'composite.html')
+
+
+def person(request, resource_uri, graph):
+    LOGGING.debug('Person request received')
+    context = {}
+
+    context['uri'] = resource_uri
+
+    triples = graph.triples((resource_uri, FOAF['givenName'], None))
+    for triple in triples:
+        context['first_name'] = triple[2]
+
+    triples = graph.triples((resource_uri, FOAF['familyName'], None))
+    for triple in triples:
+        context['last_name'] = triple[2]
+
+    triples = graph.triples((resource_uri, FOAF['mbox'], None))
+    for triple in triples:
+        context['email'] = triple[2]
+
+    return mm_render_to_response(request, context, 'person.html')
+
+
+def resource(request, resource_uri, graph):
+    LOGGING.debug('Resource request received')
+    context = {}
+
+    context['uri'] = resource_uri
+
+    triples = graph.triples((resource_uri, RDF['type'], None))
+    types = []
+    for triple in triples:
+        types.append(triple[2])
+    context['types'] = types
+
+    triples = graph.triples((resource_uri, DC['format'], None))
+    for triple in triples:
+        context['format'] = triple[2]
+
+    triples = graph.triples((resource_uri, CONTENT['chars'], None))
+    text = []
+    for triple in triples:
+        text.append(triple[2])
+    context['text'] = text
+
+    triples = graph.triples((resource_uri, SKOS['prefLabel'], None))
+    tags = []
+    for triple in triples:
+        tags.append(triple[2])
+    context['tags'] = tags
+
+    return mm_render_to_response(request, context, 'resource.html')
 
 
 def _delete(request):

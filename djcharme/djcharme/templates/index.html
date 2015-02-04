@@ -1,0 +1,21 @@
+{% extends "charme_base.html" %}
+
+{% load i18n %}
+
+{% block main %}
+
+<h2>Annotations - {{ graph_name }}</h2>
+
+<div class=contactform id="annotation">
+	<div class=accounts>
+		<table>
+			{% for annotation in annotations %}
+			<tr>
+				<td><a href={{annotation}}>{{ annotation }}</a></td>
+			</tr>
+			{% endfor %}
+		</table>
+	</div>
+</div>
+
+{% endblock %}
