@@ -1,0 +1,3 @@
+{% load i18n %}{% autoescape off %}
+{% blocktrans %}Username reminder on {{ site_name }}{% endblocktrans %}
+{% endautoescape %}

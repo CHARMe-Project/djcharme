@@ -62,6 +62,10 @@
 				{% endif %}
 
 				<tr>
+					<td><label>{% trans "Author's  username:" noop %}</label></td>
+					<td><label>{{ username }}</label></td>
+				</tr>
+				<tr>
 					<td><label>{% trans "Via organization:" noop %}</label></td>
 					<td><a href={{ organization_uri }}>{{ organization_name }}</a></td>
 				</tr>
@@ -148,6 +152,9 @@
 				</tr>
 				{% endif %}
 			</table>
+			{% if message %}
+				<label>{{ message }}</label>
+			{% endif %}
 		</form>
 	</div>
 </div>

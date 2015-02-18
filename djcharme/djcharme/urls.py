@@ -55,6 +55,12 @@ urlpatterns = patterns('',
         name='password_reset_confirm'),
     url(r'^accounts/password/reset/complete/$',
         auth_views.password_reset_complete),
+    # Username reminder
+    url(r'^accounts/username/reminder/$', registration.username_reminder,
+        name='username_reminder'),
+    url(r'^accounts/username/reminder/done$',
+        registration.username_reminder_done,
+        name='username_reminder_done'),
     #-----------------------------------------------------------
 
     # Accepts external new annotation

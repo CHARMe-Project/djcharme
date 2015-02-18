@@ -41,7 +41,6 @@ from djcharme.node.constants import  CITO, CONTENT, DC, DCTERMS, FOAF, \
 import datetime
 
 LOGGING = logging.getLogger(__name__)
-fred = 0
 
 def annotation(request, resource_uri=None, graph=None):
     LOGGING.debug('Annotation request received')
@@ -71,9 +70,10 @@ def annotation(request, resource_uri=None, graph=None):
 
         triples = graph.triples((resource_uri, OA['annotatedAt'], None))
         for triple in triples:
-            at = datetime.datetime.strptime(triple[2], "%Y-%m-%dT%H:%M:%S.%f")
-            at = at.strftime("%H:%M %d %b %Y")
-            context['annotated_at'] = at
+            ann_at = datetime.datetime.strptime(triple[2],
+                                                "%Y-%m-%dT%H:%M:%S.%f")
+            ann_at = ann_at.strftime("%H:%M %d %b %Y")
+            context['annotated_at'] = ann_at
 
         triples = graph.triples((resource_uri, OA['annotatedBy'], None))
         for triple in triples:
@@ -91,9 +91,10 @@ def annotation(request, resource_uri=None, graph=None):
 
         triples = graph.triples((resource_uri, OA['serializedAt'], None))
         for triple in triples:
-            at = datetime.datetime.strptime(triple[2], "%Y-%m-%dT%H:%M:%S.%f")
-            at = at.strftime("%H:%M %d %b %Y")
-            context['serialized_at'] = at
+            ann_at = datetime.datetime.strptime(triple[2],
+                                                "%Y-%m-%dT%H:%M:%S.%f")
+            ann_at = ann_at.strftime("%H:%M %d %b %Y")
+            context['serialized_at'] = ann_at
 
         triples = graph.triples((resource_uri, OA['motivatedBy'], None))
         motivations = []
@@ -117,6 +118,10 @@ def annotation(request, resource_uri=None, graph=None):
         triples = graph.triples((None, FOAF['mbox'], None))
         for triple in triples:
             context['email'] = triple[2]
+
+        triples = graph.triples((None, FOAF['accountName'], None))
+        for triple in triples:
+            context['username'] = triple[2]
 
         # body
         triples = graph.triples((resource_uri, OA['hasBody'], None))
@@ -163,12 +168,20 @@ def annotation(request, resource_uri=None, graph=None):
             context['citation_characterization'] = triple[2]
 
         # delete button
-        graph_name = find_annotation_graph(resource_uri)
-        update_allowed = is_update_allowed(graph, resource_uri, request)
-        if graph_name != INVALID and graph_name != RETIRED and update_allowed:
-            context['delete'] = True
+        context['delete'] = False
+
+        # message
+        if request.user.username == None or request.user.username == '':
+            context['message'] = 'If you are the author of this annotation, ' \
+                'or a moderator for %s, you may delete this annotation by ' \
+                'logging in' % context['organization_name']
         else:
-            context['delete'] = False
+            # delete button
+            graph_name = find_annotation_graph(resource_uri)
+            update_allowed = is_update_allowed(graph, resource_uri, request)
+            if (graph_name != INVALID and graph_name != RETIRED
+                and update_allowed):
+                context['delete'] = True
 
         orig_values = {}
         orig_values['resource_uri'] = resource_uri
@@ -272,6 +285,10 @@ def person(request, resource_uri, graph):
     triples = graph.triples((resource_uri, FOAF['mbox'], None))
     for triple in triples:
         context['email'] = triple[2]
+
+    triples = graph.triples((None, FOAF['accountName'], None))
+    for triple in triples:
+        context['username'] = triple[2]
 
     return mm_render_to_response(request, context, 'person.html')
 

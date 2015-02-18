@@ -1,0 +1,10 @@
+{% load i18n %}{% autoescape off %}
+{% blocktrans %}You're receiving this email because you requested a username reminder for your user account at the CHARMe site, {{ domain }}.{% endblocktrans %}
+
+{% trans "Your username is:" %} {{ user.get_username }}
+
+{% trans "Thanks for using our site!" %}
+
+{% blocktrans %}The CHARMEe site team{% endblocktrans %}
+
+{% endautoescape %}

@@ -1,0 +1,13 @@
+{% extends "charme_base.html" %}
+
+{% load i18n %}
+
+{% block main %}
+
+<h2>{% trans 'Username reminder successful' %}</h2>
+
+<p>{% trans "We've emailed you your username. You should be receiving it shortly." %}</p>
+
+<p>{% trans "If you don't receive an email, please make sure you've entered the address you registered with, and check your spam folder." %}</p>
+
+{% endblock %}

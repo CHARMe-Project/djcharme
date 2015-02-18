@@ -36,18 +36,19 @@ import logging
 
 from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
+from django.db.models import ObjectDoesNotExist
 from django.db.utils import IntegrityError
 from django.forms.util import ErrorList
 from django.http.response import HttpResponseRedirect, HttpResponse, \
     HttpResponseNotFound
-from provider.oauth2.models import AccessToken
-
 from djcharme import mm_render_to_response
 from djcharme.charme_security_model import UserForm, UserUpdateForm, \
     UserProfileUpdateForm
 from djcharme.models import UserProfile
-from django.db.models import ObjectDoesNotExist
 from djcharme.security_middleware import is_valid_token
+from provider.oauth2.models import AccessToken
+
+from djcharme.forms import UsernameReminderForm
 from djcharme.node.look_ups import get_users_admin_role_orgs
 
 
@@ -163,6 +164,39 @@ def profile_change_done(request):
     context = {}
     return mm_render_to_response(request, context,
                                  'registration/profile_change_done.html')
+
+
+def username_reminder(request, from_email=None):
+    username_reminder_form = UsernameReminderForm
+    post_reset_redirect = reverse('username_reminder_done')
+    if request.method == "POST":
+        form = username_reminder_form(request.POST)
+        if form.is_valid():
+            opts = {
+                'use_https': request.is_secure(),
+                'from_email': from_email,
+                'email_template_name':
+                    'registration/username_reminder_email.html',
+                'subject_template_name':
+                    'registration/username_reminder_subject.txt',
+                'request': request,
+            }
+            form.save(**opts)
+            return HttpResponseRedirect(post_reset_redirect)
+    else:
+        form = username_reminder_form()
+    context = {
+        'form': form,
+    }
+
+    return mm_render_to_response(request, context,
+                                 'registration/username_reminder_form.html')
+
+
+def username_reminder_done(request):
+    context = {}
+    return mm_render_to_response(request, context,
+                                 'registration/username_reminder_done.html')
 
 
 def validate_token(request, token=None, expire=None):
