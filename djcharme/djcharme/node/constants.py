@@ -77,8 +77,7 @@ DATA = 'data'
 PAGE = 'page'
 
 ALLOWED_CREATE_TARGET_TYPE = [URIRef(OA + 'Composite'),
-                              URIRef('http://www.charme.org.uk/def/' \
-                                     'DatasetSubset'),
+                              URIRef(CH_NS + 'DatasetSubset'),
                               URIRef(OA + 'SpecificResource')]
 
 
