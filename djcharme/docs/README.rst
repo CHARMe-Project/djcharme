@@ -1,9 +1,9 @@
 Documentation and Examples
 ==========================
 
-The `CHARMeNodeInstallation<https://github.com/cedadev/djcharme/blob/develop/djcharme/docs/CHARMeNodeInstallation.pdf>`_
+The `CHARMeNodeInstallation <https://github.com/cedadev/djcharme/blob/develop/djcharme/docs/CHARMeNodeInstallation.pdf>`_
 provides details of installing the central node and the
-`CHARMeNodeICD<https://github.com/cedadev/djcharme/blob/develop/djcharme/docs/CHARMeNodeICD.pdf>`_
+`CHARMeNodeICD <https://github.com/cedadev/djcharme/blob/develop/djcharme/docs/CHARMeNodeICD.pdf>`_
 provides details of the interface.
 
 Using curl to Communicate with the Central Node
@@ -15,7 +15,7 @@ Inserting Annotations
 ~~~~~~~~~~~~~~~~~~~~~
 
 This directory contains some example ttl files, these are the examples from the
-`CHARMeNodeICD<https://github.com/cedadev/djcharme/blob/develop/djcharme/docs/CHARMeNodeICD.pdf>`_.
+`CHARMeNodeICD <https://github.com/cedadev/djcharme/blob/develop/djcharme/docs/CHARMeNodeICD.pdf>`_.
 
 Prior to inserting an annotation you must obtain a token. Currently doing this
 using curl is a bit clunky.
