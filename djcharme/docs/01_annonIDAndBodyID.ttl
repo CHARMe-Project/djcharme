@@ -7,8 +7,3 @@
 	oa:hasBody <chnode:bodyID> .
 
 <chnode:bodyID> a dctypes:Text .
-	
-	
-	
-
-@prefix dctypes: <http://purl.org/dc/dcmitype/> .

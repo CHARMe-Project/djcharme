@@ -21,7 +21,7 @@
 	cito:hasCitationCharacterization cito:citesAsDataSource .
 
 <chnode:agentID> a prov:SoftwareAgent ;
-	foaf:name "CHARMe Plugin v1.1" .
+	foaf:name "CURL" .
 
 <http://example.edu/dataset/01> a dctypes:Dataset .
 

@@ -13,7 +13,7 @@
 	oa:serializedBy <chnode:agentID> .
 
 <chnode:agentID> a prov:SoftwareAgent ;
-	foaf:name "CHARMe Plugin v1.1" .
+	foaf:name "CURL" .
 
 <http://example.edu/dataset01> a dctypes:Dataset .
 
