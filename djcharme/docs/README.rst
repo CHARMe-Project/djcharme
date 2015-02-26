@@ -92,8 +92,8 @@ The Suggest Option
 ~~~~~~~~~~~~~~~~~~
 
 The *suggest* call was developed for use by a faceted search tool. Using
-*suggest* you can retrieve lists of values for bodyType, citingType,
-dataType, domainOfInterest, motivation and organization. The results can be
+*suggest* you can retrieve lists of values for *bodyType, citingType,
+dataType, domainOfInterest, motivation* and *organization*. The results can be
 restricted by the use of filters, see the 
 `CHARMeNodeICD <https://github.com/cedadev/djcharme/blob/develop/djcharme/docs/CHARMeNodeICD.pdf>`_
 for a full list of options. 
