@@ -1,0 +1,23 @@
+@prefix charme: <http://purl.org/voc/charme#> .
+@prefix chnode: <http://localhost/> .
+@prefix oa: <http://www.w3.org/ns/oa#> .
+
+<chnode:annoID> a oa:Annotation ;
+	oa:hasTarget <chnode:targetID> .
+
+<chnode:targetID> a charme:DatasetSubset ;
+	oa:hasSelector <chnode:subsetSelectorID> .
+
+<chnode:subsetSelectorID> a charme:SubsetSelector ;
+	charme:hasSpatialExtent <chnode:spatialExtentID-01> ;
+	charme:hasSpatialExtent <chnode:spatialExtentID-02> ;
+	charme:hasVariable <chnode:variableID-01> ;
+	charme:hasVariable <chnode:variableID-02> .
+
+<chnode:spatialExtentID-01> a charme:SpatialExtent .
+
+<chnode:spatialExtentID-02> a charme:SpatialExtent .
+
+<chnode:variableID-01> a charme:Variable .
+
+<chnode:variableID-02> a charme:Variable .

@@ -1,0 +1,9 @@
+@prefix chnode: <http://localhost/> .
+@prefix oa: <http://www.w3.org/ns/oa#> .
+
+<chnode:annoID> a oa:Annotation ;
+	oa:hasTarget <chnode:targetID> .
+
+<chnode:targetID> a oa:Composite ;
+	oa:item <http://example.edu/target/01> ;
+	oa:item <http://example.edu/target/02> .
