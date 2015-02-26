@@ -9,7 +9,7 @@ BASE_NAME = 'djcharme'
 V_FILE = open(os.path.join(os.path.dirname(__file__),
                        BASE_NAME, '__init__.py'))
 
-README = open(os.path.join(os.path.dirname(__file__), 'README')).read()
+README = open(os.path.join(os.path.dirname(__file__), 'README.rst')).read()
 
 VERSION = re.compile(r".*__version__ = '(.*?)'",
                      re.S).match(V_FILE.read()).group(1)
@@ -27,7 +27,7 @@ setup(
     url='https://github.com/cedadev/djcharme',
     license='BSD licence, see LICENCE',
     description='CHARMe Node',
-    long_description=open('README').read(),
+    long_description=README,
     zip_safe=False,
 
     # Adds dependencies
