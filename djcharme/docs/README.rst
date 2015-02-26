@@ -62,7 +62,9 @@ links to follow when retrieving the graph::
 
 	curl -X GET $anno_uri?depth=1 -H "Authorization: Token $access_token" -D header  -H 'Accept: text/turtle' -L
 	
-See the CHARMeNodeICD for more details
+See the
+`CHARMeNodeICD <https://github.com/cedadev/djcharme/blob/develop/djcharme/docs/CHARMeNodeICD.pdf>`_
+for more details
 
 Reporting An Annotation
 ~~~~~~~~~~~~~~~~~~~~~~~
