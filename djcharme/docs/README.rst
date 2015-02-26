@@ -81,3 +81,51 @@ If you created an annotation or you are a moderator for an annotation then you
 will have permission to delete it. **N.B.** This is a logical delete::
 
 	curl -X DELETE $anno_uri -H 'Accept: text/html' -H "Authorization: Token $access_token" -D header; grep HTTP header
+	
+The Open Search Interface
+-------------------------
+
+These examples are designed to be used with a web browser although they can be
+adapted to be used programmatically.
+
+The Suggest Option
+~~~~~~~~~~~~~~~~~~
+
+The *suggest call was developed for use by a faceted search tool. Using
+*suggest* you can retrieve lists of values for bodyType, citingType,
+dataType, domainOfInterest, motivation and organization. The results can be
+restricted by the use of filters, see the 
+`CHARMeNodeICD <https://github.com/cedadev/djcharme/blob/develop/djcharme/docs/CHARMeNodeICD.pdf>`_
+for a full list of options. 
+
+To find the list of used values for *motivation*::
+
+	https://charme-test.cems.rl.ac.uk/suggest/atom?depth=1&status=submitted&q=motivation
+
+Then to find the list of values for *organization* that have annotations with a
+*motivation* of *linking*::
+
+	https://charme-test.cems.rl.ac.uk/suggest/atom?depth=1&status=submitted&q=organization&motivation=http://www.w3.org/ns/oa%23linking
+
+The Search Option
+~~~~~~~~~~~~~~~~~
+
+Some example searches::
+
+	https://charme-test.cems.rl.ac.uk/search/atom?depth=1&status=submitted&dataType=http://purl.org/dc/dcmitype/Dataset
+	https://charme-test.cems.rl.ac.uk/search/atom?depth=1&status=submitted&motivation=http://www.w3.org/ns/oa%23tagging
+
+See the
+`CHARMeNodeICD <https://github.com/cedadev/djcharme/blob/develop/djcharme/docs/CHARMeNodeICD.pdf>`_
+for a full list of options.
+
+SPARQL Interface
+----------------
+
+A SPARQL interface is provided at::
+
+	https://charme-test.cems.rl.ac.uk/sparql.html
+
+Alternatively you can use the SPARQL web interface::
+
+	https://charme-test.cems.rl.ac.uk/sparql.html
