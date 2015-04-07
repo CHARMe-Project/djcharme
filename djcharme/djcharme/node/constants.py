@@ -62,7 +62,7 @@ STABLE = 'stable'
 RETIRED = 'retired'
 GRAPH_NAMES = [SUBMITTED, STABLE, RETIRED, INVALID]
 
-NODE_URI = 'http://localhost/'
+LOCALHOST_URI = 'http://localhost/'
 TARGET_URI = 'targetID'
 ANNO_URI = 'annoID'
 REPLACEMENT_URIS = ['agentID', ANNO_URI, 'bodyID', TARGET_URI,

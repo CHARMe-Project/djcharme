@@ -51,7 +51,7 @@ from djcharme.exception import UserError
 from djcharme.models import  Organization
 from djcharme.models import  OrganizationUser
 from djcharme.node import _extract_subject
-from djcharme.node.constants import ANNO_URI, NODE_URI, TARGET_URI, \
+from djcharme.node.constants import ANNO_URI, LOCALHOST_URI, TARGET_URI, \
     REPLACEMENT_URIS, REPLACEMENT_URIS_MULTIVALUED
 from djcharme.node.constants import FOAF, RDF, PROV, OA, CH_NODE
 from djcharme.node.constants import FORMAT_MAP, ALLOWED_CREATE_TARGET_TYPE, \
@@ -305,7 +305,7 @@ def _modify_rdf(request, mimetype):
             new_res = (URIRef('%s:%s' % (CH_NODE, ANNO_URI)), res[1], res[2])
             tmp_g.add(new_res)
 
-    activity_uri = URIRef((getattr(settings, 'NODE_URI', NODE_URI)
+    activity_uri = URIRef((getattr(settings, 'NODE_URI', LOCALHOST_URI)
                   + '/%s/%s' % (RESOURCE, uuid.uuid4().hex)))
     # retire original
     if (_change_annotation_state(original_uri, RETIRED, request, activity_uri,
@@ -400,7 +400,7 @@ def _create_person(user):
         a list of triples
 
     """
-    person_uri = URIRef((getattr(settings, 'NODE_URI', NODE_URI)
+    person_uri = URIRef((getattr(settings, 'NODE_URI', LOCALHOST_URI)
                   + '/%s/%s' % (RESOURCE, uuid.uuid4().hex)))
     triples = []
     triples.append((person_uri, URIRef(RDF + 'type'),
@@ -491,7 +491,7 @@ def format_resource_uri_ref(resource_id):
     '''
     if resource_id.startswith('http:') or resource_id.startswith('https:'):
         return URIRef(resource_id)
-    return URIRef('%s/%s/%s' % (getattr(settings, 'NODE_URI', NODE_URI),
+    return URIRef('%s/%s/%s' % (getattr(settings, 'NODE_URI', LOCALHOST_URI),
                                 RESOURCE, resource_id))
 
 
@@ -501,14 +501,14 @@ def _format_node_uri_ref(uriref, generated_uris):
         * uriref:rdflib.URIRef
         * generated_uris:dict of generated URIs
     '''
-    if isinstance(uriref, URIRef) and NODE_URI in uriref:
-        uriref = URIRef(uriref.replace(NODE_URI,
-                                       getattr(settings, 'NODE_URI', NODE_URI)
+    if isinstance(uriref, URIRef) and LOCALHOST_URI in uriref:
+        uriref = URIRef(uriref.replace(LOCALHOST_URI,
+                                       getattr(settings, 'NODE_URI', LOCALHOST_URI)
                                        + '/'))
 
     if isinstance(uriref, URIRef) and CH_NODE in uriref:
         uriref = URIRef(uriref.replace(CH_NODE + ':',
-                                       getattr(settings, 'NODE_URI', NODE_URI)
+                                       getattr(settings, 'NODE_URI', LOCALHOST_URI)
                                        + '/'))
 
     if isinstance(uriref, URIRef):
@@ -578,7 +578,7 @@ def _validate_submitted_annotation(graph):
     Returns:
         graph (rdflib.graph.Graph): The validated graph.
     """
-    local_resource = getattr(settings, 'NODE_URI', NODE_URI) + '/'
+    local_resource = getattr(settings, 'NODE_URI', LOCALHOST_URI) + '/'
     for subject, pred, obj in graph:
         if local_resource in subject:
             LOGGING.info("UserError Found %s in the subject of submitted " \
@@ -605,7 +605,7 @@ def change_annotation_state(annotation_uri, new_graph, request):
     LOGGING.debug("change_annotation_state(%s, %s, request)",
                   annotation_uri, new_graph)
     annotation_uri = format_resource_uri_ref(annotation_uri)
-    activity_uri = URIRef((getattr(settings, 'NODE_URI', NODE_URI)
+    activity_uri = URIRef((getattr(settings, 'NODE_URI', LOCALHOST_URI)
                            + '/%s/%s' % (RESOURCE, uuid.uuid4().hex)))
     timestamp = Literal(datetime.utcnow())
 
@@ -769,7 +769,7 @@ def _delete_body(annotation_uri, graph_name, request):
             count = count + 1
         if count > 1:
             continue
-        node_uri = getattr(settings, 'NODE_URI', NODE_URI)
+        node_uri = getattr(settings, 'NODE_URI', LOCALHOST_URI)
         for body in  graph.triples((res[2], None, None)):
             if node_uri in body[0]:
                 continue
@@ -803,7 +803,7 @@ def _delete_target(annotation_uri, graph_name, request):
             count = count + 1
         if count > 1:
             continue
-        node_uri = getattr(settings, 'NODE_URI', NODE_URI)
+        node_uri = getattr(settings, 'NODE_URI', LOCALHOST_URI)
         for target in  graph.triples((res[2], None, None)):
             if node_uri in target[0]:
                 continue
