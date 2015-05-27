@@ -330,6 +330,9 @@ class COSQuery(OSQuery):
                               namespace=RDF, default=''))
         params.append(OSParam("citingType", "type",
                               namespace=RDF, default=''))
+        params.append(OSParam("comment", "chars",
+                              namespace="http://www.w3.org/2011/content#",
+                              default=''))
         params.append(OSParam("dataType", "type",
                               namespace=RDF, default=''))
         params.append(OSParam("domainOfInterest", "domainOfInterest",

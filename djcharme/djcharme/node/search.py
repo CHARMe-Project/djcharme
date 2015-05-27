@@ -56,6 +56,7 @@ PREFIX oa: <http://www.w3.org/ns/oa#>
 PREFIX cito: <http://purl.org/spar/cito/>
 PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
 PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX cnt: <http://www.w3.org/2011/content#>
 PREFIX foaf: <http://xmlns.com/foaf/0.1/>"""
 
 ANNOTATIONS_SELECT = """
@@ -77,6 +78,11 @@ ANNOTATIONS_FOR_CITING_TYPE = """
 ?anno cito:hasCitingEntity ?citingEntity .
 ?citingEntity rdf:type ?citingType ."""
 
+ANNOTATIONS_FOR_COMMENT = """
+?body text:query (cnt:chars '%s' 100) .
+?anno oa:hasBody ?body ;
+      oa:annotatedAt ?annotatedAt ."""
+      
 ANNOTATIONS_FOR_DATA_TYPE = """
 ?anno oa:annotatedAt ?annotatedAt .
 ?anno oa:hasTarget ?target .
@@ -123,6 +129,7 @@ ANNOTATIONS_FOR_USER = """
 
 ANNOTATION_CLAUSES = {'bodyType':ANNOTATIONS_FOR_BODY_TYPE,
                       'citingType':ANNOTATIONS_FOR_CITING_TYPE,
+                      'comment':ANNOTATIONS_FOR_COMMENT,
                       'dataType':ANNOTATIONS_FOR_DATA_TYPE,
                       'domainOfInterest':ANNOTATIONS_FOR_DOMAIN,
                       'motivation':ANNOTATIONS_FOR_MOTIVATION,
@@ -611,7 +618,7 @@ def _get_where_for_parameter_name(query_attr, parameter_name):
     values = query_attr.get(parameter_name)
     if values == None or len(values) < 1 or parameter_name == 'status':
         return  ''
-    if parameter_name == 'title':
+    if parameter_name == 'title' or parameter_name == 'comment':
         return '{' + (ANNOTATION_CLAUSES[parameter_name] % values) + '}'
 
     # TODO remove split when I can work out to handle the parameter being
