@@ -82,6 +82,16 @@ ANNOTATIONS_FOR_COMMENT = """
 ?body text:query (cnt:chars '%s' 100) .
 ?anno oa:hasBody ?body ;
       oa:annotatedAt ?annotatedAt ."""
+
+ANNOTATIONS_FOR_CREATOR_FAMILY_NAME = """
+?anno oa:annotatedAt ?annotatedAt .
+?anno oa:annotatedBy ?person .
+?person foaf:familyName ?creatorFamilyName"""
+
+ANNOTATIONS_FOR_CREATOR_GIVEN_NAME = """
+?anno oa:annotatedAt ?annotatedAt .
+?anno oa:annotatedBy ?person .
+?person foaf:givenName ?creatorGivenName"""
       
 ANNOTATIONS_FOR_DATA_TYPE = """
 ?anno oa:annotatedAt ?annotatedAt .
@@ -130,6 +140,8 @@ ANNOTATIONS_FOR_USER = """
 ANNOTATION_CLAUSES = {'bodyType':ANNOTATIONS_FOR_BODY_TYPE,
                       'citingType':ANNOTATIONS_FOR_CITING_TYPE,
                       'comment':ANNOTATIONS_FOR_COMMENT,
+                      'creatorFamilyName':ANNOTATIONS_FOR_CREATOR_FAMILY_NAME,
+                      'creatorGivenName':ANNOTATIONS_FOR_CREATOR_GIVEN_NAME,
                       'dataType':ANNOTATIONS_FOR_DATA_TYPE,
                       'domainOfInterest':ANNOTATIONS_FOR_DOMAIN,
                       'motivation':ANNOTATIONS_FOR_MOTIVATION,
@@ -632,7 +644,8 @@ def _get_where_for_parameter_name(query_attr, parameter_name):
         else:
             where_clause = where_clause + ' || '
         where_clause = where_clause + '?' + parameter_name + "="
-        if parameter_name == 'title' or parameter_name == 'userName':
+        if (parameter_name == 'userName' or parameter_name == 'creatorFamilyName'
+            or parameter_name == 'creatorGivenName'):
             where_clause = where_clause + "'" + value + "'"
         else:
             where_clause = where_clause + "<" + URIRef(value) + '>'

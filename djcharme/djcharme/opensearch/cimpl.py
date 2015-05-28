@@ -333,6 +333,10 @@ class COSQuery(OSQuery):
         params.append(OSParam("comment", "chars",
                               namespace="http://www.w3.org/2011/content#",
                               default=''))
+        params.append(OSParam("creatorFamilyName", "familyName",
+                              namespace=FOAF, default=''))
+        params.append(OSParam("creatorGivenName", "givenName",
+                              namespace=FOAF, default=''))
         params.append(OSParam("dataType", "type",
                               namespace=RDF, default=''))
         params.append(OSParam("domainOfInterest", "domainOfInterest",
