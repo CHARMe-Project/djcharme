@@ -24,7 +24,7 @@ setup(
     author_email='maurizio.nagni@stfc.ac.uk',
     include_package_data=True,
     packages=find_packages(),  # include all packages under this directory
-    url='https://github.com/cedadev/djcharme',
+    url='https://github.com/CHARMe-Project/djcharme',
     license='BSD licence, see LICENCE',
     description='CHARMe Node',
     long_description=README,

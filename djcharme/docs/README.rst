@@ -1,9 +1,9 @@
 Documentation and Examples
 ==========================
 
-The `CHARMeNodeInstallation <https://github.com/cedadev/djcharme/blob/develop/djcharme/docs/CHARMeNodeInstallation.pdf>`_
+The `CHARMeNodeInstallation <https://github.com/CHARMe-Project/djcharme/blob/develop/djcharme/docs/CHARMeNodeInstallation.pdf>`_
 provides details of installing the central node and the
-`CHARMeNodeICD <https://github.com/cedadev/djcharme/blob/develop/djcharme/docs/CHARMeNodeICD.pdf>`_
+`CHARMeNodeICD <https://github.com/CHARMe-Project/djcharme/blob/develop/djcharme/docs/CHARMeNodeICD.pdf>`_
 provides details of the interface.
 
 Using curl to Communicate with the Central Node
@@ -15,7 +15,7 @@ Inserting Annotations
 ~~~~~~~~~~~~~~~~~~~~~
 
 This directory contains some example ttl files, these are the examples from the
-`CHARMeNodeICD <https://github.com/cedadev/djcharme/blob/develop/djcharme/docs/CHARMeNodeICD.pdf>`_.
+`CHARMeNodeICD <https://github.com/CHARMe-Project/djcharme/blob/develop/djcharme/docs/CHARMeNodeICD.pdf>`_.
 
 Prior to inserting an annotation you must obtain a token. Currently doing this
 using curl is a bit clunky.
@@ -63,7 +63,7 @@ links to follow when retrieving the graph::
 	curl -X GET $anno_uri?depth=1 -H "Authorization: Token $access_token" -D header  -H 'Accept: text/turtle' -L
 	
 See the
-`CHARMeNodeICD <https://github.com/cedadev/djcharme/blob/develop/djcharme/docs/CHARMeNodeICD.pdf>`_
+`CHARMeNodeICD <https://github.com/CHARMe-Project/djcharme/blob/develop/djcharme/docs/CHARMeNodeICD.pdf>`_
 for more details
 
 Reporting An Annotation
@@ -95,7 +95,7 @@ The *suggest* call was developed for use by a faceted search tool. Using
 *suggest* you can retrieve lists of values for *bodyType, citingType,
 dataType, domainOfInterest, motivation* and *organization*. The results can be
 restricted by the use of filters, see the 
-`CHARMeNodeICD <https://github.com/cedadev/djcharme/blob/develop/djcharme/docs/CHARMeNodeICD.pdf>`_
+`CHARMeNodeICD <https://github.com/CHARMe-Project/djcharme/blob/develop/djcharme/docs/CHARMeNodeICD.pdf>`_
 for a full list of options. 
 
 To find the list of values used for *motivation*::
@@ -116,7 +116,7 @@ Some example searches::
 	https://charme-test.cems.rl.ac.uk/search/atom?depth=1&status=submitted&motivation=http://www.w3.org/ns/oa%23tagging
 
 See the
-`CHARMeNodeICD <https://github.com/cedadev/djcharme/blob/develop/djcharme/docs/CHARMeNodeICD.pdf>`_
+`CHARMeNodeICD <https://github.com/CHARMe-Project/djcharme/blob/develop/djcharme/docs/CHARMeNodeICD.pdf>`_
 for a full list of options.
 
 SPARQL Interface
