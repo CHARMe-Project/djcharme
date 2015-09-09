@@ -138,7 +138,7 @@ def report_to_moderator(request, resource_id):
     # create message
     message = ('You are receiving this email as you are registered as an ' \
                'admin for %s by the CHARMe site %s\n\nThe annotation\n%s\n' \
-               'has been flagged for moderation by ' %
+               'has been flagged for moderation by ' % 
                (organization_name, getattr(settings, 'NODE_URI'),
                 annotation_uri))
     if request.user.first_name != "":
@@ -514,7 +514,7 @@ def _format_node_uri_ref(uriref, generated_uris):
     if isinstance(uriref, URIRef):
         for key in generated_uris.keys():
             if key in uriref:
-                uriref = URIRef(uriref.replace(key, "%s/%s" %
+                uriref = URIRef(uriref.replace(key, "%s/%s" % 
                                                (RESOURCE, generated_uris[key])))
     return uriref
 
@@ -564,7 +564,7 @@ def _format_submitted_annotation(graph):
             if types != "":
                 types = types + ', '
             types = types + type_
-        raise UserError((TARGET_URI + ' may only be used for ' + types +
+        raise UserError((TARGET_URI + ' may only be used for ' + types + 
                          ' target types'))
 
 
@@ -692,7 +692,7 @@ def validate_graph_name(graph_name):
         if names != '':
             names = names + ', '
         names = names + name
-    raise UserError(("The status of %s is not valid. It must be one of %s" %
+    raise UserError(("The status of %s is not valid. It must be one of %s" % 
                      (graph_name, names)))
 
 
@@ -716,7 +716,7 @@ def _move_annotation(annotation_uri, new_graph, old_graph, request, timestamp):
     old_g = generate_graph(CharmeMiddleware.get_store(), old_graph)
     if not is_update_allowed(old_g, annotation_uri, request):
         raise SecurityError(("You do not have the required permission to " \
-                             "update the status of annotation %s" %
+                             "update the status of annotation %s" % 
                              annotation_uri))
 
     new_g = generate_graph(CharmeMiddleware.get_store(), new_graph)
@@ -758,7 +758,7 @@ def _delete_body(annotation_uri, graph_name, request):
     graph = generate_graph(CharmeMiddleware.get_store(), graph_name)
     if not is_update_allowed(graph, annotation_uri, request):
         raise SecurityError(("You do not have the required permission to " \
-                             "update the status of annotation %s" %
+                             "update the status of annotation %s" % 
                              annotation_uri))
 
     # Find all of the targets
@@ -792,7 +792,7 @@ def _delete_target(annotation_uri, graph_name, request):
     graph = generate_graph(CharmeMiddleware.get_store(), graph_name)
     if not is_update_allowed(graph, annotation_uri, request):
         raise SecurityError(("You do not have the required permission to " \
-                             "update the status of annotation %s" %
+                             "update the status of annotation %s" % 
                              annotation_uri))
 
     # Find all of the targets
@@ -1059,8 +1059,26 @@ def find_resource_by_id(resource_id, depth=None):
     '''
     graph = ConjunctiveGraph(store=CharmeMiddleware.get_store())
     uri_ref = format_resource_uri_ref(resource_id)
-    LOGGING.debug("Looking resource %s", uri_ref)
+    LOGGING.debug("Looking for resource %s", uri_ref)
     return _extract_subject(graph, uri_ref, depth)
+
+
+def resource_exists(resource_id):
+    """
+    Check that the resource exists in the triple store.
+
+    Args:
+        resource_id(str): The id of the resource.
+
+    Returns:
+        True if the resource exists.
+
+    """
+    uri_ref = format_resource_uri_ref(resource_id)
+    tmp_g = find_resource_by_id(resource_id)   
+    for res in tmp_g.triples((uri_ref, None, None)):
+        return True
+    return False
 
 
 # This code is a workaround until FUSEKI fixes this bug

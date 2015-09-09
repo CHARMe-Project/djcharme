@@ -29,6 +29,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 '''
 
+from djcharme.models import FollowedResource
 from djcharme.models import OrganizationUser
 
 
@@ -49,3 +50,26 @@ def get_users_admin_role_orgs(user_id):
     for organization_user in organization_users:
         organizations.append(organization_user.organization.name)
     return organizations
+
+
+def is_following_resource(user, resource):
+    """
+    Check if the user is following the resource.
+
+    Args:
+        user(str): The name of the user
+        resource(str): The URI of the resource.
+
+    Returns:
+        True if the user is already following the resource.
+
+    """
+    followed_resources = (FollowedResource.objects.
+                          filter(user=user).
+                          filter(resource=resource))
+    if len(followed_resources) > 0:
+        return True
+    else:
+        return False
+
+

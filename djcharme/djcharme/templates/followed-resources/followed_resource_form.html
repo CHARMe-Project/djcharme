@@ -1,0 +1,40 @@
+{% extends "charme_base.html" %} {% load i18n %} {% block main %}
+
+<h2>Follow Resources</h2>
+
+<p>When you follow a resource you will be notified by email every
+	time a new annotation is created about the resource.</p>
+
+{% if form.non_field_errors %}
+<div class=error>
+	<ul>
+		<li>{{ form.non_field_errors }}</li>
+	</ul>
+</div>
+{% endif %}
+
+<div class=contactform>
+	<div class=accounts>
+		<form action="{% url 'following-add' %}" method="POST">
+			{% csrf_token %}
+			<table>
+				<tr>
+					<td><label for="id_resource">Resource:</label></td>
+					<td>{{ form.resource }}</td>
+					<td><span class="helptext">The URI of the resource you
+							wish to follow</span></td>
+					<td><span class=error>{{ form.resource.errors }}</span>
+				</tr>
+			</table>
+			<p>
+				<input type="submit" value="Follow resource" />
+				<input type="button" 
+					onclick="location.href='{% url 'following-list' %}';"
+					value="Cancel" />
+			</p>
+		</form>
+	</div>
+</div>
+
+{% endblock %}
+

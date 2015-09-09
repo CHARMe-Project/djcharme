@@ -10,6 +10,23 @@ from provider.oauth2.models import Client
 
 AUTH_USER_MODEL = getattr(settings, 'AUTH_USER_MODEL', 'auth.User')
 
+
+class FollowedResource(models.Model):
+    """
+    The resource followed by a user.
+
+    """
+    user = models.ForeignKey(User,
+                             help_text=
+                             'The user to associate with this resource.')
+    resource = models.CharField(max_length=500,
+                            help_text=
+                            "The URI of the resource followed by the user.")
+
+    def __unicode__(self):
+        return self.resource
+
+
 class UserProfile(models.Model):
     """
     Additional information about a user.
@@ -69,5 +86,4 @@ class OrganizationUser(models.Model):
 
     def __unicode__(self):
         return self.role
-
 

@@ -1,0 +1,30 @@
+{% extends "charme_base.html" %} {% load i18n %} {% block main %}
+
+<h2>Follow Resources</h2>
+
+<p>When you follow a resource you will be notified by email every
+	time a new annotation is created about the resource.</p>
+
+<div class="contactform">
+	<div class="accounts">
+		<table>
+			{% for resource in followed_resource %}
+			<tr>
+				<td><a href={{resource}}>{{ resource }}</a></td>
+				<td style="text-align: right;"><input type="button"
+					onclick="location.href='{% url 'following-delete' pk=resource.pk %}';"
+					value="Stop following" /></td>
+			</tr>
+			{% endfor %}
+			<tr>
+				<td><input type="button"
+					onclick="location.href='{% url 'following-add' %}';"
+					value="Follow new resource" /></td>
+				<td></td>
+			</tr>
+		</table>
+	</div>
+</div>
+
+{% endblock %}
+

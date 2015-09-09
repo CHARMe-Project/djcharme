@@ -5,11 +5,20 @@ Admin stuff.
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 from django.contrib.auth.models import User
-from djcharme.models import UserProfile, Organization, OrganizationClient, \
-    OrganizationUser
+from djcharme.models import FollowedResource, UserProfile, Organization, \
+    OrganizationClient, OrganizationUser
 from provider.oauth2.admin import ClientAdmin
 from provider.oauth2.models import Client
 
+
+class FollowedResourceAdmin(admin.ModelAdmin):
+    """
+    The Followed Resource Admin.
+
+    """
+    fields = ['user', 'resource']
+    list_display = ('user', 'resource')
+    list_filter = ['user']
 
 class UserProfileInline(admin.StackedInline):
     """
@@ -134,6 +143,7 @@ admin.site.unregister(User)
 admin.site.register(User, UserAdmin_)
 admin.site.unregister(Client)
 admin.site.register(Client, ClientAdmin_)
+admin.site.register(FollowedResource, FollowedResourceAdmin)
 admin.site.register(Organization, OrganizationAdmin)
 admin.site.register(OrganizationUser, OrganizationUserAdmin)
 admin.site.register(OrganizationClient, OrganizationClientAdmin)

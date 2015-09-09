@@ -122,6 +122,11 @@ urlpatterns = patterns('',
     url(r'^index/(\w+)', node_gate.index, name='charme.index.id'),
     url(r'^index', node_gate.index, name='index'),
 
+    # Folowing resources
+    url(r'^following/$', main_gui.Following.as_view(), name='following-list'),
+    url(r'^following/add$', main_gui.FollowingCreate.as_view(), name='following-add'),
+    url(r'^following/(?P<pk>[0-9]+)/delete/$', main_gui.FollowingDelete.as_view(), name='following-delete'),
+    
     # Anything else
     url(r'^', main_gui.welcome, name='charme.welcome'),
 
