@@ -188,7 +188,7 @@ def annotation(request, resource_uri=None, graph=None):
         resource_form = ResourceForm(initial=orig_values)
         context['resource_form'] = resource_form
 
-        return mm_render_to_response(request, context, 'annotation.html')
+        return mm_render_to_response(request, context, 'resources/annotation.html')
 
 
 def annotation_index(request, tmp_g, graph_name):
@@ -237,7 +237,7 @@ def activity(request, resource_uri, graph):
         for a_triple in activity_triples:
             context['email'] = a_triple[2]
 
-    return mm_render_to_response(request, context, 'activity.html')
+    return mm_render_to_response(request, context, 'resources/activity.html')
 
 
 def agent(request, resource_uri, graph):
@@ -250,7 +250,7 @@ def agent(request, resource_uri, graph):
     for triple in triples:
         context['name'] = triple[2]
 
-    return mm_render_to_response(request, context, 'agent.html')
+    return mm_render_to_response(request, context, 'resources/agent.html')
 
 
 def composite(request, resource_uri, graph):
@@ -265,7 +265,7 @@ def composite(request, resource_uri, graph):
         items.append(triple[2])
     context['items'] = items
 
-    return mm_render_to_response(request, context, 'composite.html')
+    return mm_render_to_response(request, context, 'resources/composite.html')
 
 
 def person(request, resource_uri, graph):
@@ -290,7 +290,7 @@ def person(request, resource_uri, graph):
     for triple in triples:
         context['username'] = triple[2]
 
-    return mm_render_to_response(request, context, 'person.html')
+    return mm_render_to_response(request, context, 'resources/person.html')
 
 
 def resource(request, resource_uri, graph):
@@ -321,7 +321,7 @@ def resource(request, resource_uri, graph):
         tags.append(triple[2])
     context['tags'] = tags
 
-    return mm_render_to_response(request, context, 'resource.html')
+    return mm_render_to_response(request, context, 'resources/resource.html')
 
 
 def _delete(request):
