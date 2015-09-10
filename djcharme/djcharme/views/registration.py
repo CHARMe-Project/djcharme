@@ -27,6 +27,10 @@ ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+
+Contents:
+This module contains views of the user registration pages.
+
 Created on 11 Dec 2013
 
 @author: mnagni
@@ -41,15 +45,15 @@ from django.db.utils import IntegrityError
 from django.forms.util import ErrorList
 from django.http.response import HttpResponseRedirect, HttpResponse, \
     HttpResponseNotFound
+from provider.oauth2.models import AccessToken
+
 from djcharme import mm_render_to_response
 from djcharme.charme_security_model import UserForm, UserUpdateForm, \
     UserProfileUpdateForm
-from djcharme.models import UserProfile
-from djcharme.security_middleware import is_valid_token
-from provider.oauth2.models import AccessToken
-
 from djcharme.forms import UsernameReminderForm
-from djcharme.node.look_ups import get_users_admin_role_orgs
+from djcharme.models import UserProfile
+from djcharme.node import get_users_admin_role_orgs
+from djcharme.security_middleware import is_valid_token
 
 
 LOGGING = logging.getLogger(__name__)

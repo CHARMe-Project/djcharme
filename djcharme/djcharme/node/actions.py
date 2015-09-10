@@ -39,17 +39,18 @@ import uuid
 
 from SPARQLWrapper.SPARQLExceptions import EndPointNotFound
 from django.conf import settings
-from django.contrib.auth.models import User
 from django.core.mail import send_mail
 from django.db.models import ObjectDoesNotExist
+from rdflib import BNode
+from rdflib import Graph, URIRef, Literal
+from rdflib.graph import ConjunctiveGraph
+
 from djcharme.charme_middleware import CharmeMiddleware
 from djcharme.exception import NotFoundError
 from djcharme.exception import ParseError
 from djcharme.exception import SecurityError
 from djcharme.exception import StoreConnectionError
 from djcharme.exception import UserError
-from djcharme.models import  Organization
-from djcharme.models import  OrganizationUser
 from djcharme.node import _extract_subject
 from djcharme.node.constants import ANNO_URI, LOCALHOST_URI, TARGET_URI, \
     REPLACEMENT_URIS, REPLACEMENT_URIS_MULTIVALUED
@@ -57,9 +58,10 @@ from djcharme.node.constants import FOAF, RDF, PROV, OA, CH_NODE
 from djcharme.node.constants import FORMAT_MAP, ALLOWED_CREATE_TARGET_TYPE, \
     RESOURCE
 from djcharme.node.constants import GRAPH_NAMES, SUBMITTED, INVALID, RETIRED
-from rdflib import BNode
-from rdflib import Graph, URIRef, Literal
-from rdflib.graph import ConjunctiveGraph
+from djcharme.node.model_queries import get_admin_email_addresses, \
+    get_followers, get_organization_for_client, is_moderator, \
+    is_organization_admin
+
 
 LOGGING = logging.getLogger(__name__)
 
@@ -133,7 +135,7 @@ def report_to_moderator(request, resource_id):
         if res[1] == (URIRef(FOAF + 'name')):
             organization_name = res[2]
             break
-    email_addresses = _get_admin_email_addresses(organization_name)
+    email_addresses = get_admin_email_addresses(organization_name)
 
     # create message
     message = ('You are receiving this email as you are registered as an ' \
@@ -237,6 +239,7 @@ def _insert_rdf(data, mimetype, user, client, graph, store):
 
     # add the rest
     anno_uri = ''
+    targets = []
     for res in tmp_g:
         if (res[1] == URIRef(RDF + 'type')
             and res[2] == URIRef(OA + 'Annotation')):
@@ -244,7 +247,11 @@ def _insert_rdf(data, mimetype, user, client, graph, store):
             prov = _get_prov(anno_uri, person_uri, client, timestamp)
             for triple in prov:
                 _add(final_g, triple)
+        if res[1] == URIRef(OA + 'hasTarget'):
+            targets.append(res[2])
         _add(final_g, res)
+    if targets:
+        _mail_followers(anno_uri, targets, 'created')
     return anno_uri
 
 
@@ -326,6 +333,7 @@ def _modify_rdf(request, mimetype):
 
     # add the rest
     anno_uri = ''
+    targets = []
     for res in tmp_g:
         if (res[1] == URIRef(RDF + 'type')
             and res[2] == URIRef(OA + 'Annotation')):
@@ -339,7 +347,11 @@ def _modify_rdf(request, mimetype):
                                                    activity_uri, person_uri)
             for triple in modify_activity:
                 _add(final_g, triple)
+        if res[1] == URIRef(OA + 'hasTarget'):
+            targets.append(res[2])
         _add(final_g, res)
+    if targets:
+        _mail_followers(anno_uri, targets, 'created')
     return anno_uri
 
 
@@ -377,7 +389,7 @@ def _get_prov(annotation_uri, person_uri, client, timestamp):
     triples.append((annotation_uri, URIRef(OA + 'annotatedAt'),
                     timestamp))
     triples.append((annotation_uri, URIRef(OA + 'annotatedBy'), person_uri))
-    organization = _get_organization_for_client(client)
+    organization = get_organization_for_client(client)
     if organization != None:
         triples.append((annotation_uri, URIRef(OA + 'annotatedBy'),
                         URIRef(client.url)))
@@ -608,7 +620,6 @@ def change_annotation_state(annotation_uri, new_graph, request):
     activity_uri = URIRef((getattr(settings, 'NODE_URI', LOCALHOST_URI)
                            + '/%s/%s' % (RESOURCE, uuid.uuid4().hex)))
     timestamp = Literal(datetime.utcnow())
-
     new_g = _change_annotation_state(annotation_uri, new_graph, request,
                                      activity_uri, timestamp, True)
     if new_g == None:
@@ -731,14 +742,25 @@ def _move_annotation(annotation_uri, new_graph, old_graph, request, timestamp):
     for res in _get_software(old_g, annotation_uri):
         _add(new_g, res)
     # Move the annotation
+    targets = []
     for res in old_g.triples((annotation_uri, None, None)):
         _remove(old_g, res)
         # We are only allowed one annotatedAt per annotation
         if res[1] == URIRef(OA + 'annotatedAt'):
             continue
+        if res[1] == URIRef(OA + 'hasTarget'):
+            targets.append(res[2])
         _add(new_g, res)
     # Add new annotatedAt
     _add(new_g, ((annotation_uri, URIRef(OA + 'annotatedAt'), timestamp)))
+    
+    if targets:
+        if new_graph == RETIRED:
+            message = "marked as deleted"
+        else:
+            message = "marked as %s" % new_graph
+
+        _mail_followers(annotation_uri, targets, message)
 
     return new_g
 
@@ -826,9 +848,9 @@ def is_update_allowed(graph, annotation_uri, request):
     """
     if _is_my_annotation(graph, annotation_uri, request.user.username):
         return True
-    if _is_organization_admin(request, annotation_uri):
+    if is_organization_admin(request.client, request.user, annotation_uri):
         return True
-    if _is_moderator(request):
+    if is_moderator(request.user):
         return True
 
     return False
@@ -856,91 +878,6 @@ def _is_my_annotation(graph, annotation_uri, username):
                               username, annotation_uri)
                 return True
     return False
-
-
-def _is_organization_admin(request, annotation_uri):
-    """
-    Check to see if this user is an admin for the organization at which the
-    annotation was created.
-
-    Args:
-        request (WSGIRequest): The incoming request.
-        annotation_uri (URIRef): The URI of the annotation.
-
-    Returns:
-        boolean True if the user is listed as a admin for the organization.
-
-    """
-    user_id = request.user.id
-    try:
-        organization_id = (request.client.organizationclient_set.
-                       values_list('organization', flat=True))
-    except AttributeError as ex:
-        return False
-    if len(organization_id) < 1:
-        LOGGING.warn("No organization found for client %s", request.client.url)
-        return False
-    # there should only be one
-    organization_id = organization_id[0]
-    organization_users = (OrganizationUser.objects.filter(user=user_id).
-                          filter(organization=organization_id))
-    for organization_user in organization_users:
-        if organization_user.role == 'admin':
-            LOGGING.debug("User %s is an admin for this annotation: %s",
-                          request.user.username, annotation_uri)
-            return True
-    return False
-
-
-def _is_moderator(request):
-    """
-    Check to see if this user is in the moderator group.
-
-    Args:
-        request (WSGIRequest): The incoming request.
-
-    Returns:
-        boolean True if the user is listed as a member of the moderator group.
-
-    """
-    groups = request.user.groups.values_list('name', flat=True)
-    if "moderator" in groups:
-        LOGGING.debug("User %s is a moderator", request.user.username)
-        return True
-    return False
-
-
-def _get_admin_email_addresses(organization_name):
-    """
-    Get the list of admin email addresses associated with the organization.
-
-    Args:
-        organization_name (str): The name of the organization.
-
-    Returns:
-        [str] List of admin email addresses.
-
-    """
-    organizations = (Organization.objects.filter(name=organization_name))
-    if len(organizations) < 1:
-        LOGGING.warn("No data found for %s", organization_name)
-        return None
-    organization_ids = []
-    for organization in organizations:
-        organization_ids.append(organization.id)
-    # there should only be one
-    organization_id = organization_ids[0]
-    organization_users = (OrganizationUser.objects.filter(role='admin').
-                          filter(organization=organization_id))
-    if len(organization_users) < 1:
-        LOGGING.warn("No admin found for organization %s", organization_name)
-        return None
-    admins = []
-    for organization_user in organization_users:
-        users = User.objects.filter(username=organization_user.user)
-        for user in users:
-            admins.append(user.email)
-    return admins
 
 
 def _get_people(graph, annotation_uri):
@@ -987,30 +924,6 @@ def _get_organization(graph, annotation_uri):
     return organization
 
 
-def _get_organization_for_client(client):
-    """
-    Get the name of the organization associated with the client.
-
-    Args:
-        client (client): The Client object from a request
-
-    Returns:
-        str The name of the organization or None.
-
-    """
-    organization_id = (client.organizationclient_set.
-                       values_list('organization', flat=True))
-    if len(organization_id) < 1:
-        LOGGING.warn("No organization found for client %s", client.url)
-        return None
-    # there should only be one
-    organization_id = organization_id[0]
-    organizations = (Organization.objects.filter(id=organization_id))
-    for organization in organizations:
-        return organization.name
-    return None
-
-
 def _get_software(graph, annotation_uri):
     """
     Get the list of software associated with the annotation in the graph.
@@ -1031,6 +944,38 @@ def _get_software(graph, annotation_uri):
             for res3 in graph.triples((res2[0], None, None)):
                 software.append(res3)
     return software
+
+
+def _mail_followers(annotation_uri, targets, action):
+    """
+    Mail the followers of the targets.
+
+    Args:
+        annotation_uri (str): The URI of the annotation.
+        targets (list(str)): The list of URIs of targets.
+        action (str): The action on the annotation.
+
+    """
+    LOGGING.debug("_mail_followers(%s, targets, %s)" % (annotation_uri, action))
+    followers = get_followers(targets)
+    from_address = getattr(settings, 'DEFAULT_FROM_EMAIL')
+    subject = 'An annotation has been %s' % action
+
+    for follower in followers:
+        # create message
+        message = ('You are receiving this email as you are registered as ' \
+                   'following %s by the CHARMe site %s\n\nThe annotation ' \
+                   '%s, which references %s, has been %s.\n\nRegards\nThe CHARMe site team\n' % 
+                   (follower.resource, getattr(settings, 'NODE_URI'),
+                    annotation_uri, follower.resource, action))
+        # send mails
+        try:
+            send_mail(subject, message, from_address, [follower.user.email])
+        except Exception as ex:
+            LOGGING.error("An error occurred when emailing user %s, %s" % 
+                          (follower.user, ex))
+            print message
+    return
 
 
 def find_annotation_graph(resource_id):

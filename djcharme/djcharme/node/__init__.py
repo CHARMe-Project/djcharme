@@ -1,6 +1,6 @@
 '''
 BSD Licence
-Copyright (c) 2014, Science & Technology Facilities Council (STFC)
+Copyright (c) 2015, Science & Technology Facilities Council (STFC)
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification,
@@ -27,8 +27,14 @@ ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+
+This module exposes node functions to other packages.
+
 '''
 from rdflib.graph import Graph
+
+from djcharme.node.model_queries import get_users_admin_role_orgs
+from djcharme.node.model_queries import is_following_resource
 
 
 def _collect_all(graph, cache_graph, uri_ref, depth=None):
