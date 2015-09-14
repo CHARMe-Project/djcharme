@@ -41,8 +41,11 @@ This module contains pre-formatted queries of the SQL database.
 import logging
 
 from django.contrib.auth.models import User
+from django.core.exceptions import ObjectDoesNotExist
+from provider.oauth2.models import Client
 
-from djcharme.models import FollowedResource, Organization, OrganizationUser
+from djcharme.models import FollowedResource, Organization, \
+    OrganizationClient, OrganizationUser
 
 
 LOGGING = logging.getLogger(__name__)
@@ -97,6 +100,46 @@ def get_users_admin_role_orgs(user_id):
     for organization_user in organization_users:
         organizations.append(organization_user.organization.name)
     return organizations
+
+
+def get_client(organization_name):
+    """
+    Get the client with the given organization name. Return None if not found.
+
+    Args:
+        organization_name (str): The name of the organization.
+
+    Returns:
+        client The client object or None if not found.
+
+    """
+    try:
+        organization = Organization.objects.get(name=organization_name)
+        organization_client = OrganizationClient.objects.get(organization=organization)
+        client = Client.objects.get(organizationclient=organization_client)
+    except ObjectDoesNotExist():
+            return None
+    return client
+
+
+def get_user(user_name):
+    """
+    Get the user with the given user name. Return None if not found.
+
+    Args:
+        user_name (str): The user name of the user.
+
+    Returns:
+        User The User object or None if not found.
+
+    """
+    try:
+        user = User.objects.get(username=user_name)
+    except ObjectDoesNotExist():
+        return None
+    except Exception:
+        return None
+    return user
 
 
 def get_organization_for_client(client):
@@ -198,11 +241,8 @@ def is_organization_admin(client, user, annotation_uri):
 
     """
     user_id = user.id
-    try:
-        organization_id = (client.organizationclient_set.
+    organization_id = (client.organizationclient_set.
                        values_list('organization', flat=True))
-    except AttributeError:
-        return False
     if len(organization_id) < 1:
         LOGGING.warn("No organization found for client %s", client.url)
         return False

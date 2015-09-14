@@ -64,7 +64,7 @@ from djcharme.node.model_queries import get_admin_email_addresses, \
 
 
 LOGGING = logging.getLogger(__name__)
-
+CREATED = 'created'
 
 def rdf_format_from_mime(mimetype):
     """
@@ -251,7 +251,7 @@ def _insert_rdf(data, mimetype, user, client, graph, store):
             targets.append(res[2])
         _add(final_g, res)
     if targets:
-        _mail_followers(anno_uri, targets, 'created')
+        _mail_followers(anno_uri, targets, CREATED)
     return anno_uri
 
 
@@ -351,7 +351,7 @@ def _modify_rdf(request, mimetype):
             targets.append(res[2])
         _add(final_g, res)
     if targets:
-        _mail_followers(anno_uri, targets, 'created')
+        _mail_followers(anno_uri, targets, CREATED, original_uri)
     return anno_uri
 
 
@@ -848,8 +848,12 @@ def is_update_allowed(graph, annotation_uri, request):
     """
     if _is_my_annotation(graph, annotation_uri, request.user.username):
         return True
-    if is_organization_admin(request.client, request.user, annotation_uri):
-        return True
+    try:
+        if is_organization_admin(request.client, request.user, annotation_uri):
+            return True
+    except AttributeError:
+        # there is no request.client
+        pass
     if is_moderator(request.user):
         return True
 
@@ -946,35 +950,63 @@ def _get_software(graph, annotation_uri):
     return software
 
 
-def _mail_followers(annotation_uri, targets, action):
+def _mail_followers(annotation_uri, targets, message_part, original_uri=None):
     """
-    Mail the followers of the targets.
+    Mail the followers of the targets and annotation.
 
     Args:
         annotation_uri (str): The URI of the annotation.
         targets (list(str)): The list of URIs of targets.
-        action (str): The action on the annotation.
+        message_part (str): The action on the annotation.
+        original_uri (str): The URI of the original annotation, may be None.
 
     """
-    LOGGING.debug("_mail_followers(%s, targets, %s)" % (annotation_uri, action))
     followers = get_followers(targets)
     from_address = getattr(settings, 'DEFAULT_FROM_EMAIL')
-    subject = 'An annotation has been %s' % action
+    subject = 'An annotation has been %s' % message_part
 
     for follower in followers:
         # create message
         message = ('You are receiving this email as you are registered as ' \
                    'following %s by the CHARMe site %s\n\nThe annotation ' \
-                   '%s, which references %s, has been %s.\n\nRegards\nThe CHARMe site team\n' % 
+                   '%s, which references %s, has been %s.\n\nYou can ' \
+                   'update your notification settings by logging on to %s' \
+                   '\n\nRegards\nThe CHARMe site team\n' % 
                    (follower.resource, getattr(settings, 'NODE_URI'),
-                    annotation_uri, follower.resource, action))
+                    annotation_uri, follower.resource, message_part,
+                    getattr(settings, 'NODE_URI')))
+        if original_uri:
+            message = ('%s This is a modification of the annotation %s' % 
+                       (message, original_uri))
+        message = ('%s\n\nYou can update your notification settings by ' \
+                   'logging on to %s\n\nRegards\nThe CHARMe site team\n' % 
+                   (message, getattr(settings, 'NODE_URI')))        
         # send mails
         try:
             send_mail(subject, message, from_address, [follower.user.email])
         except Exception as ex:
             LOGGING.error("An error occurred when emailing user %s, %s" % 
                           (follower.user, ex))
-            print message
+    
+    if message_part == CREATED:
+        # The annotation is being created so there will be no followers
+        return
+    followers = get_followers([annotation_uri])
+    for follower in followers:
+        # create message
+        message = ('You are receiving this email as you are registered as ' \
+                   'following %s by the CHARMe site %s\n\nThis annotation ' \
+                   'has been %s.You can update your notification settings ' \
+                   'by logging on to %s\n\nRegards\nThe CHARMe site team\n' \
+                   % (follower.resource, getattr(settings, 'NODE_URI'),
+                      annotation_uri, follower.resource, message_part,
+                      getattr(settings, 'NODE_URI')))
+        # send mails
+        try:
+            send_mail(subject, message, from_address, [follower.user.email])
+        except Exception as ex:
+            LOGGING.error("An error occurred when emailing user %s, %s" % 
+                          (follower.user, ex))
     return
 
 
