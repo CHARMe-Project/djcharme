@@ -66,9 +66,10 @@ def http_accept(request):
 
 
 def check_mime_format(mimeformat):
-    '''Map input MIME format to one of the accepted formats available
-    '''
+    """
+    Map input MIME format to one of the accepted formats available.
 
+    """
     # Set a default MIME format if none was set
     if mimeformat is None:
         mimeformat = 'application/ld+json'
@@ -93,6 +94,3 @@ def validate_mime_format(request):
             return ret
     return None
 
-'''
-        SELECT Distinct ?g ?s ?p ?o WHERE { GRAPH ?g { ?s ?p ?o . }}
-'''

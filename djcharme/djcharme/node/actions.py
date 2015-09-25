@@ -51,7 +51,6 @@ from djcharme.exception import ParseError
 from djcharme.exception import SecurityError
 from djcharme.exception import StoreConnectionError
 from djcharme.exception import UserError
-from djcharme.node import _extract_subject
 from djcharme.node.constants import ANNO_URI, LOCALHOST_URI, TARGET_URI, \
     REPLACEMENT_URIS, REPLACEMENT_URIS_MULTIVALUED
 from djcharme.node.constants import FOAF, RDF, PROV, OA, CH_NODE
@@ -61,6 +60,7 @@ from djcharme.node.constants import GRAPH_NAMES, SUBMITTED, INVALID, RETIRED
 from djcharme.node.model_queries import get_admin_email_addresses, \
     get_followers, get_organization_for_client, is_moderator, \
     is_organization_admin
+from djcharme.node.triple_queries import extract_subject
 
 
 LOGGING = logging.getLogger(__name__)
@@ -591,7 +591,7 @@ def _validate_submitted_annotation(graph):
         graph (rdflib.graph.Graph): The validated graph.
     """
     local_resource = getattr(settings, 'NODE_URI', LOCALHOST_URI) + '/'
-    for subject, pred, obj in graph:
+    for subject, _, _ in graph:
         if local_resource in subject:
             LOGGING.info("UserError Found %s in the subject of submitted " \
                          "annotation)", subject)
@@ -787,7 +787,7 @@ def _delete_body(annotation_uri, graph_name, request):
     for res in graph.triples((annotation_uri, OA['hasBody'], None)):
         # If this is the only reference to the body then delete it
         count = 0
-        for x in graph.triples((None, None, res[2])):
+        for _ in graph.triples((None, None, res[2])):
             count = count + 1
         if count > 1:
             continue
@@ -821,7 +821,7 @@ def _delete_target(annotation_uri, graph_name, request):
     for res in graph.triples((annotation_uri, OA['hasTarget'], None)):
         # If this is the only reference to the target then delete it
         count = 0
-        for x in graph.triples((None, None, res[2])):
+        for _ in graph.triples((None, None, res[2])):
             count = count + 1
         if count > 1:
             continue
@@ -1028,7 +1028,7 @@ def find_annotation_graph(resource_id):
             return graph
 
 
-def find_resource_by_id(resource_id, depth=None):
+def find_resource_by_id(resource_id, depth=1):
     '''
         Returns the charme resource associated with the given resource_id
         * resource_id:String
@@ -1037,7 +1037,7 @@ def find_resource_by_id(resource_id, depth=None):
     graph = ConjunctiveGraph(store=CharmeMiddleware.get_store())
     uri_ref = format_resource_uri_ref(resource_id)
     LOGGING.debug("Looking for resource %s", uri_ref)
-    return _extract_subject(graph, uri_ref, depth)
+    return extract_subject(graph, uri_ref, depth)
 
 
 def resource_exists(resource_id):
@@ -1051,9 +1051,8 @@ def resource_exists(resource_id):
         True if the resource exists.
 
     """
-    uri_ref = format_resource_uri_ref(resource_id)
-    tmp_g = find_resource_by_id(resource_id)   
-    for res in tmp_g.triples((uri_ref, None, None)):
+    graph = find_resource_by_id(resource_id)
+    if len(graph) > 0:
         return True
     return False
 

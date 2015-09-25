@@ -31,6 +31,7 @@ from rdflib import URIRef
 from rdflib.namespace import Namespace
 
 
+CONTENT_HTML = 'text/html'
 CONTENT_JSON = 'application/ld+json'
 CONTENT_RDF = 'application/rdf+xml'
 CONTENT_TURTLE = 'text/turtle'
@@ -74,6 +75,7 @@ CH_NODE = 'chnode'
 
 RESOURCE = 'resource'
 DATA = 'data'
+FOLLOWING = 'following'
 PAGE = 'page'
 
 ALLOWED_CREATE_TARGET_TYPE = [URIRef(OA + 'Composite'),

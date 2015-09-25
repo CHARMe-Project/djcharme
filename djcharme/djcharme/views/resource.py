@@ -28,17 +28,19 @@ ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 '''
+import datetime
 import logging
 
 from django.forms.fields import CharField
 from django.forms.forms import Form
 from django.http.response import HttpResponseRedirect
+
 from djcharme import mm_render_to_response
 from djcharme.node.actions import change_annotation_state, is_update_allowed, \
     find_annotation_graph
 from djcharme.node.constants import  CITO, CONTENT, DC, DCTERMS, FOAF, \
     INVALID, OA, PROV, RDF, RETIRED, SKOS
-import datetime
+
 
 LOGGING = logging.getLogger(__name__)
 
@@ -197,7 +199,7 @@ def annotation_index(request, tmp_g, graph_name):
     context['graph_name'] = graph_name
 
     annotations = []
-    for subject, pred, obj in tmp_g.triples((None, None, OA['Annotation'])):
+    for subject, _, _ in tmp_g.triples((None, None, OA['Annotation'])):
         annotations.append(subject)
     context['annotations'] = annotations
     return mm_render_to_response(request, context, 'index.html')

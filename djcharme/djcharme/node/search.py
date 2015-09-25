@@ -42,7 +42,7 @@ from rdflib.term import Literal
 from rdflib.term import URIRef
 
 from djcharme.charme_middleware import CharmeMiddleware
-from djcharme.node import _extract_subject
+from djcharme.node.triple_queries import extract_subject
 from djcharme.node.actions import generate_graph
 from djcharme.node.constants import STABLE
 
@@ -196,7 +196,7 @@ def _populate_annotations(graph, triples, depth=3):
     ret = []
     for row in triples:
         tmp_g = Graph()
-        for subj in _extract_subject(graph, row[0], depth):
+        for subj in extract_subject(graph, row[0], depth):
             tmp_g.add(subj)
         ret.append(tmp_g)
     return ret

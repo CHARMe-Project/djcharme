@@ -32,12 +32,6 @@ Contents:
 This module contains pre-formatted queries of the models.
 
 '''
-
-"""
-This module contains pre-formatted queries of the SQL database.
-
-"""
-
 import logging
 
 from django.contrib.auth.models import User
@@ -64,7 +58,7 @@ def get_admin_email_addresses(organization_name):
     organizations = (Organization.objects.filter(name=organization_name))
     if len(organizations) < 1:
         LOGGING.warn("No data found for %s", organization_name)
-        return None
+        return []
     organization_ids = []
     for organization in organizations:
         organization_ids.append(organization.id)
@@ -73,8 +67,8 @@ def get_admin_email_addresses(organization_name):
     organization_users = (OrganizationUser.objects.filter(role='admin').
                           filter(organization=organization_id))
     if len(organization_users) < 1:
-        LOGGING.warn("No admin found for organization %s", organization_name)
-        return None
+        LOGGING.error("No admin found for organization %s", organization_name)
+        return []
     admins = []
     for organization_user in organization_users:
         users = User.objects.filter(username=organization_user.user)

@@ -31,33 +31,16 @@ Created on 14 May 2013
 
 @author: mnagni
 '''
-import httplib
-import json
 import logging
-import urllib
 
-from django.contrib import messages
-from django.contrib.auth.decorators import login_required
-from django.http.response import (HttpResponseRedirectBase,
-                                  HttpResponseNotFound, HttpResponse)
-from djcharme import mm_render_to_response_error, settings
-from djcharme.charme_middleware import CharmeMiddleware
-from djcharme.exception import NotFoundError
-from djcharme.exception import SecurityError
-from djcharme.exception import SerializeError, StoreConnectionError
-from djcharme.exception import UserError
-from djcharme.node.actions import  insert_rdf, find_resource_by_id, \
-    collect_annotations, change_annotation_state, format_resource_uri_ref, \
-    generate_graph, rdf_format_from_mime
-from djcharme.node.constants import FOAF, OA, PROV, RDF, FORMAT_MAP, RESOURCE, \
-    SUBMITTED
-from djcharme.views import isGET, isPOST, isPUT, isDELETE, isHEAD, isPATCH, \
-    content_type
+from django.http.response import HttpResponseRedirectBase, HttpResponse
 from rdflib.graph import ConjunctiveGraph
 from rdflib.term import URIRef
 
-from djcharme.views.resource import agent, annotation, annotation_index, \
-    activity, composite, person, resource
+from djcharme.charme_middleware import CharmeMiddleware
+from djcharme.node.actions import  insert_rdf, generate_graph, rdf_format_from_mime
+from djcharme.views import isGET, isPOST, isPUT, isDELETE, isHEAD, isPATCH, \
+    content_type
 
 
 LOGGING = logging.getLogger(__name__)
@@ -88,25 +71,6 @@ def get_graph_from_request(request):
     if graph == 'default':
         graph = None
     return graph
-
-
-def _get_connection():
-    '''
-        Returns an httplib.HTTPConnection instance pointing to
-        settings.SPARQL_HOST_NAME
-    '''
-    return httplib.HTTPConnection(getattr(settings, 'SPARQL_HOST_NAME'),
-                                  port=getattr(settings, 'SPARQL_PORT'))
-
-
-def _submit_get(graph, accept):
-    headers = {"Accept": accept}
-    params = urllib.urlencode({'graph': graph})
-    conn = _get_connection()
-    conn.request('GET', getattr(settings, 'GRAPH_STORE_RW_PATH'),
-                 params, headers)
-    response = conn.getresponse()
-    return response
 
 
 def processGET(request):
@@ -206,15 +170,6 @@ def processPATCH(request):
     return HttpResponse(status=501)
 
 
-def __serialize(graph, req_format='application/rdf+xml'):
-    '''
-        Serializes a graph according to the required format
-    '''
-    if req_format == 'application/ld+json':
-        req_format = 'json-ld'
-    return graph.serialize(format=req_format)
-
-
 def _validate_mime_format(request, default=None):
     """
     Returns the first valid mimetype as mapped as rdf format
@@ -228,158 +183,3 @@ def _validate_mime_format(request, default=None):
         (len(req_formats) == 1 and req_formats[0] == '*/*')):
         return default
     return None
-
-
-def _validate_format(request):
-    '''
-        Returns the mimetype of the required format as mapped by rdflib
-        return: String - an allowed rdflib mimetype
-    '''
-    req_format = None
-    if isGET(request):
-        req_format = FORMAT_MAP.get(request.GET.get('format', None))
-    if isPOST(request):
-        req_format = request.environ.get('CONTENT_TYPE', None)
-
-    if req_format:
-        if req_format not in FORMAT_MAP.values():
-            raise SerializeError("Cannot generate the required format %s "
-                                 % req_format)
-    return req_format
-
-
-@login_required
-def index(request, graph='submitted'):
-    '''
-        Returns a tabular view of the stored annotations.
-        *request: HTTPRequest - the client request
-        *graph: String -  the required named graph
-        TDB - In a future implementation this actions should be supported by an
-        OpenSearch implementation
-    '''
-    try:
-        validate_graph_name(graph)
-    except UserError as ex:
-        messages.add_message(request, messages.ERROR, ex)
-        return mm_render_to_response_error(request, '400.html', 400)
-    tmp_g = None
-    try:
-        tmp_g = collect_annotations(graph)
-    except StoreConnectionError as ex:
-        LOGGING.error("Internal error. " + str(ex))
-        messages.add_message(request, messages.ERROR, ex)
-        return mm_render_to_response_error(request, '503.html', 503)
-
-    req_format = _validate_format(request)
-
-    if req_format:
-        LOGGING.debug("Annotations %s", str(__serialize
-                                            (tmp_g, req_format=req_format)))
-        return HttpResponse(__serialize(tmp_g, req_format=req_format))
-
-    LOGGING.debug("Annotations %s", str(tmp_g.serialize()))
-    return annotation_index(request, tmp_g, graph)
-
-def insert(request):
-    '''
-        Inserts in the triplestore a new annotation under the "SUBMITTED"
-        graph
-    '''
-    req_format = _validate_format(request)
-
-    if request.method == 'POST':
-        triples = request.body
-        anno_uri = insert_rdf(triples, req_format, request.user, request.client,
-                              graph=SUBMITTED)
-        return HttpResponse(anno_uri)
-
-
-def advance_status(request):
-    '''
-        Advance the status of an annotation
-    '''
-    if isPOST(request) and 'application/ld+json' in content_type(request):
-        params = json.loads(request.body)
-        LOGGING.info("advancing %s to state:%s", str(params.get('annotation')),
-                     str(params.get('toState')))
-        try:
-            tmp_g = change_annotation_state(params.get('annotation'),
-                                            params.get('toState'), request)
-        except NotFoundError as ex:
-            messages.add_message(request, messages.ERROR, str(ex))
-            return mm_render_to_response_error(request, '404.html', 404)
-        except SecurityError as ex:
-            messages.add_message(request, messages.ERROR, str(ex))
-            return mm_render_to_response_error(request, '403.html', 403)
-        except UserError as ex:
-            messages.add_message(request, messages.ERROR, str(ex))
-            return mm_render_to_response_error(request, '400.html', 400)
-        if tmp_g == None:
-            return HttpResponse()
-        else:
-            return HttpResponse(tmp_g.serialize())
-    elif not isPOST(request):
-        messages.add_message(request, messages.ERROR,
-                             "Message must be a POST")
-        return mm_render_to_response_error(request, '405.html', 405)
-    else:
-        messages.add_message(request, messages.ERROR,
-                             "Message must contain application/ld+json")
-        return mm_render_to_response_error(request, '400.html', 400)
-
-
-def process_resource(request, resource_id):
-    if _validate_mime_format(request):
-        LOGGING.info("Redirecting to /%s/%s", str(RESOURCE), str(resource_id))
-        return HttpResponseSeeOther('/%s/%s' % (RESOURCE, resource_id))
-    if 'text/html' in request.META.get('HTTP_ACCEPT', None):
-        LOGGING.info("Redirecting to /page/%s", str(resource_id))
-        return HttpResponseSeeOther('/page/%s' % resource_id)
-    return HttpResponseNotFound()
-
-
-def process_data(request, resource_id):
-    req_format = _validate_mime_format(request)
-    if req_format is None:
-        return process_resource(request, resource_id)
-
-    tmp_g = find_resource_by_id(resource_id)
-    return HttpResponse(tmp_g.serialize(format=req_format),
-                        mimetype=request.META.get('HTTP_ACCEPT'))
-
-
-def process_page(request, resource_id=None):
-    if 'text/html' not in request.META.get('HTTP_ACCEPT', None):
-        process_resource(request, resource_id)
-
-    tmp_g = find_resource_by_id(resource_id, 1)
-
-    resource_uri = format_resource_uri_ref(resource_id)
-
-    # Check if the resource is an annotation
-    triples = tmp_g.triples((resource_uri, RDF['type'], OA['Annotation']))
-    for triple in triples:
-        return annotation(request, resource_uri, tmp_g)
-
-    # Check if the resource is a SoftwareAgent
-    triples = tmp_g.triples((resource_uri, RDF['type'], PROV['SoftwareAgent']))
-    for triple in triples:
-        return agent(request, resource_uri, tmp_g)
-
-    # Check if the resource is an activity
-    triples = tmp_g.triples((resource_uri, RDF['type'], PROV['Activity']))
-    for triple in triples:
-        return activity(request, resource_uri, tmp_g)
-
-    # Check if the resource is a person
-    triples = tmp_g.triples((resource_uri, RDF['type'], FOAF['Person']))
-    for triple in triples:
-        return person(request, resource_uri, tmp_g)
-
-    # Check if the resource is a composite
-    triples = tmp_g.triples((resource_uri, RDF['type'], OA['Composite']))
-    for triple in triples:
-        return composite(request, resource_uri, tmp_g)
-
-    return resource(request, resource_uri, tmp_g)
-

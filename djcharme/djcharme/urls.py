@@ -24,6 +24,8 @@ urlpatterns = patterns('',
 
     # ACCOUNTS
     #-----------------------------------------------------------
+    # Social Auth
+    url('', include('social.apps.django_app.urls', namespace='social')),
     # Registation
     url(r'^accounts/registration/$', registration.registration,
         name='registration'),
@@ -63,21 +65,32 @@ urlpatterns = patterns('',
         name='username_reminder_done'),
     #-----------------------------------------------------------
 
-    # Accepts external new annotation
+    # API - Add new annotation
     url(r'^insert/annotation', node_gate.insert, name='node_gate.insert'),
 
-    # Modify an annotation
+    # API - Modify an annotation
     url(r'^modify/annotation', node_gate.modify, name='node_gate.modify'),
 
-    # Annotation status management
+    # API - Annotation status management
     url(r'^advance_status/', node_gate.advance_status,
         name='advance_status'),
 
+    # API - Follow resources                     
+    url(r'^user/following/(?P<resource_uri>.*)', node_gate.Following.as_view(),
+        name='follow_resource'),
+             
+    # API - Report annotations
+    url(r'^resource/(?P<resource_id>\w+)/reporttomoderator/$', node_gate.ReportToModerator.as_view(),
+        name='report_resource'),
+
     # Display linked data resources
-    url(r'^resource/(\w+)', node_gate.process_resource,
+    # API
+    url(r'^resource/(?P<resource_id>\w+)', node_gate.Resource.as_view(),
         name='process_resource'),
-    url(r'^data/(\w+)', node_gate.process_data, name='process_data'),
-    url(r'^page/(\w+)', node_gate.process_page, name='process_page'),
+    # API
+    url(r'^data/(?P<resource_id>\w+)', node_gate.ResourceData.as_view(), name='process_data'),
+    # API/GUI
+    url(r'^page/(?P<resource_id>\w+)', node_gate.ResourcePage.as_view(), name='process_page'),
     url(r'^annotation/$', resource.annotation, name='annotation'),
     url(r'^activity/$', resource.activity, name='activity'),
 
@@ -106,23 +119,23 @@ urlpatterns = patterns('',
         name='token_response'),
     url(r'^token/userinfo', registration.userinfo, name='userinfo'),
 
-    # Conditions of use
-    url(r'^conditionsofuse/$', main_gui.conditions_of_use),
-
     # Facets
     url(r'^facets/test', facets.test_facets, name='test_facets'),
 
-    # Server version
+    # API - Server version
     url(r'^version', node_gate.version),
 
-    # Vocab
+    # API - Vocab
     url(r'^vocab', node_gate.vocab),
 
     # Index pages
     url(r'^index/(\w+)', node_gate.index, name='charme.index.id'),
     url(r'^index', node_gate.index, name='index'),
 
-    # Folowing resources
+    # GUI - Conditions of use
+    url(r'^conditionsofuse/$', main_gui.conditions_of_use),
+
+    # GUI - Folowing resources
     url(r'^following/$', main_gui.Following.as_view(), name='following-list'),
     url(r'^following/add$', main_gui.FollowingCreate.as_view(), name='following-add'),
     url(r'^following/(?P<pk>[0-9]+)/delete/$', main_gui.FollowingDelete.as_view(), name='following-delete'),

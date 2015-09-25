@@ -29,15 +29,40 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
 Contents:
-This module exposes node functions to other packages.
+This module contains pre-formatted queries of the triple store.
 
 '''
 from rdflib.graph import Graph
 
-from djcharme.node.actions import resource_exists
-from djcharme.node.model_queries import get_users_admin_role_orgs
-from djcharme.node.model_queries import is_following_resource
+
+def _collect_all(graph, cache_graph, uri_ref, depth=1):
+    if depth == None:
+        depth = 1
+    for res in graph.triples((uri_ref, None, None)):
+        cache_graph.add(res)
+        if depth > 1:
+            new_depth = depth
+            if new_depth > 1:  # decrease the depth by one
+                new_depth = new_depth - 1
+            _collect_all(graph, cache_graph, res[2], new_depth)
 
 
+def extract_subject(graph, subject, depth):
+    """
+    Extracts from graph and describes, if exists, the specified subject
+    - Graph **graph**
+        the graph to search in
+    - URIRef **uriRef**
+        the subject to describe
+    - integer **depth**
+        how deep should the subject's properties be described
 
+    **return** an rdflib.Graph containing the subject details
+    """
+    tmp_g = Graph()
+    for res in graph.triples((subject, None, None)):
+        tmp_g.add(res)
+        if depth is None or depth > 0:
+            _collect_all(graph, tmp_g, res[2], depth)
+    return tmp_g
 

@@ -44,8 +44,7 @@ from django.views.generic.list import ListView
 
 from djcharme import mm_render_to_response
 from djcharme.models import FollowedResource
-from djcharme.node import is_following_resource
-from djcharme.node.actions import resource_exists
+from djcharme.node import is_following_resource, resource_exists
 
 
 def welcome(request):
