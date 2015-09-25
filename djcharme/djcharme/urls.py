@@ -24,8 +24,6 @@ urlpatterns = patterns('',
 
     # ACCOUNTS
     #-----------------------------------------------------------
-    # Social Auth
-    url('', include('social.apps.django_app.urls', namespace='social')),
     # Registation
     url(r'^accounts/registration/$', registration.registration,
         name='registration'),
