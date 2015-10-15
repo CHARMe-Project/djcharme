@@ -284,9 +284,11 @@ SECURITY_FILTER = [
     ("/accounts/login", ("GET", "POST")),
     ("/accounts/password/reset", ("GET", "POST")),
     ("/accounts/username/reminder", ("GET", "POST")),
+    ("/accounts/register", ("GET", "POST")),
     ("/accounts/registration", ("GET", "POST")),
     ("/conditionsofuse", ("GET")),
     ("/data", ("GET")),
+    ("/index", ("GET")),
     ("/page", ("GET")),
     ("/resource", ("GET")),
     ("/oauth2\/?", ("GET", "POST")),
@@ -295,8 +297,6 @@ SECURITY_FILTER = [
     ("/token/test", ("GET",)),
     ("/version", ("GET",)),
     ("/vocab", ("GET",)),
-    ("/accounts/register", ("GET", "POST")),
-    ("/accounts/signin/complete/", ("GET", "POST")),
 ]
 
 LOGIN_REDIRECT_URL = '/accounts/profile/'
