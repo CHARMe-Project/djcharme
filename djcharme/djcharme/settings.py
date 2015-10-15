@@ -286,6 +286,7 @@ SECURITY_FILTER = [
     ("/accounts/username/reminder", ("GET", "POST")),
     ("/accounts/register", ("GET", "POST")),
     ("/accounts/registration", ("GET", "POST")),
+    ("/accounts/signin/complete/", ("GET", "POST")),
     ("/conditionsofuse", ("GET")),
     ("/data", ("GET")),
     ("/index", ("GET")),
