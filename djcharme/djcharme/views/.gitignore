@@ -1,11 +1,1 @@
-/__init__.pyc
-/compose.pyc
-/demo.pyc
-/node_gate.pyc
-/endpoint.pyc
-/facets.pyc
-/main_gui.pyc
-/registration.pyc
-/resource.pyc
-/search.pyc
-/views.pyc
+/*.pyc
