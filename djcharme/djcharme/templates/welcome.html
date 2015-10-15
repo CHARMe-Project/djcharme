@@ -1,13 +1,9 @@
-{% extends "charme_base.html" %} {% block main %}
+{% extends "charme_base.html" %}
+
+{% block main %}
 
 <h2>CHARMe</h2>
 
 <p>Welcome to this CHARMe node</p>
-{% if user.is_authenticated %}
-<p>
-	<a href="{% url 'following-list' %}">Follow resources</a>
-</p>
-{% endif %} 
 
 {% endblock %}
-

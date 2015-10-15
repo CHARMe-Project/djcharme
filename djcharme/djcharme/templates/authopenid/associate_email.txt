@@ -1,0 +1,13 @@
+{% load i18n %}
+{% autoescape off %}
+
+{% blocktrans %}You're receiving this email to inform you that Open ID 
+{{ openid }} has been linked to your user account {{ user }} at the CHARMe 
+site.{% endblocktrans %}
+
+
+{% trans "Thanks for using our site!" %}
+
+{% blocktrans %}The CHARMEe site team{% endblocktrans %}
+
+{% endautoescape %}

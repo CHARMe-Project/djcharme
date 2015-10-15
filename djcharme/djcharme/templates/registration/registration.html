@@ -4,7 +4,9 @@
 
 {% block main %}
 
+{% block registration_header %}
 <h2>User Registration</h2>
+{% endblock %}
 
 {% if user_form.non_field_errors %}
 <div class=error>
@@ -14,10 +16,15 @@
 </div>
 {% endif %}
 
-<div class=contactform id="registration">
+<div class=contactform>
 	<div class=accounts>
-		<form method="post" action="{% url 'registration' %}">
+		{% if openid %}
+			<form method="post" action="{% url 'user_register' %}">
+		{% else %}
+			<form method="post" action="{% url 'registration' %}">
+		{% endif %}
 			{% csrf_token %}
+		    <input type="hidden" name="next" value="{{ request.REQUEST.next }}" />
 			<table>
 				<tr>
 					<td><label>{% trans "Username:" noop %}</label></td>
@@ -75,5 +82,8 @@
 		</form>
 	</div>
 </div>
+
+{% block registration_footer %}
+{% endblock %}
 
 {% endblock %}

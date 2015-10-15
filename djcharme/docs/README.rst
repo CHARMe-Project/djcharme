@@ -9,16 +9,12 @@ provides details of the interface.
 Using curl to Communicate with the Central Node
 -----------------------------------------------
 
-These are some examples of using curl to make calls to the central node.
-
-Inserting Annotations
-~~~~~~~~~~~~~~~~~~~~~
-
 This directory contains some example ttl files, these are the examples from the
 `CHARMeNodeICD <https://github.com/CHARMe-Project/djcharme/blob/develop/djcharme/docs/CHARMeNodeICD.pdf>`_.
 
-Prior to inserting an annotation you must obtain a token. Currently doing this
-using curl is a bit clunky.
+Some of these example require you to be authenticated via a token (inserting, 
+reporting and deleting annotations). Currently doing this using curl is a bit
+clunky.
 
 First setup the user specific values::
 
@@ -44,8 +40,12 @@ Now get a token via curl::
 	curl -X GET ${charme_node}"/oauth2/authorize?client_id=${client_id}&response_type=token" -c cookies.txt -b cookies.txt -D /tmp/header -L  > /dev/null
 	export access_token=`grep access_token /tmp/header | cut -d'=' -f2 | cut -d'&' -f1`;echo ${access_token}
 
-We now have the token in the variable ``access_token``. To insert an
-annotation::
+This access_token can then be used in the examples below that use curl to make calls to the central node.
+
+Inserting Annotations
+~~~~~~~~~~~~~~~~~~~~~
+
+To insert an annotation::
 
 	export anno_uri=`curl -X POST ${charme_node}/insert/annotation -d@${data_dir}/05_textAnnotation.ttl -H "Authorization: Token ${access_token}" -D /tmp/header -H 'Content-Type: text/turtle'`;echo $anno_uri
 
@@ -55,12 +55,12 @@ Viewing Annotations
 You can view an annotation via a web browser or you can programmatically
 retrieve it::
 
-	curl -X GET $anno_uri -H "Authorization: Token $access_token" -D header  -H 'Accept: json-ld' -L
+	curl -X GET $anno_uri -D header  -H 'Accept: json-ld' -L
 	
 You can specify the format or the returned data and the ``depth``, the number of
 links to follow when retrieving the graph::
 
-	curl -X GET $anno_uri?depth=1 -H "Authorization: Token $access_token" -D header  -H 'Accept: text/turtle' -L
+	curl -X GET $anno_uri?depth=1 -D header  -H 'Accept: text/turtle' -L
 	
 See the
 `CHARMeNodeICD <https://github.com/CHARMe-Project/djcharme/blob/develop/djcharme/docs/CHARMeNodeICD.pdf>`_

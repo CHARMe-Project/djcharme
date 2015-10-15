@@ -1,0 +1,78 @@
+{% extends "charme_base.html" %}
+
+{% load i18n %}
+
+{% block main %}
+
+<h2>User Profile - {{ user.username }}</h2>
+
+{% if has_openids %}
+<h3>Associated openids</h3>
+<ul>
+	{% for oid_url in associated_openids %}
+		<li>{{ oid_url }} (<a href="{% url 'user_dissociate' %}?openid_url={{ oid_url }}">dissociate</a>)</li>
+	{% endfor %}
+</ul>
+{% endif %}
+
+<h3>Actions</h3>
+<ul>
+	<li><a href="{% url 'user_associate' %}">Associate a new openid</a></li>
+  	<li><a href="{% url 'password_change' %}">Change password</a></li>
+  	<li><a href="{% url 'following-list' %}">Follow resources</a></li>
+  	<li><a href="{% url 'user_signout' %}">Logout</a></li>
+</ul>
+
+<h3>User Details</h3>
+
+{% block details %}
+
+<div class=contactform>
+	<div class=accounts>
+		<table>
+			<tr>
+				<td><label>{% trans "First name:" noop %}</label></td>
+				<td><label>{{ user.first_name }}</label></td>
+			</tr>
+			<tr>
+				<td><label>{% trans "Last name:" noop %}</label></td>
+				<td>{{ user.last_name }}</td>
+			</tr>
+			<tr>
+				<td><label>{% trans "Email:" noop %}</label></td>
+				<td>{{ user.email }}</td>
+			</tr>
+			<tr>
+				<td><label>{% trans "Show my email in annotations:" noop %}</label></td>
+				<td>{{ user.userprofile.show_email }}</td>
+			</tr>
+			<tr>
+				<td></td>
+				<td style="text-align: right;"><input type="button"
+					onclick="location.href='{% url 'profile_change' %}';"
+					value="Edit account" /></td>
+			</tr>
+		</table>
+	</div>
+</div>
+
+{% if msg %}
+<div class=error>
+	<ul>
+		<li>{{ msg }}</li>
+	</ul>
+</div>
+{% endif %}
+
+{% if request.REQUEST.msg %}
+<div class=error>
+	<ul>
+		<li>{{ request.REQUEST.msg }}</li>
+	</ul>
+</div>
+{% endif %}
+
+{% endblock %}
+
+{% endblock %}
+

@@ -1,10 +1,8 @@
-{% extends "charme_base.html" %}
+{% extends "registration/profile.html" %}
 
 {% load i18n %}
 
-{% block main %}
-
-<h2>User Profile</h2>
+{% block details %}
 
 {% if user_form.non_field_errors %}
 <div class=error>
@@ -14,26 +12,11 @@
 </div>
 {% endif %}
 
-<div class=contactform id="profile_change">
+<div class=contactform>
 	<div class=accounts>
 		<form method="post" action="{% url 'profile_change' %}">
 			{% csrf_token %}
 			<table>
-				<tr>
-					<td><a href="{% url 'following-list' %}">Followed resources</a></td>
-					<td></td>
-					<td></td>
-				</tr>
-				<tr>
-					<td><a href="/accounts/password/change/">Change password</a></td>
-					<td></td>
-					<td></td>
-				</tr>
-				<tr>
-					<td><label>{% trans "Username:" noop %}</label></td>
-					<td><label>{{ user.username }}</label></td>
-					<td></td>
-				</tr>
 				<tr>
 					<td><label>{% trans "First name:" noop %}</label></td>
 					<td>{{ user_form.first_name }}</td>
@@ -56,8 +39,11 @@
 				</tr>
 				<tr>
 					<td></td>
-					<td style="text-align: right;"><input type="submit"
-						value="Update account"></td>
+					<td style="text-align: right;">
+					<input type="submit" value="Update account">
+					<input type="button"
+					onclick="location.href='{% url 'profile' %}'"
+					value="Cancel" /></td>
 					<td></td>
 				</tr>
 			</table>

@@ -3,3 +3,9 @@ recursive-include docs *
 recursive-include djcharme/resources *
 recursive-include djcharme/templates *
 recursive-include djcharme/static *
+
+exclude djcharme/local_settings.py
+include djcharme/local_settings.py.ini
+
+recursive-exclude djcharme/test *
+exclude djcharme/test_rdflib.py

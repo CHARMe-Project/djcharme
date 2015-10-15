@@ -1,10 +1,11 @@
 from django.conf.urls import patterns, include, url
 from django.contrib import admin
 from django.contrib.auth import views as auth_views
-from django.contrib.auth.views import login
+from django_authopenid import views as oid_views
+
 from djcharme.charme_security_model import LoginForm
 from djcharme.views import node_gate, compose, endpoint, main_gui, search, \
-    registration, resource, facets, views
+    registration, resource, facets, auth
 
 
 admin.autodiscover()
@@ -25,20 +26,16 @@ urlpatterns = patterns('',
     # ACCOUNTS
     #-----------------------------------------------------------
     # Registation
-    url(r'^accounts/registration/$', registration.registration,
+    url(r'^accounts/registration/$', registration.Registration.as_view(),
         name='registration'),
     # Login
-    url(r'^accounts/login/$', login,
-        kwargs={'template_name': 'login.html',
-                'authentication_form': LoginForm},
-        name='login'),
-    # Logout
-    url(r'^accounts/logout/$', views.logout_view,),
+    url(r'^accounts/login/$', auth.Login.as_view(), name='login'),
     # Profile
+    url(r'^accounts/profile/$', registration.Profile.as_view(),
+        name='profile'),
+    # Profile change
     url(r'^accounts/profile/change/$', registration.profile_change,
         name='profile_change'),
-    url(r'^accounts/profile/change/done/$', registration.profile_change_done,
-        name='profile_change_done'),
     # Password change
     url(r'^accounts/password/change/$', auth_views.password_change,
         name='password_change'),
@@ -61,6 +58,17 @@ urlpatterns = patterns('',
     url(r'^accounts/username/reminder/done$',
         registration.username_reminder_done,
         name='username_reminder_done'),
+
+    # replacement for django_authopenid register
+    url(r'^accounts/register/$', auth.Register.as_view(),
+        name='user_register'),
+    # update for django_authopenid signin complete
+    url(r'^accounts/signin/complete/$', oid_views.complete_signin,
+        {'auth_form':LoginForm, 'on_failure':auth.signin_failure},
+        name='user_complete_signin'),
+    # django_authopenid
+    url(r'^accounts/', include('django_authopenid.urls')),
+
     #-----------------------------------------------------------
 
     # API - Add new annotation
@@ -78,17 +86,19 @@ urlpatterns = patterns('',
         name='follow_resource'),
              
     # API - Report annotations
-    url(r'^resource/(?P<resource_id>\w+)/reporttomoderator/$', node_gate.ReportToModerator.as_view(),
-        name='report_resource'),
+    url(r'^resource/(?P<resource_id>\w+)/reporttomoderator/$',
+        node_gate.ReportToModerator.as_view(), name='report_resource'),
 
     # Display linked data resources
     # API
     url(r'^resource/(?P<resource_id>\w+)', node_gate.Resource.as_view(),
         name='process_resource'),
     # API
-    url(r'^data/(?P<resource_id>\w+)', node_gate.ResourceData.as_view(), name='process_data'),
+    url(r'^data/(?P<resource_id>\w+)', node_gate.ResourceData.as_view(),
+        name='process_data'),
     # API/GUI
-    url(r'^page/(?P<resource_id>\w+)', node_gate.ResourcePage.as_view(), name='process_page'),
+    url(r'^page/(?P<resource_id>\w+)', node_gate.ResourcePage.as_view(),
+        name='process_page'),
     url(r'^annotation/$', resource.annotation, name='annotation'),
     url(r'^activity/$', resource.activity, name='activity'),
 
@@ -135,8 +145,10 @@ urlpatterns = patterns('',
 
     # GUI - Folowing resources
     url(r'^following/$', main_gui.Following.as_view(), name='following-list'),
-    url(r'^following/add$', main_gui.FollowingCreate.as_view(), name='following-add'),
-    url(r'^following/(?P<pk>[0-9]+)/delete/$', main_gui.FollowingDelete.as_view(), name='following-delete'),
+    url(r'^following/add$', main_gui.FollowingCreate.as_view(),
+        name='following-add'),
+    url(r'^following/(?P<pk>[0-9]+)/delete/$',
+        main_gui.FollowingDelete.as_view(), name='following-delete'),
     
     # Anything else
     url(r'^', main_gui.welcome, name='charme.welcome'),

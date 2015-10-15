@@ -15,11 +15,11 @@ This is a BETA service
 <div class=links>
 	{% if user.is_authenticated %}
 		Hello {{ user.first_name }}
-		[<a href="/accounts/profile/change/">Profile</a>] 
-		[<a href="/accounts/logout/">Logout</a>]
+		[<a href="{% url 'profile' %}">Profile</a>] 
+		[<a href="{% url 'user_signout' %}">Logout</a>]
 	{% else %}
-		[<a href="/accounts/login/">Login</a> or 
-		<a href="/accounts/registration/">Register</a>]
+		[<a href="{% url 'login' %}">Login</a> or 
+		<a href="{% url 'registration' %}">Register</a>]
 	{% endif %}
 </div>
 

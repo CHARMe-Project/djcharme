@@ -39,12 +39,16 @@ from json import dumps
 import logging
 
 from django.contrib.auth.models import User
+from django.contrib.auth.views import login
 from django.core.urlresolvers import reverse
 from django.db.models import ObjectDoesNotExist
 from django.db.utils import IntegrityError
 from django.forms.util import ErrorList
 from django.http.response import HttpResponseRedirect, HttpResponse, \
     HttpResponseNotFound
+from django.http.response import HttpResponseServerError
+from django.utils.decorators import method_decorator
+from django.views.generic import TemplateView, View
 from provider.oauth2.models import AccessToken
 
 from djcharme import mm_render_to_response
@@ -54,36 +58,84 @@ from djcharme.forms import UsernameReminderForm
 from djcharme.models import UserProfile
 from djcharme.node import get_users_admin_role_orgs
 from djcharme.security_middleware import is_valid_token
+from djcharme.settings import REDIRECT_FIELD_NAME
+from djcharme.views import get_extra_context, get_safe_redirect
+from djcharme.views import not_authenticated
 
 
 LOGGING = logging.getLogger(__name__)
 
+CHANGE_FORM_TEMPLATE = 'registration/profile_change_form.html'
+PROFILE_TEMPLATE = 'registration/profile.html'
+REGISTEATION_TEMPLATE = 'registration/registration.html'
 
-def _register_user(request):
-    context = {}
-    user_form = UserForm(request.POST)
-    if user_form.is_valid():
+
+class Registration(View):
+    """
+    Display the registration view.
+
+    """
+    @method_decorator(not_authenticated)
+    def dispatch(self, *args, **kwargs):
         try:
-            user = User.objects.create_user(
-                            user_form.cleaned_data.get('username'),
-                            user_form.cleaned_data.get('email'),
-                            password=user_form.cleaned_data.get('password'),
-                            first_name=user_form.cleaned_data.get('first_name'),
-                            last_name=user_form.cleaned_data.get('last_name'))
-            user.save()
-            user_profile = UserProfile.objects.create(
-                            user_id=user.id,
-                            show_email=user_form.cleaned_data.get('show_email'))
-            user_profile.save()
-            return HttpResponseRedirect(reverse('login'))
-        except IntegrityError:
-            LOGGING.debug('Username is already registered')
-            errors = user_form._errors.setdefault('username', ErrorList())
-            errors.append(u'Username is already registered')
+            return super(Registration, self).dispatch(*args, **kwargs)
+        except Exception as ex:
+            LOGGING.error("Registration - unexpected error: %s", ex)
+            return HttpResponseServerError(str(ex))
 
-    context['user_form'] = user_form
-    return mm_render_to_response(request, context,
-                                 'registration/registration.html')
+    def get(self, request, *args, **kwargs):
+        context = {}
+        context['user_form'] = UserForm()
+        context['openid'] = False
+        return mm_render_to_response(request, context, REGISTEATION_TEMPLATE)
+
+    def post(self, request, *args, **kwargs):
+        LOGGING.debug('Registration request received')
+        redirect_to = get_safe_redirect(request)
+        user_form = UserForm(request.POST)
+        if user_form.is_valid():
+            try:
+                user = User.objects.create_user(
+                    user_form.cleaned_data.get('username'),
+                    user_form.cleaned_data.get('email'),
+                    password=user_form.cleaned_data.get('password'),
+                    first_name=user_form.cleaned_data.get('first_name'),
+                    last_name=user_form.cleaned_data.get('last_name'))
+                user.save()
+                user_profile = UserProfile.objects.create(
+                    user_id=user.id,
+                    show_email=user_form.cleaned_data.get('show_email'))
+                user_profile.save()
+                login(request, user)
+                return HttpResponseRedirect(redirect_to)
+
+            except IntegrityError:
+                LOGGING.debug('Username is already registered')
+                errors = user_form._errors.setdefault('username', ErrorList())
+                errors.append(u'Username is already registered')
+
+        # form not valid
+        context = {
+            'user_form': user_form,
+            'openid': False,
+            REDIRECT_FIELD_NAME: redirect_to,
+        }
+        extra_context = get_extra_context(kwargs)
+        if extra_context is not None:
+            context.update(extra_context)
+        return mm_render_to_response(request, context, REGISTEATION_TEMPLATE)
+
+
+class Profile(TemplateView):
+    """
+    Display the profile view.
+
+    """
+    template_name = PROFILE_TEMPLATE
+
+    def get_context_data(self, **kwargs):
+        context = super(Profile, self).get_context_data(**kwargs)
+        return context
 
 
 def _update_user(request):
@@ -92,8 +144,8 @@ def _update_user(request):
     user_form = UserUpdateForm(request.POST, instance=request.user)
     create_profile = False
     try:
-        user_profile_form = UserProfileUpdateForm(request.POST,
-                                              instance=request.user.userprofile)
+        user_profile_form = UserProfileUpdateForm(
+            request.POST, instance=request.user.userprofile)
     except ObjectDoesNotExist:
         user_profile_form = UserProfileUpdateForm(request.POST)
         create_profile = True
@@ -102,15 +154,14 @@ def _update_user(request):
             user_form.save()
             if create_profile:
                 user_profile = UserProfile.objects.create(
-                            user_id=request.user.id,
-                            show_email=
-                            user_profile_form.base_fields.get('show_email'))
+                    user_id=request.user.id,
+                    show_email=user_profile_form.base_fields.get('show_email'))
                 user_profile.save()
             else:
                 user_profile_form.save()
             context = {}
-            return mm_render_to_response(request, context,
-                        'registration/profile_change_done.html')
+            context['msg'] = 'Profile updated'
+            return mm_render_to_response(request, context, PROFILE_TEMPLATE)
         except IntegrityError:
             LOGGING.debug('Username is already registered')
             errors = user_form._errors.setdefault('username', ErrorList())
@@ -118,20 +169,7 @@ def _update_user(request):
 
     context['user_form'] = user_form
     context['user_profile_form'] = user_profile_form
-    return mm_render_to_response(request, context,
-                                 'registration/profile_change_form.html')
-
-
-def registration(request):
-    context = {}
-    LOGGING.debug('Registration request received')
-
-    if request.method == 'POST':
-        return _register_user(request)
-    else:  # GET
-        context['user_form'] = UserForm()
-        return mm_render_to_response(request, context,
-                                     'registration/registration.html')
+    return mm_render_to_response(request, context, CHANGE_FORM_TEMPLATE)
 
 
 def profile_change(request):
@@ -160,14 +198,7 @@ def profile_change(request):
             orig_values['show_email'] = False
         user_profile_form = UserProfileUpdateForm(initial=orig_values)
         context['user_profile_form'] = user_profile_form
-        return mm_render_to_response(request, context,
-                                     'registration/profile_change_form.html')
-
-
-def profile_change_done(request):
-    context = {}
-    return mm_render_to_response(request, context,
-                                 'registration/profile_change_done.html')
+        return mm_render_to_response(request, context, CHANGE_FORM_TEMPLATE)
 
 
 def username_reminder(request, from_email=None):
@@ -235,4 +266,3 @@ def token_response(request):
 def test_token(request):
     return mm_render_to_response(request, {}, 'oauth_test2.html')
 
-User

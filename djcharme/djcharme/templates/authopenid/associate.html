@@ -1,0 +1,47 @@
+{% extends "charme_base.html" %}
+
+{% load i18n %}
+
+{% block main %}
+
+<div class="loginform">
+	<h4>Associate a new Open ID with your account</h4>
+	{% if msg %}
+	<div class=error>
+		<ul>
+			<li>{{ msg }}</li>
+		</ul>
+	</div>
+	{% endif %}
+	{% if form.non_field_errors %}
+	<div class=error>
+		<ul>
+			<li>{{ form.non_field_errors }}</li>
+		</ul>
+	</div>
+	{% endif %}
+    <div class=accounts>
+		<form action="{% url 'user_associate' %}" method="post">
+		    {% csrf_token %}
+		    <input type="hidden" name="next" value="{{ request.REQUEST.next }}" />
+			<table>
+				<tr>
+					<td><label> {% trans "Open ID:" noop %} </label></td>
+					<td><input name="openid_url" type="text" /></td>
+					<td class=error>{{ form.openid_url.errors }}</td>
+				</tr>
+				<tr>
+					<td></td>
+					<td style="text-align: right;">
+						<input type="submit" value="Add OpenID">
+						<input type="button" 
+						onclick="location.href='{% url 'profile' %}'"
+						value="Cancel" /></td>
+					<td></td>
+				</tr>
+			</table>
+		</form>
+	</div>
+</div>
+
+{% endblock %}

@@ -63,7 +63,6 @@ TEMPLATE_LOADERS = (
 STATICFILES_FINDERS = (
     "django.contrib.staticfiles.finders.FileSystemFinder",
     "django.contrib.staticfiles.finders.AppDirectoriesFinder",
-#    'django.contrib.staticfiles.finders.DefaultStorageFinder',
 )
 
 #########
@@ -130,6 +129,8 @@ INSTALLED_APPS = (
     "cookielaw",
     'provider',
     'provider.oauth2',
+    'registration',
+    'django_authopenid',
 )
 
 
@@ -149,6 +150,7 @@ TEMPLATE_CONTEXT_PROCESSORS = (
     "django.core.context_processors.media",
     "django.core.context_processors.request",
     "django.core.context_processors.tz",
+    "django_authopenid.context_processors.authopenid",
 )
 
 # List of middleware classes to use. Order is important; in the request phase,
@@ -163,6 +165,7 @@ MIDDLEWARE_CLASSES = (
     "django.contrib.messages.middleware.MessageMiddleware",
     "djcharme.security_middleware.SecurityMiddleware",
     "djcharme.charme_middleware.CharmeMiddleware",
+    "django_authopenid.middleware.OpenIDMiddleware",
 )
 
 LOGGING = {
@@ -247,7 +250,9 @@ PASSWORD_HASHERS = (
 )
 
 AUTHENTICATION_BACKENDS = (
-    'djcharme.charme_security_model.CharmeAuthenticationBackend',)
+    'djcharme.charme_security_model.CharmeAuthenticationBackend',
+    'django.contrib.auth.backends.ModelBackend',
+)
 
 # Set header fields for HTTP OPTIONS method response.  If omitted, the code
 # will default to the setting in charme_middleware.CharmeMiddleware
@@ -264,6 +269,12 @@ OAUTH_SCOPES = (
     (1, 'add_annotation'),
     (2, 'update_annotation'),
 )
+
+
+# Modify temporarily the session serializer because the json serializer in
+# Django 1.6 can't serialize openid.yadis.manager.YadisServiceManager objects
+SESSION_SERIALIZER = 'django.contrib.sessions.serializers.PickleSerializer'
+
 
 # Sets URIs that are *NOT* secured.  Entries are URIs and HTTP method tuples
 SECURITY_FILTER = [
@@ -283,9 +294,12 @@ SECURITY_FILTER = [
     ("/token/validate/", ("GET",)),
     ("/token/test", ("GET",)),
     ("/version", ("GET",)),
-    ("/vocab", ("GET",))
+    ("/vocab", ("GET",)),
+    ("/accounts/register", ("GET", "POST")),
+    ("/accounts/signin/complete/", ("GET", "POST")),
 ]
 
+LOGIN_REDIRECT_URL = '/accounts/profile/'
 REDIRECT_FIELD_NAME = 'next'
 
 # Email settings used when resetting passwords
