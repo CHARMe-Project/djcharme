@@ -126,9 +126,7 @@ def report_to_moderator(request, resource_id):
     """
     LOGGING.debug("report_to_moderator(request, %s)", resource_id)
     annotation_uri = format_resource_uri_ref(resource_id)
-    graph_name = find_annotation_graph(annotation_uri)
-    if graph_name == None:
-        raise NotFoundError(("Annotation %s not found" % annotation_uri))
+    graph_name = find_annotation_graph_name(annotation_uri)
     graph = generate_graph(CharmeMiddleware.get_store(), graph_name)
     organizations = _get_organization(graph, annotation_uri)
     for res in organizations:
@@ -314,12 +312,11 @@ def _modify_rdf(request, mimetype):
 
     activity_uri = URIRef((getattr(settings, 'NODE_URI', LOCALHOST_URI)
                   + '/%s/%s' % (RESOURCE, uuid.uuid4().hex)))
-    # retire original
-    if (_change_annotation_state(original_uri, RETIRED, request, activity_uri,
-                                 modification_time) == None):
-        raise UserError(("Current annotation status of %s is final. Data " \
-                         "has not been updated." % RETIRED))
-
+    
+    original_graph_name = find_annotation_graph_name(original_uri)
+    if _is_graph_final_state(original_graph_name):
+        raise UserError(("Current annotation status of %s is final. Updates " \
+                         "are not allowed." % original_graph_name))
     _format_submitted_annotation(tmp_g)
     final_g = generate_graph(store, SUBMITTED)
 
@@ -350,6 +347,12 @@ def _modify_rdf(request, mimetype):
         if res[1] == URIRef(OA + 'hasTarget'):
             targets.append(res[2])
         _add(final_g, res)
+        
+    # retire original
+    _change_annotation_state(original_uri, RETIRED, original_graph_name,
+                             request, activity_uri, modification_time)
+
+    # send out notifications
     if targets:
         _mail_followers(anno_uri, targets, CREATED, original_uri)
     return anno_uri
@@ -600,13 +603,14 @@ def _validate_submitted_annotation(graph):
     return graph
 
 
-def change_annotation_state(annotation_uri, new_graph, request):
+def change_annotation_state(annotation_uri, new_graph_name, request):
     """
     Advance the status of an annotation.
 
     Args:
         annotation_uri (URIRef): The URI of the annotation.
-        new_graph (str): The name of the graph/state to move the annotation to.
+        new_graph_name (str): The name of the graph/state to move the
+            annotation to.
         request (WSGIRequest): The incoming request.
 
     Returns:
@@ -615,13 +619,16 @@ def change_annotation_state(annotation_uri, new_graph, request):
 
     """
     LOGGING.debug("change_annotation_state(%s, %s, request)",
-                  annotation_uri, new_graph)
+                  annotation_uri, new_graph_name)
+    validate_graph_name(new_graph_name)
     annotation_uri = format_resource_uri_ref(annotation_uri)
     activity_uri = URIRef((getattr(settings, 'NODE_URI', LOCALHOST_URI)
                            + '/%s/%s' % (RESOURCE, uuid.uuid4().hex)))
     timestamp = Literal(datetime.utcnow())
-    new_g = _change_annotation_state(annotation_uri, new_graph, request,
-                                     activity_uri, timestamp, True)
+    old_graph_name = find_annotation_graph_name(annotation_uri)
+    new_g = _change_annotation_state(annotation_uri, new_graph_name,
+                                     old_graph_name, request, activity_uri,
+                                     timestamp, True)
     if new_g == None:
         return
 
@@ -634,9 +641,9 @@ def change_annotation_state(annotation_uri, new_graph, request):
             raise StoreConnectionError("Cannot insert triple. " + str(ex))
 
     # If we are retiring include extra metadata
-    if new_graph == INVALID or new_graph == RETIRED:
+    if _is_graph_final_state(new_graph_name):
         deleted_prov = _get_deleted_activity(annotation_uri, timestamp,
-                                         activity_uri, person_uri)
+                                             activity_uri, person_uri)
         for triple in deleted_prov:
             _add(new_g, triple)
 
@@ -645,19 +652,21 @@ def change_annotation_state(annotation_uri, new_graph, request):
     return new_g
 
 
-def _change_annotation_state(annotation_uri, new_graph, request, activity_uri,
-                             timestamp, delete_body_target=False):
+def _change_annotation_state(annotation_uri, new_graph_name, old_graph_name, request,
+                             activity_uri, timestamp,
+                             delete_body_target=False):
     """
     Advance the status of an annotation.
 
     Args:
         annotation_uri (URIRef): The URI of the annotation.
-        new_graph (str): The name of the graph/state to move the annotation to.
+        new_graph_name (str): The name of the graph/state to move the annotation to.
+        old_graph_name (str): The name of the graph/state to move the annotation from.
         request (WSGIRequest): The incoming request.
         activity_uri (URIRef): The uri of the Activity
         timestamp (Literal): The time of the change
         delete_body_target (boolean): Physically delete the target if the
-        annotation is moved to the retired or invalid graph
+            annotation is moved to the retired or invalid graph
 
     Returns:
         graph (rdflib.graph.Graph): The new graph containing the updated
@@ -666,23 +675,19 @@ def _change_annotation_state(annotation_uri, new_graph, request, activity_uri,
     """
     # lets do some initial validation
     annotation_uri = format_resource_uri_ref(annotation_uri)
-    validate_graph_name(new_graph)
-    old_graph = find_annotation_graph(annotation_uri)
-    if old_graph == None:
-        raise NotFoundError(("Annotation %s not found" % annotation_uri))
-    if old_graph == new_graph:
+    if old_graph_name == new_graph_name:
         return None
-    if old_graph == INVALID or old_graph == RETIRED:
+    if _is_graph_final_state(old_graph_name):
         raise UserError(("Current annotation status of %s is final. Status " \
-                         "has not been updated." % old_graph))
-    if new_graph == INVALID or new_graph == RETIRED:
+                         "has not been updated." % old_graph_name))
+    if _is_graph_final_state(new_graph_name):
         # we must do this before we move the annotation
         if delete_body_target:
-            _delete_target(annotation_uri, old_graph, request)
-            _delete_body(annotation_uri, old_graph, request)
-    new_g = _move_annotation(annotation_uri, new_graph, old_graph, request,
+            _delete_target(annotation_uri, old_graph_name, request)
+            _delete_body(annotation_uri, old_graph_name, request)
+    new_g = _move_annotation(annotation_uri, new_graph_name, old_graph_name, request,
                              timestamp)
-    if new_graph == INVALID or new_graph == RETIRED:
+    if _is_graph_final_state(new_graph_name):
         _add(new_g, (annotation_uri, URIRef(PROV + 'wasInvalidatedBy'),
                      activity_uri))
     return new_g
@@ -694,6 +699,10 @@ def validate_graph_name(graph_name):
 
     Args:
         graph_name (str): The graph name to validate
+
+    Throws:
+        UserError if graph name is invalid
+
     """
     if graph_name in GRAPH_NAMES:
         return
@@ -969,12 +978,9 @@ def _mail_followers(annotation_uri, targets, message_part, original_uri=None):
         # create message
         message = ('You are receiving this email as you are registered as ' \
                    'following %s by the CHARMe site %s\n\nThe annotation ' \
-                   '%s, which references %s, has been %s.\n\nYou can ' \
-                   'update your notification settings by logging on to %s' \
-                   '\n\nRegards\nThe CHARMe site team\n' % 
+                   '%s, which references %s, has been %s.\n' % 
                    (follower.resource, getattr(settings, 'NODE_URI'),
-                    annotation_uri, follower.resource, message_part,
-                    getattr(settings, 'NODE_URI')))
+                    annotation_uri, follower.resource, message_part))
         if original_uri:
             message = ('%s This is a modification of the annotation %s' % 
                        (message, original_uri))
@@ -996,11 +1002,10 @@ def _mail_followers(annotation_uri, targets, message_part, original_uri=None):
         # create message
         message = ('You are receiving this email as you are registered as ' \
                    'following %s by the CHARMe site %s\n\nThis annotation ' \
-                   'has been %s.You can update your notification settings ' \
+                   'has been %s. You can update your notification settings ' \
                    'by logging on to %s\n\nRegards\nThe CHARMe site team\n' \
                    % (follower.resource, getattr(settings, 'NODE_URI'),
-                      annotation_uri, follower.resource, message_part,
-                      getattr(settings, 'NODE_URI')))
+                      message_part, getattr(settings, 'NODE_URI')))
         # send mails
         try:
             send_mail(subject, message, from_address, [follower.user.email])
@@ -1010,15 +1015,18 @@ def _mail_followers(annotation_uri, targets, message_part, original_uri=None):
     return
 
 
-def find_annotation_graph(resource_id):
+def find_annotation_graph_name(resource_id):
     """
-    Find the graph that contains the given resource.
+    Find the name of the graph that contains the given resource.
 
     Args:
         resource_id(str): The id of the resource.
 
     Returns:
-        str The name of the graph or None.
+        str The name of the graph.
+
+    Throws:
+        NotFoundError
 
     """
     triple = (format_resource_uri_ref(resource_id), None, None)
@@ -1026,6 +1034,7 @@ def find_annotation_graph(resource_id):
         new_g = generate_graph(CharmeMiddleware.get_store(), graph)
         if triple in new_g:
             return graph
+    raise NotFoundError(("Annotation %s not found" % resource_id))
 
 
 def find_resource_by_id(resource_id, depth=1):
@@ -1099,6 +1108,22 @@ def collect_annotations(graph_name):
         raise StoreConnectionError("Cannot open a connection with triple store"
                                    "\n" + str(ex))
     return tmp_g
+
+
+def _is_graph_final_state(graph_name):
+    """
+    Check if the graph permits modifications to annotations.
+
+    Args:
+        graph_name(str): The name of the graph.
+
+    Returns:
+        True if the graph permits modifications to annotations.
+
+    """
+    if graph_name == INVALID or graph_name == RETIRED:
+        return True
+    return False
 
 
 def _add(graph, spo):

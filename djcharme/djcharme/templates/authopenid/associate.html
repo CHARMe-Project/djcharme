@@ -26,8 +26,20 @@
 		    <input type="hidden" name="next" value="{{ request.REQUEST.next }}" />
 			<table>
 				<tr>
-					<td><label> {% trans "Open ID:" noop %} </label></td>
-					<td><input name="openid_url" type="text" /></td>
+					<td><label> {% trans "Select your ID provider:" noop %} </label></td>
+					{% if 'Safari' in request.META.HTTP_USER_AGENT %}
+					<td>
+						<select name="openid_url">
+							<!-- Add ID providers here -->
+							<option value="https://ceda.ac.uk/openid/">CEDA</option>
+						</select></td>
+					{% else %}
+					<td><input list="id_providers" name="openid_url">
+						<datalist id="id_providers">
+							<!-- Add ID providers here -->
+							<option value="https://ceda.ac.uk/openid/">CEDA</option>
+						</datalist></td>
+					{% endif %}	
 					<td class=error>{{ form.openid_url.errors }}</td>
 				</tr>
 				<tr>

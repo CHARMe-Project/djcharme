@@ -276,7 +276,10 @@ def _advance_status(request):
     '''
     if isPOST(request) and (CONTENT_JSON in content_type(request) or
                             'application/json' in content_type(request)):
-        params = json.loads(request.body)
+        try:
+            params = json.loads(request.body)
+        except ValueError as ex:
+            return HttpResponseBadRequest(str(ex))
         if not params.has_key('annotation') or not params.has_key('toState'):
             return HttpResponseBadRequest("Missing annotation/state parameters")
         LOGGING.info("advancing %s to state:%s", str(params.get('annotation')),
