@@ -2,21 +2,13 @@ import sys
 import site
 import os
 
-#this is the path to the virtualenv python site-package dir
+# this is the path to the virtualenv python site-package dir
 vepath = 'VEPATH_PAR'
-#this is the path to dir parent to the django project 
+# this is the path to dir parent to the django project 
 djangoPath = 'DJANGO_PATH'
 
-#this is the project's name
+# this is the project's name
 projectLibPath = 'PROJECT_LIB_PATH'
-
-#EXAMPLE
-#vepath = '/home/jenkins/testEnv/pyEnv/ve/cedaManager/lib/python2.6/site-packages'
-#djangoPath = '/home/jenkins/testEnv/pyEnv/ve/cedaManager/lib/python2.6/site-packages/cedaManager/src/MolesManager'
-#projectLib = '/home/jenkins/testEnv/pyEnv/ve/cedaManager/lib/python2.6/site-packages/cedaManager/src'
-
-#this is the project's name
-#projectName = ''
 
 ALLDIRS = [vepath, projectLibPath, djangoPath]
 
@@ -37,6 +29,6 @@ sys.path[:0] = new_sys_path
 
 os.environ['DJANGO_SETTINGS_MODULE'] = 'settings'
 
-import django.core.handlers.wsgi
-application = django.core.handlers.wsgi.WSGIHandler()
+from django.core.wsgi import get_wsgi_application
+application = get_wsgi_application()
 

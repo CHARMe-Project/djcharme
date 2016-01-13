@@ -31,10 +31,9 @@ setup(
     zip_safe=False,
 
     classifiers=[
-        'Framework :: Django :: 1.6',
+        'Framework :: Django :: 1.7',
         'License :: OSI Approved :: BSD License',
         'Natural Language :: English',
-        'Programming Language :: Python :: 2.6',
         'Programming Language :: Python :: 2.7',
         'Topic :: Internet :: WWW/HTTP :: HTTP Servers',
     ],
@@ -43,23 +42,24 @@ setup(
     # django-registration==0.8 is explicitly included as 1.0 breaks
     # django-authopenid
     install_requires=[
-        'Django==1.6.5',
-        'SPARQLWrapper==1.6.4',
+        'python>=2.7',
         'ceda-markup==0.1.0',
         'cedatheme_mf54==1.0.0',
+        'Django==1.7',
         'django-authopenid==1.0.2',
-        'django-classy-tags==0.5.1',
-        'django-cookie-law==1.0.1',
-        'django-oauth2-provider==0.2.7-dev',
+        'django-classy-tags==0.6.2',
+        'django-cookie-law==1.0.6',
+        'django-oauth2-provider==0.2.7.dev0',
         'django-registration==0.8',
-        'html5lib==0.95',
-        'isodate==0.5.0',
+        'html5lib==0.9999999',
+        'isodate==0.5.4',
         'ordereddict==1.1',
         'py-bcrypt==0.4',
-        'pyparsing==1.5.7',
-        'rdflib==4.1-dev',
-        'rdflib-jsonld==0.1',
+        'pyparsing==2.0.3',
+        'rdflib==4.2.1',
+        'rdflib-jsonld==0.3',
         'shortuuid==0.4.2',
+        'SPARQLWrapper==1.6.4',
     ],
 )
 
