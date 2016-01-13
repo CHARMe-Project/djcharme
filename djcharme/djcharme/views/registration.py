@@ -84,9 +84,12 @@ class Registration(View):
             return HttpResponseServerError(str(ex))
 
     def get(self, request, *args, **kwargs):
-        context = {}
-        context['user_form'] = UserForm()
-        context['openid'] = False
+        redirect_to = get_safe_redirect(request)
+        context = {
+            'user_form': UserForm(),
+            'openid': False,
+            REDIRECT_FIELD_NAME: redirect_to,
+        }
         return mm_render_to_response(request, context, REGISTEATION_TEMPLATE)
 
     def post(self, request, *args, **kwargs):

@@ -64,7 +64,8 @@ urlpatterns = patterns('',
         name='user_register'),
     # update for django_authopenid signin complete
     url(r'^accounts/signin/complete/$', oid_views.complete_signin,
-        {'auth_form':LoginForm, 'on_failure':auth.signin_failure},
+        {'auth_form':LoginForm, 'on_success':auth.signin_success,
+         'on_failure':auth.signin_failure},
         name='user_complete_signin'),
     # django_authopenid
     url(r'^accounts/', include('django_authopenid.urls')),

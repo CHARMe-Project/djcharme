@@ -3,7 +3,7 @@ from xml.etree import ElementTree
 
 from django.test.client import RequestFactory
 
-from djcharme.views.node_gate import index, insert, process_page, advance_status
+from djcharme.views.node_gate import index, insert, ResourcePage, advance_status
 
 
 charme_turtle_model = '''

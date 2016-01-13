@@ -27,7 +27,11 @@
 		<div class=accounts>
 			<form name="form" method="post" action="{% url 'login' %}">
 				{% csrf_token %}
-				<input type="hidden" name="next" value="{{ request.REQUEST.next }}" />
+				{% if request.REQUEST.next %}
+					<input type="hidden" name="next" value="{{ request.REQUEST.next }}" />
+				{% else %}
+					<input type="hidden" name="next" value="{{ next }}" />
+				{% endif %}
 				<table>
 					<tr>
 						<td><label> {% trans "Username:" noop %} </label></td>
@@ -70,8 +74,11 @@
 		<div class=accounts>
 			<form name="openid_form" method="post" action="{% url 'login' %}">
 				{% csrf_token %}
-				<input type="hidden" name="next"
-					value="{{ request.REQUEST.next }}" />
+				{% if request.REQUEST.next %}
+					<input type="hidden" name="next" value="{{ request.REQUEST.next }}" />
+				{% else %}
+					<input type="hidden" name="next" value="{{ next }}" />
+				{% endif %}
 				<!-- safari does not support datalist so we have to use the more basic select -->
 				<table>
 					<tr>

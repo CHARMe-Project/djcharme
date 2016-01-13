@@ -34,6 +34,7 @@ class UserProfile(models.Model):
     """
     user = models.OneToOneField(User)
     show_email = models.BooleanField('show email',
+                                     default=False,
                                      help_text='Include your email address ' \
                                      'in any new annotations you create.')
 

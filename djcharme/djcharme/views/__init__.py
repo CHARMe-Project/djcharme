@@ -35,7 +35,7 @@ This module contains helper functions for the views package.
 from django.http import HttpResponseRedirect
 
 from djcharme.node.constants import FORMAT_MAP
-from djcharme.settings import LOGIN_REDIRECT_URL, REDIRECT_FIELD_NAME
+from djcharme.settings import LOGIN_REDIRECT_URL, NODE_URI, REDIRECT_FIELD_NAME
 from django.utils.http import is_safe_url
 from django.shortcuts import resolve_url
 
@@ -139,6 +139,10 @@ def get_safe_redirect(request):
     redirect_to = request.REQUEST.get(REDIRECT_FIELD_NAME, '')
     # Ensure the user-originating redirection url is safe.
     if not is_safe_url(url=redirect_to, host=request.get_host()):
+        if 'HTTP_REFERER' in request.META.keys():
+            url = '%s/page' % NODE_URI
+            if url in request.META['HTTP_REFERER']:
+                return request.META['HTTP_REFERER'].split(NODE_URI)[1]
         redirect_to = resolve_url(LOGIN_REDIRECT_URL)
     return redirect_to
 

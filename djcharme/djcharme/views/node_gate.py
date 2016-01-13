@@ -488,7 +488,7 @@ class ResourceData(View):
         if len(tmp_g) < 1:
             return HttpResponseNotFound('Resource does not exist on this system')
         return HttpResponse(tmp_g.serialize(format=req_format),
-                            mimetype=FORMAT_MAP.get(req_format))
+                            content_type=FORMAT_MAP.get(req_format))
 
 
 class ResourcePage(View):

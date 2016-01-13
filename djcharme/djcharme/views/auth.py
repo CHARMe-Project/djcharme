@@ -35,6 +35,7 @@ or a new one.
 import logging
 import urllib
 
+from django.contrib.auth import login as plain_login
 from django.contrib.auth.models import User
 from django.contrib.auth.views import login
 from django.core.urlresolvers import reverse
@@ -46,12 +47,13 @@ from django.shortcuts import render
 from django.utils.decorators import method_decorator
 from django.views.generic import View
 from django_authopenid.forms import OpenidSigninForm, UserAssociation
+from django_authopenid.utils import from_openid_response
 from django_authopenid.utils import get_url_host
 from django_authopenid.views import ask_openid
 
 from djcharme.charme_security_model import LoginForm, UserForm
 from djcharme.models import UserProfile
-from djcharme.settings import REDIRECT_FIELD_NAME
+from djcharme.settings import REDIRECT_FIELD_NAME, SEND_MAIL
 from djcharme.views import get_extra_context, get_safe_redirect, \
     not_authenticated
 
@@ -76,8 +78,10 @@ class Login(View):
             return HttpResponseServerError(str(ex))
 
     def get(self, request, *args, **kwargs):
+        redirect_to = get_safe_redirect(request)
         return login(request, template_name=LOGIN_TEMPLATE,
-                     authentication_form=LoginForm)
+                     authentication_form=LoginForm,
+                     extra_context={REDIRECT_FIELD_NAME:redirect_to})
 
     def post(self, request, *args, **kwargs):
         auth_form = LoginForm
@@ -154,7 +158,6 @@ class Register(View):
         return render(request, REGISTER_TEMPLATE, context)
 
     def post(self, request, *args, **kwargs):
-        send_email = True
         extra_context = get_extra_context(kwargs)
         redirect_to = get_safe_redirect(request)
         openid_ = request.session.get('openid', None)
@@ -198,7 +201,7 @@ class Register(View):
             # associate the user to openid
             uassoc = UserAssociation(openid_url=str(openid_),
                                      user_id=user_.id)
-            uassoc.save(send_email=send_email)
+            uassoc.save(send_email=SEND_MAIL)
             login(request, user_)
             return HttpResponseRedirect(redirect_to)
 
@@ -213,6 +216,39 @@ class Register(View):
             context.update(extra_context)
 
         return render(request, REGISTER_TEMPLATE, context)
+
+
+def signin_success(request, identity_url, openid_response,
+        redirect_field_name=REDIRECT_FIELD_NAME, **kwargs):
+    """
+    openid signin success.
+
+    If the openid is already registered, the user is redirected to 
+    url set par next or in settings with OPENID_REDIRECT_NEXT variable.
+    If none of these urls are set user is redirectd to /.
+
+    if openid isn't registered user is redirected to register page.
+    """
+    redirect_to = get_safe_redirect(request)
+    openid_ = from_openid_response(openid_response)
+    
+    openids = request.session.get('openids', [])
+    openids.append(openid_)
+    request.session['openids'] = openids
+    request.session['openid'] = openid_
+    try:
+        rel = UserAssociation.objects.get(openid_url__exact=str(openid_))
+    except:
+        # try to register this new user
+        return HttpResponseRedirect(
+            "%s?%s" % (reverse('user_register'),
+            urllib.urlencode({ redirect_field_name: redirect_to }))
+        )
+    user_ = rel.user
+    if user_.is_active:
+        user_.backend = "django.contrib.auth.backends.ModelBackend"
+        plain_login(request, user_)
+    return HttpResponseRedirect(redirect_to)
 
 
 def signin_failure(request, message, extra_context=None, **kwargs):

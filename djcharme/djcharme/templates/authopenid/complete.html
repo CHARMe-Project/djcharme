@@ -38,7 +38,11 @@
 	<div class=accounts>
         <form action="{% url 'user_register' %}" method="POST">
 			{% csrf_token %}
-			<input type="hidden" name="next" value="{{ request.REQUEST.next }}" />
+			{% if request.REQUEST.next %}
+				<input type="hidden" name="next" value="{{ request.REQUEST.next }}" />
+			{% else %}
+				<input type="hidden" name="next" value="{{ next }}" />
+			{% endif %}
 			<table>
 				<tr>
 					<td><label> {% trans "Username:" noop %} </label></td>

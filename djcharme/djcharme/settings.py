@@ -31,7 +31,7 @@ LANGUAGE_CODE = 'en-gb'
 # A boolean that turns on/off debug mode. When set to ``True``, stack traces
 # are displayed for error pages. Should always be set to ``False`` in
 # production. Best set to ``True`` in local_settings.py
-DEBUG = True
+DEBUG = False
 
 # Whether a user's session cookie expires when the Web browser is closed.
 SESSION_EXPIRE_AT_BROWSER_CLOSE = True
@@ -302,6 +302,9 @@ SECURITY_FILTER = [
 
 LOGIN_REDIRECT_URL = '/accounts/profile/'
 REDIRECT_FIELD_NAME = 'next'
+
+# send an email when an open id is linked to a user
+SEND_MAIL = True
 
 # Email settings used when resetting passwords
 EMAIL_HOST = 'localhost'
