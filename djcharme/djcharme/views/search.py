@@ -85,7 +85,7 @@ def do_search(request, iformat):
     try:
         response = CharmeMiddleware.get_osengine().do_search(host_url,
                                                              iformat, context)
-        return HttpResponse(response, mimetype=FORMAT_MAP.get(iformat))
+        return HttpResponse(response, content_type=FORMAT_MAP.get(iformat))
     except Exception as ex:
         try:
             messages.add_message(request, messages.ERROR, ex)
@@ -105,7 +105,7 @@ def do_suggest(request, iformat):
         context['suggest'] = True
         response = CharmeMiddleware.get_osengine().do_search(host_url,
                                                              iformat, context)
-        return HttpResponse(response, mimetype=FORMAT_MAP.get(iformat))
+        return HttpResponse(response, content_type=FORMAT_MAP.get(iformat))
     except Exception as ex:
         try:
             messages.add_message(request, messages.ERROR, ex)
