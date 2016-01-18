@@ -65,9 +65,6 @@ SELECT Distinct ?anno ?annotatedAt"""
 ANNOTATIONS_SELECT_COUNT = """
 SELECT count(DISTINCT ?anno)"""
 
-ANNOTATIONS_ORDER = """
-ORDER BY DESC(?annotatedAt)"""
-
 ANNOTATIONS_FOR_BODY_TYPE = """
 ?anno oa:annotatedAt ?annotatedAt .
 ?anno oa:hasBody ?body .
@@ -152,6 +149,20 @@ ANNOTATION_CLAUSES = {'bodyType':ANNOTATIONS_FOR_BODY_TYPE,
                       'title':ANNOTATIONS_FOR_TITLE,
                       'userName':ANNOTATIONS_FOR_USER}
 
+# The allowed values for the sort keys.
+SORT_KEYS = ['bodyType',
+             'citingType',
+             'creatorFamilyName',
+             'creatorGivenName',
+             'dataType',
+             'domainOfInterest',
+             'motivation',
+             'organization',
+             'target',
+             'userName',
+             'annotatedAt'
+             ]
+             
 
 def get_multi_value_parameter_names():
     """
@@ -411,7 +422,7 @@ def _get_data_types(graph, parameter_name, where_clause, limit, offset):
     FILTER (?dataType != oa:Composite)
     }
     """ % (where_clause))
-    result1, count = _do_query(graph, parameter_name, statement, None,
+    result1, _ = _do_query(graph, parameter_name, statement, None,
                      "http://www.w3.org/2004/02/skos/core#prefLabel")
 
     statement = (PREFIX +
@@ -425,7 +436,7 @@ def _get_data_types(graph, parameter_name, where_clause, limit, offset):
     }
     ORDER BY ?itemType
     """ % (where_clause))
-    result2, count = _do_query(graph, parameter_name, statement, None,
+    result2, _ = _do_query(graph, parameter_name, statement, None,
                      "http://www.w3.org/2004/02/skos/core#prefLabel")
 
     result = {'searchTerm': parameter_name}
@@ -576,8 +587,9 @@ def get_search_results(query_attr):
     """
     LOGGING.debug("get_search_results(query_attr)")
     where_clause = _get_where_clause(query_attr)
+    annotations_order = _get_annotations_order(query_attr)
 
-    statement = PREFIX + ANNOTATIONS_SELECT + where_clause + ANNOTATIONS_ORDER
+    statement = PREFIX + ANNOTATIONS_SELECT + where_clause + annotations_order
     if _get_limit(query_attr) > 0:
         statement = statement + ' LIMIT ' + str(_get_limit(query_attr))
     if _get_offset(query_attr) != None:
@@ -585,6 +597,7 @@ def get_search_results(query_attr):
 
     statement_count = PREFIX + ANNOTATIONS_SELECT_COUNT + where_clause
     graph = _get_graph(query_attr)
+    print statement
     triples = graph.query(statement)
     results = _do__open_search(query_attr, graph, triples)
     total_results = _get_count(graph.query(statement_count))
@@ -605,10 +618,23 @@ def _get_where_clause(query_attr):
 
     """
     where_clause = ''
-    for parameter_name in ANNOTATION_CLAUSES.keys():
-        where_clause = (where_clause +
-                        _get_where_for_parameter_name(query_attr,
-                                                      parameter_name))
+    parameter_names = ANNOTATION_CLAUSES.keys()
+    unused_parameter_names = ANNOTATION_CLAUSES.keys()
+    for parameter_name in parameter_names:
+        clause_bit = _get_where_for_parameter_name(query_attr,
+                                                      parameter_name)
+        if len(clause_bit) > 0 :
+            where_clause = where_clause + clause_bit
+            unused_parameter_names.remove(parameter_name)
+    
+    # we may need extra bits if there is a sortKeys in the parameters so that
+    # we can use it later
+    sort_keys = _get_sort_key_values(query_attr)
+    for sort_name, _ in sort_keys:
+        if sort_name in unused_parameter_names:
+            clause = 'OPTIONAL{' + ANNOTATION_CLAUSES[sort_name] + '}'
+            where_clause = where_clause + clause
+
     # special case for status
     if len(where_clause) == 0:
         where_clause = where_clause = '{' + ANNOTATION_CLAUSES['status'] + '}'
@@ -643,24 +669,80 @@ def _get_where_for_parameter_name(query_attr, parameter_name):
             first_term = False
         else:
             where_clause = where_clause + ' || '
-        where_clause = where_clause + '?' + parameter_name + "="
-        if (parameter_name == 'userName' or parameter_name == 'creatorFamilyName'
+        if (parameter_name == 'creatorFamilyName'
             or parameter_name == 'creatorGivenName'):
-            where_clause = where_clause + "'" + value + "'"
+            # case insensitive search on given and family names
+            where_clause = (where_clause + 'regex(?' + parameter_name + ', "^'
+                            + value + '$", "i")')
         else:
-            where_clause = where_clause + "<" + URIRef(value) + '>'
-        # special case for composite
-        if parameter_name == 'target':
-            where_clause = where_clause + ' || '
-            where_clause = where_clause + '?' + "item="
-            where_clause = where_clause + "<" + URIRef(value) + '>'
-        # special case for composite
-        if parameter_name == 'dataType':
-            where_clause = where_clause + ' || '
-            where_clause = where_clause + '?' + "itemType="
-            where_clause = where_clause + "<" + URIRef(value) + '>'
+            where_clause = where_clause + '?' + parameter_name + "="
+            if (parameter_name == 'userName'):
+                where_clause = where_clause + "'" + value + "'"
+            else:
+                where_clause = where_clause + "<" + URIRef(value) + '>'
+            # special case for composite
+            if parameter_name == 'target':
+                where_clause = where_clause + ' || '
+                where_clause = where_clause + '?' + "item="
+                where_clause = where_clause + "<" + URIRef(value) + '>'
+            # special case for composite
+            if parameter_name == 'dataType':
+                where_clause = where_clause + ' || '
+                where_clause = where_clause + '?' + "itemType="
+                where_clause = where_clause + "<" + URIRef(value) + '>'
     where_clause = where_clause + ')} '
 
     return where_clause
 
 
+def _get_annotations_order(query_attr):
+    """
+    Validate the values for the sortKeys paramerter and constuct the order
+    statment. Bad values will result in defaults being used.
+
+    Args:
+        query_attr (dict): The query parameters from the users request.
+
+    Returns:
+        str The order statment.
+    """
+    first = True
+    sort_values = _get_sort_key_values(query_attr)
+    for sort_name, order_name in sort_values:
+        if first:
+            first = False
+            annotations_order = '\nORDER BY %s(?%s)' % (order_name, sort_name)
+        else:
+            annotations_order = '%s %s(?%s)' % (annotations_order, order_name,
+                                                sort_name)
+    return annotations_order
+
+
+def _get_sort_key_values(query_attr):
+    """
+    Extract and validate the values from the sortKeys paramerter. If ASC/DESC
+    is not provided then the default of DESC is used. The sortKeys must be a
+    case sensitive match for a SORT_KEYS value otherwise they are ignored. Bad
+    values will result in defaults being returned.
+
+    Args:
+        query_attr (dict): The query parameters from the users request.
+
+    Returns:
+        list[(str, str)] A list of (variable name, ASC/DESC).
+    """
+    values = []
+    sortKeys = query_attr.get('sortKeys').split(' ')
+    for sortKey in sortKeys:
+        bits = sortKey.split(',')
+        sort_attr = bits[0]
+        if sort_attr in SORT_KEYS:
+            if len(bits) > 1 and (bits[1].upper() == 'ASC' 
+                                  or bits[1].upper() == 'DESC'):
+                order = bits[1].upper()
+            else:
+                order = 'DESC'
+            values.append((sort_attr, order))
+    if len(values) == 0:
+        values.append(('annotatedAt', 'DESC'))
+    return values

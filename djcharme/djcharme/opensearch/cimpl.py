@@ -44,7 +44,7 @@ from ceda_markup.opensearch.osquery import OSQuery
 from ceda_markup.opensearch.template.atom import OSAtomResponse
 from ceda_markup.opensearch.template.osresponse import OSEngineResponse, Result
 
-from djcharme.node.constants import CH_NODE, FOAF, RDF, STABLE
+from djcharme.node.constants import OA, CH_NODE, FOAF, RDF, RDFS, STABLE
 from djcharme.node.search import annotation_resource, get_suggestions, \
     get_search_results
 from djcharme.views import check_mime_format
@@ -328,8 +328,8 @@ class COSQuery(OSQuery):
                               namespace=OS_NAMESPACE, default=''))
         params.append(OSParam("bodyType", "type",
                               namespace=RDF, default=''))
-        params.append(OSParam("citingType", "type",
-                              namespace=RDF, default=''))
+        params.append(OSParam("citingType", "Resource",
+                              namespace=RDFS, default=''))
         params.append(OSParam("comment", "chars",
                               namespace="http://www.w3.org/2011/content#",
                               default=''))
@@ -337,18 +337,18 @@ class COSQuery(OSQuery):
                               namespace=FOAF, default=''))
         params.append(OSParam("creatorGivenName", "givenName",
                               namespace=FOAF, default=''))
-        params.append(OSParam("dataType", "type",
-                              namespace=RDF, default=''))
-        params.append(OSParam("domainOfInterest", "domainOfInterest",
-                              namespace=CH_NODE, default=''))
-        params.append(OSParam("motivation", "motivation",
-                              namespace=CH_NODE, default=''))
+        params.append(OSParam("dataType", "Resource",
+                              namespace=RDFS, default=''))
+        params.append(OSParam("domainOfInterest", "SemanticTag",
+                              namespace=OA, default=''))
+        params.append(OSParam("motivation", "Motivation",
+                              namespace=OA, default=''))
         params.append(OSParam("organization", "name",
                               namespace=FOAF, default=''))
         params.append(OSParam("status", "status",
                               namespace=CH_NODE, default=STABLE))
-        params.append(OSParam("target", "target",
-                              namespace=CH_NODE, default=''))
+        params.append(OSParam("target", "Resource",
+                              namespace=RDFS, default=''))
         params.append(OSParam("title", "title",
                               namespace="http://purl.org/dc/terms/",
                               default=''))
@@ -358,6 +358,8 @@ class COSQuery(OSQuery):
                               namespace=CH_NODE, default='1'))
         params.append(OSParam("format", "format",
                               namespace=CH_NODE, default='json-ld'))
+        params.append(OSParam("sortKeys", "sortKeys",
+                              namespace=CH_NODE, default='annotatedAt,DESC'))
         '''
         params.append(OSParam(BBOX, 'box',
                 namespace = "http://a9.com/-/opensearch/extensions/geo/1.0/"))
