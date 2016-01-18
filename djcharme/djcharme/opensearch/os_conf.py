@@ -31,7 +31,10 @@ Created on 4 May 2012
 
 @author: Maurizio Nagni
 '''
+from ceda_markup.markup import createMarkup
 from ceda_markup.opensearch.os_engine import OSEngine
+from ceda_markup.opensearch.os_engine_helper import OSEngineHelper
+from ceda_markup.opensearch.os_request import OS_PREFIX, OS_NAMESPACE
 from ceda_markup.opensearch.os_request import OpenSearchDescription
 
 from djcharme.opensearch.cimpl import COSQuery, COSAtomResponse
@@ -44,6 +47,38 @@ def setUp():
     responses = [COSAtomResponse()]
     os_short_name = "CHARMe Search"
     os_description = "Use CHARMe Search to search for annotations"
-    os_tags = "bodyType citingType dataType domainOfInterest motivation organization region"
-    os = OpenSearchDescription(os_short_name, os_description, os_tags=os_tags)
-    return OSEngine(query, responses, os)
+    os_tags = "bodyType citingType dataType domainOfInterest motivation " \
+        "organization region"
+    os_adult_content = "false"
+    os = OpenSearchDescription(os_short_name, os_description, os_tags=os_tags,
+                               os_adult_content=os_adult_content)
+    return OSEngine(query, responses, os, os_engine_helper=helper())
+
+
+class helper(OSEngineHelper):
+    """
+    An implementation of the OSEngineHelper class used to provide additional
+    information for the description document.
+
+    """
+
+    def __init__(self):
+        """
+        Constructor
+        """
+        super(OSEngineHelper)
+
+    def additional_description(self, req_doc):
+        """
+        Overriding the OSEngineHelper method to add further tags into reqDoc.
+
+        Args:
+            req_doc: a request OpenSource document
+
+        """
+        markup = createMarkup('Query', OS_PREFIX, OS_NAMESPACE, req_doc)
+        markup.set("role", "example")
+        markup.set("status", "submitted")
+        req_doc.append(markup)
+        return req_doc
+
