@@ -20,8 +20,8 @@ os.chdir(os.path.normpath(os.path.join(os.path.abspath(__file__), os.pardir)))
 setup(
     name=BASE_NAME,
     version=VERSION,
-    author=u'Maurizio Nagni',
-    author_email='maurizio.nagni@stfc.ac.uk',
+    author=u'Antony Wilson',
+    author_email='antony.wilson@stfc.ac.uk',
     include_package_data=True,
     packages=find_packages(),  # include all packages under this directory
     url='https://github.com/CHARMe-Project/djcharme',
@@ -42,7 +42,6 @@ setup(
     # django-registration==0.8 is explicitly included as 1.0 breaks
     # django-authopenid
     install_requires=[
-        'python>=2.7',
         'ceda-markup==0.1.0',
         'cedatheme_mf54==1.0.0',
         'Django==1.7',
