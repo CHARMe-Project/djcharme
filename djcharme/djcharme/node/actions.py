@@ -1174,10 +1174,10 @@ def _add_strabon(spo, context=None):
 
     triple = "%s %s %s " % (subject.n3(), predicate.n3(), obj.n3())
     if context is not None:
-        q = "INSERT DATA { GRAPH %s { %s } } }}" % (
+        q = "INSERT DATA { GRAPH %s { %s } }" % (
             context.identifier.n3(), triple)
     else:
-        q = "INSERT DATA { %s } }}" % triple
+        q = "INSERT DATA { %s }" % triple
     q = 'view=HTML&format=HTML&handle=plain&submit=Update&query=%s' % q
     r = sparqlstore._do_update(q)
     content = r.read()  # we expect no content
@@ -1239,11 +1239,11 @@ def _remove_strabon(spo, context):
 
     triple = "%s %s %s ." % (subject.n3(), predicate.n3(), obj.n3())
     if context is not None:
-        q = "DELETE { GRAPH %s { %s } } WHERE { GRAPH %s { %s } } }}" % (
+        q = "DELETE { GRAPH %s { %s } } WHERE { GRAPH %s { %s } }" % (
             context.identifier.n3(), triple,
             context.identifier.n3(), triple)
     else:
-        q = "DELETE { %s } WHERE { %s } }}" % (triple, triple)
+        q = "DELETE { %s } WHERE { %s }" % (triple, triple)
     q = 'view=HTML&format=HTML&handle=plain&submit=Update&query=%s' % q
     r = sparqlstore._do_update(q)
     content = r.read()  # we expect no content
