@@ -111,8 +111,6 @@ class CharmeMiddleware(object):
                                   update_endpoint=getattr(settings,
                                                           'SPARQL_UPDATE'),
                                  postAsEncoded=False)
-        store.bind("rdf", "http://www.w3.org/1999/02/22-rdf-syntax-ns#")
-        store.bind("oa", "http://www.w3.org/ns/oa#")
         store.bind("chnode", getattr(settings, 'NODE_URI', 'http://localhost'))
         LOGGING.info("__init_store - Store created")
         CharmeMiddleware.__store = store

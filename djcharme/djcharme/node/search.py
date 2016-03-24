@@ -55,7 +55,6 @@ PREFIX dcterm:  <http://purl.org/dc/terms/>
 PREFIX oa: <http://www.w3.org/ns/oa#>
 PREFIX cito: <http://purl.org/spar/cito/>
 PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
-PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
 PREFIX cnt: <http://www.w3.org/2011/content#>
 PREFIX foaf: <http://xmlns.com/foaf/0.1/>"""
 
@@ -63,7 +62,7 @@ ANNOTATIONS_SELECT = """
 SELECT Distinct ?anno ?annotatedAt"""
 
 ANNOTATIONS_SELECT_COUNT = """
-SELECT count(DISTINCT ?anno)"""
+SELECT (count(DISTINCT(?anno)) as ?count)"""
 
 ANNOTATIONS_FOR_BODY_TYPE = """
 ?anno oa:annotatedAt ?annotatedAt .
@@ -597,7 +596,6 @@ def get_search_results(query_attr):
 
     statement_count = PREFIX + ANNOTATIONS_SELECT_COUNT + where_clause
     graph = _get_graph(query_attr)
-    print statement
     triples = graph.query(statement)
     results = _do__open_search(query_attr, graph, triples)
     total_results = _get_count(graph.query(statement_count))

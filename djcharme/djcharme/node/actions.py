@@ -1151,8 +1151,6 @@ def _add_strabon(spo, context=None):
                                     update_endpoint=getattr(settings,
                                                             'SPARQL_UPDATE'),
                                     postAsEncoded=False)
-    sparqlstore.bind("rdf", "http://www.w3.org/1999/02/22-rdf-syntax-ns#")
-    sparqlstore.bind("oa", "http://www.w3.org/ns/oa#")
     sparqlstore.bind("chnode", getattr(settings, 'NODE_URI',
                                        'http://localhost'))
 
@@ -1215,8 +1213,6 @@ def _remove_strabon(spo, context):
                                     update_endpoint=getattr(settings,
                                                             'SPARQL_UPDATE'),
                                     postAsEncoded=False)
-    sparqlstore.bind("rdf", "http://www.w3.org/1999/02/22-rdf-syntax-ns#")
-    sparqlstore.bind("oa", "http://www.w3.org/ns/oa#")
     sparqlstore.bind("chnode", getattr(settings, 'NODE_URI',
                                        'http://localhost'))
 
