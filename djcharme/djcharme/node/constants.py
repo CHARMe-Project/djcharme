@@ -68,7 +68,7 @@ LOCALHOST_URI = 'http://localhost/'
 TARGET_URI = 'targetID'
 ANNO_URI = 'annoID'
 REPLACEMENT_URIS = ['agentID', ANNO_URI, 'bodyID', TARGET_URI,
-                    'subsetSelectorID']
+                    'subsetSelectorID', 'geometryID']
 REPLACEMENT_URIS_MULTIVALUED = ['variableID', 'spatialExtentID',
                                 'temporalExtentID', 'verticalExtentID']
 
