@@ -144,7 +144,7 @@ urlpatterns = patterns('',
     # GUI - Conditions of use
     url(r'^conditionsofuse/$', main_gui.conditions_of_use),
 
-    # GUI - Folowing resources
+    # GUI - Following resources
     url(r'^following/$', main_gui.Following.as_view(), name='following-list'),
     url(r'^following/add$', main_gui.FollowingCreate.as_view(),
         name='following-add'),
