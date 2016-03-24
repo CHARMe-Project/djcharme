@@ -68,8 +68,8 @@ LOCALHOST_URI = 'http://localhost/'
 TARGET_URI = 'targetID'
 ANNO_URI = 'annoID'
 REPLACEMENT_URIS = ['agentID', ANNO_URI, 'bodyID', TARGET_URI,
-                    'subsetSelectorID', 'geometryID']
-REPLACEMENT_URIS_MULTIVALUED = ['variableID', 'spatialExtentID',
+                    'subsetSelectorID']
+REPLACEMENT_URIS_MULTIVALUED = ['geometryID', 'variableID', 'spatialExtentID',
                                 'temporalExtentID', 'verticalExtentID']
 
 CH_NODE = 'chnode'
