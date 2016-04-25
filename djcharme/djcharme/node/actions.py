@@ -1157,7 +1157,7 @@ def _add_strabon(spo, context=None):
     sparqlstore.headers["Content-type"] = "application/x-www-form-urlencoded"
     credentials = "%s:%s" % (getattr(settings, 'SPARQL_USERNAME'),
                                      getattr(settings, 'SPARQL_PASSWORD'))
-    credentials64 = base64.encodestring(credentials.encode('utf-8'))
+    credentials64 = base64.b64encode(credentials.encode('utf-8'))
     sparqlstore.headers["Authorization"] = ("Basic %s" % credentials64)
 
     if not sparqlstore.connection:
@@ -1219,7 +1219,7 @@ def _remove_strabon(spo, context):
     sparqlstore.headers["Content-type"] = "application/x-www-form-urlencoded"
     credentials = "%s:%s" % (getattr(settings, 'SPARQL_USERNAME'),
                                      getattr(settings, 'SPARQL_PASSWORD'))
-    credentials64 = base64.encodestring(credentials.encode('utf-8'))
+    credentials64 = base64.b64encode(credentials.encode('utf-8'))
     sparqlstore.headers["Authorization"] = ("Basic %s" % credentials64)
 
     if not sparqlstore.connection:
