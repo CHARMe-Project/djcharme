@@ -3,8 +3,8 @@ BSD Licence
 Copyright (c) 2015, Science & Technology Facilities Council (STFC)
 All rights reserved.
 
-Redistribution and use in source and binary forms, with or without modification,
-are permitted provided that the following conditions are met:
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
 
     * Redistributions of source code must retain the above copyright notice,
         this list of conditions and the following disclaimer.
@@ -38,11 +38,12 @@ from django.http.response import HttpResponseRedirect
 from djcharme import mm_render_to_response
 from djcharme.node.actions import change_annotation_state, is_update_allowed, \
     find_annotation_graph_name
-from djcharme.node.constants import  CITO, CONTENT, DC, DCTERMS, FOAF, \
+from djcharme.node.constants import CITO, CONTENT, DC, DCTERMS, FOAF, \
     INVALID, OA, PROV, RDF, RETIRED, SKOS
 
 
 LOGGING = logging.getLogger(__name__)
+
 
 def annotation(request, resource_uri=None, graph=None):
     LOGGING.debug('Annotation request received')
@@ -93,7 +94,8 @@ def annotation(request, resource_uri=None, graph=None):
 
         triples = graph.triples((resource_uri, OA['serializedAt'], None))
         for triple in triples:
-            ann_at = datetime.datetime.strptime(triple[2],
+            date = triple[2].split('+')[0]
+            ann_at = datetime.datetime.strptime(date,
                                                 "%Y-%m-%dT%H:%M:%S.%f")
             ann_at = ann_at.strftime("%H:%M %d %b %Y")
             context['serialized_at'] = ann_at
@@ -173,7 +175,7 @@ def annotation(request, resource_uri=None, graph=None):
         context['delete'] = False
 
         # message
-        if request.user.username == None or request.user.username == '':
+        if request.user.username is None or request.user.username == '':
             context['message'] = 'If you are the author of this annotation, ' \
                 'or a moderator for %s, you may delete this annotation by ' \
                 'logging in' % context['organization_name']
@@ -181,8 +183,8 @@ def annotation(request, resource_uri=None, graph=None):
             # delete button
             graph_name = find_annotation_graph_name(resource_uri)
             update_allowed = is_update_allowed(graph, resource_uri, request)
-            if (graph_name != INVALID and graph_name != RETIRED
-                and update_allowed):
+            if (graph_name != INVALID and graph_name != RETIRED and
+                    update_allowed):
                 context['delete'] = True
 
         orig_values = {}
@@ -190,7 +192,8 @@ def annotation(request, resource_uri=None, graph=None):
         resource_form = ResourceForm(initial=orig_values)
         context['resource_form'] = resource_form
 
-        return mm_render_to_response(request, context, 'resources/annotation.html')
+        return mm_render_to_response(request, context,
+                                     'resources/annotation.html')
 
 
 def annotation_index(request, tmp_g, graph_name):
@@ -221,9 +224,9 @@ def activity(request, resource_uri, graph):
 
     triples = graph.triples((resource_uri, PROV['wasEndedAt'], None))
     for triple in triples:
-            at = datetime.datetime.strptime(triple[2], "%Y-%m-%dT%H:%M:%S.%f")
-            at = at.strftime("%H:%M %d %b %Y")
-            context['wasEndedAt'] = at
+        at = datetime.datetime.strptime(triple[2], "%Y-%m-%dT%H:%M:%S.%f")
+        at = at.strftime("%H:%M %d %b %Y")
+        context['wasEndedAt'] = at
 
     triples = graph.triples((resource_uri, PROV['wasEndedBy'], None))
     for triple in triples:
@@ -335,5 +338,3 @@ def _delete(request):
 
 class ResourceForm(Form):
     resource_uri = CharField(max_length=100, required=True)
-
-

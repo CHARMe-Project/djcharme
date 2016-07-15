@@ -3,8 +3,8 @@ BSD Licence
 Copyright (c) 2014, Science & Technology Facilities Council (STFC)
 All rights reserved.
 
-Redistribution and use in source and binary forms, with or without modification,
-are permitted provided that the following conditions are met:
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
 
     * Redistributions of source code must retain the above copyright notice,
         this list of conditions and the following disclaimer.
@@ -32,10 +32,10 @@ Created on 9 Jan 2012
 @author: Maurizio Nagni
 '''
 
-
 import logging
 import mimetypes
 from multiprocessing.process import Process
+import traceback
 
 from django.conf import settings
 from django.contrib import messages
@@ -48,7 +48,7 @@ from djcharme import mm_render_to_response_error, LOAD_SAMPLE
 
 
 def webusage(request):
-    template = ('\nMETHOD:%s\nIP:%s\nREMOTE_HOST:%s\nPATH_INFO:%s\n' \
+    template = ('\nMETHOD:%s\nIP:%s\nREMOTE_HOST:%s\nPATH_INFO:%s\n'
                 'HTTP_USER_AGENT:%s\n')
     return template % (request.META.get('REQUEST_METHOD', 'Unknown'),
                        request.META.get('REMOTE_ADDR', 'Unknown'),
@@ -92,8 +92,8 @@ class CharmeMiddleware(object):
 
     DEFAULT_OPTIONS_HDR_RESPONSE = {
         'Access-Control-Allow-Methods': 'GET, OPTIONS, POST, DELETE',
-        'Access-Control-Allow-Headers': 'X-CSRFToken, X-Requested-With, ' \
-            'x-requested-with, Content-Type, Content-Length, Authorization',
+        'Access-Control-Allow-Headers': 'X-CSRFToken, X-Requested-With, '
+        'x-requested-with, Content-Type, Content-Length, Authorization',
         'Access-Control-Max-Age': 10,
         'Content-Type': "text/plain"
     }
@@ -110,7 +110,7 @@ class CharmeMiddleware(object):
                                                         'SPARQL_QUERY'),
                                   update_endpoint=getattr(settings,
                                                           'SPARQL_UPDATE'),
-                                 postAsEncoded=False)
+                                  postAsEncoded=False)
         store.bind("chnode", getattr(settings, 'NODE_URI', 'http://localhost'))
         LOGGING.info("__init_store - Store created")
         CharmeMiddleware.__store = store
@@ -168,8 +168,8 @@ class CharmeMiddleware(object):
         self._validate_request(request)
 
     def process_response(self, request, response):
-        response['Access-Control-Allow-Origin'
-            ] = request.META.get('HTTP_ORIGIN', request.build_absolute_uri())
+        response['Access-Control-Allow-Origin'] = (
+            request.META.get('HTTP_ORIGIN', request.build_absolute_uri()))
 
         response['Access-Control-Allow-Credentials'] = 'true'
 
@@ -182,8 +182,8 @@ class CharmeMiddleware(object):
                 for key, value in settings.OPTIONS_HDR_RESPONSE.items():
                     response[key] = value
             else:
-                for key, value in (
-                    self.__class__.DEFAULT_OPTIONS_HDR_RESPONSE.items()):
+                for key, value in (self.__class__.
+                                   DEFAULT_OPTIONS_HDR_RESPONSE.items()):
                     response[key] = value
 
             return response
@@ -191,7 +191,7 @@ class CharmeMiddleware(object):
             return response
 
     def process_exception(self, request, exception):
-        LOGGING.info("process_exception - %s", str(exception))
+        LOGGING.error(traceback.format_exc())
 
     def _get_user_roles(self, user):
         # user.roles = contact_role_server

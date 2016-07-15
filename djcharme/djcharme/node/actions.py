@@ -3,8 +3,8 @@ BSD Licence
 Copyright (c) 2015, Science & Technology Facilities Council (STFC)
 All rights reserved.
 
-Redistribution and use in source and binary forms, with or without modification,
-are permitted provided that the following conditions are met:
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
 
     * Redistributions of source code must retain the above copyright notice,
         this list of conditions and the following disclaimer.
@@ -46,8 +46,8 @@ from rdflib import Graph, URIRef, Literal
 from rdflib.graph import ConjunctiveGraph
 
 from djcharme.charme_middleware import CharmeMiddleware
+from djcharme.exception import Http400
 from djcharme.exception import NotFoundError
-from djcharme.exception import ParseError
 from djcharme.exception import SecurityError
 from djcharme.exception import StoreConnectionError
 from djcharme.exception import UserError
@@ -65,6 +65,7 @@ from djcharme.node.triple_queries import extract_subject
 
 LOGGING = logging.getLogger(__name__)
 CREATED = 'created'
+
 
 def rdf_format_from_mime(mimetype):
     """
@@ -136,9 +137,9 @@ def report_to_moderator(request, resource_id):
     email_addresses = get_admin_email_addresses(organization_name)
 
     # create message
-    message = ('You are receiving this email as you are registered as an ' \
-               'admin for %s by the CHARMe site %s\n\nThe annotation\n%s\n' \
-               'has been flagged for moderation by ' % 
+    message = ('You are receiving this email as you are registered as an '
+               'admin for %s by the CHARMe site %s\n\nThe annotation\n%s\n'
+               'has been flagged for moderation by ' %
                (organization_name, getattr(settings, 'NODE_URI'),
                 annotation_uri))
     if request.user.first_name != "":
@@ -152,8 +153,8 @@ def report_to_moderator(request, resource_id):
 
     # add reason for flagging annotation
     if request.body != "":
-        message = "%s\n\nThe following reason was given:\n%s\n" % (message,
-                                                                   request.body)
+        message = ("%s\n\nThe following reason was given:\n%s\n" %
+                   (message, request.body))
 
     # add signature
     message = '%s\n\nRegards\nThe CHARMe site team\n' % (message)
@@ -187,11 +188,9 @@ def insert_rdf(data, mimetype, user, client, graph=None, store=None):
                   mimetype, user)
     try:
         return _insert_rdf(data, mimetype, user, client, graph, store)
-    except ParseError as ex:
-        raise ParseError(str(ex))
     except EndPointNotFound as ex:
         LOGGING.error("EndPointNotFound error while inserting triple. %s", ex)
-        raise StoreConnectionError("Cannot insert triple. " + str(ex))
+        raise StoreConnectionError("Cannot connect to triple store.")
 
 
 def _insert_rdf(data, mimetype, user, client, graph, store):
@@ -211,18 +210,34 @@ def _insert_rdf(data, mimetype, user, client, graph, store):
             if none use the return of get_store()
         * return:str - The URI of the new annotation
     '''
+    # Necessary as RDFlib does not contain the json-ld lib
+    if mimetype == 'json-ld':
+        if data.startswith('{"@graph": '):
+            data = data.replace('{"@graph": ', '')
+            data = data[:-1]
+
+    if data is None or data == "":
+        raise Http400("No content was provided")
+
     if store is None:
         store = CharmeMiddleware.get_store()
     tmp_g = Graph()
-    # Necessary as RDFlib does not contain the json-ld lib
+
     try:
         tmp_g.parse(data=data, format=mimetype)
     except SyntaxError as ex:
         try:
-            LOGGING.info("Syntax error while parsing triple. %s", ex)
-            raise ParseError(str(ex))
+            LOGGING.debug("Error parsing data. {}".format(ex))
+            raise Http400("Error parsing data. {}".format(ex))
         except UnicodeDecodeError:
-            raise ParseError(ex.__dict__["_why"])
+            LOGGING.debug(
+                "Error parsing data. {}".format(ex.__dict__["_why"]))
+            raise Http400(
+                "Error parsing data. {}".format(ex.__dict__["_why"]))
+    except ValueError as ex:
+        LOGGING.debug("Error parsing data. {}".format(ex))
+        raise Http400("Error parsing data. {}".format(ex))
+
     _format_submitted_annotation(tmp_g)
     final_g = generate_graph(store, graph)
 
@@ -239,8 +254,8 @@ def _insert_rdf(data, mimetype, user, client, graph, store):
     anno_uri = ''
     targets = []
     for res in tmp_g:
-        if (res[1] == URIRef(RDF + 'type')
-            and res[2] == URIRef(OA + 'Annotation')):
+        if (res[1] == URIRef(RDF + 'type') and
+                res[2] == URIRef(OA + 'Annotation')):
             anno_uri = res[0]
             prov = _get_prov(anno_uri, person_uri, client, timestamp)
             for triple in prov:
@@ -268,13 +283,9 @@ def modify_rdf(request, mimetype):
     LOGGING.debug("modify_rdf(request, %s)", mimetype)
     try:
         return _modify_rdf(request, mimetype)
-    except UserError as ex:
-        raise UserError(str(ex))
-    except ParseError as ex:
-        raise ParseError(str(ex))
     except EndPointNotFound as ex:
         LOGGING.error("EndPointNotFound error while modifying triple. %s", ex)
-        raise StoreConnectionError("Cannot insert triple. " + str(ex))
+        raise StoreConnectionError("Cannot connect to triple store.")
 
 
 def _modify_rdf(request, mimetype):
@@ -289,18 +300,34 @@ def _modify_rdf(request, mimetype):
         a URIRef containing the URI of the modified annotation
 
     """
+    data = request.body
+
+    if mimetype == 'json-ld':
+        if data.startswith('{"@graph": '):
+            data = data.replace('{"@graph": ', '')
+            data = data[:-1]
+
+    if data is None or data == "":
+        raise Http400("No content was provided")
+
     modification_time = Literal(datetime.utcnow())
     store = CharmeMiddleware.get_store()
     tmp_g = Graph()
-    data = request.body
     # Necessary as RDFlib does not contain the json-ld lib
     try:
         tmp_g.parse(data=data, format=mimetype)
     except SyntaxError as ex:
         try:
-            raise ParseError(str(ex))
+            LOGGING.debug("Error parsing data. {}".format(ex))
+            raise Http400("Error parsing data. {}".format(ex))
         except UnicodeDecodeError:
-            raise ParseError(ex.__dict__["_why"])
+            LOGGING.debug(
+                "Error parsing data. {}".format(ex.__dict__["_why"]))
+            raise Http400(
+                "Error parsing data. {}".format(ex.__dict__["_why"]))
+    except ValueError as ex:
+        LOGGING.debug("Error parsing data. {}".format(ex))
+        raise Http400("Error parsing data. {}".format(ex))
 
     original_uri = _get_annotation_uri_from_graph(tmp_g)
     # replace original uri in tmp graph
@@ -310,13 +337,13 @@ def _modify_rdf(request, mimetype):
             new_res = (URIRef('%s:%s' % (CH_NODE, ANNO_URI)), res[1], res[2])
             tmp_g.add(new_res)
 
-    activity_uri = URIRef((getattr(settings, 'NODE_URI', LOCALHOST_URI)
-                  + '/%s/%s' % (RESOURCE, uuid.uuid4().hex)))
-    
+    activity_uri = URIRef((getattr(settings, 'NODE_URI', LOCALHOST_URI) +
+                           '/%s/%s' % (RESOURCE, uuid.uuid4().hex)))
+
     original_graph_name = find_annotation_graph_name(original_uri)
     if _is_graph_final_state(original_graph_name):
-        raise UserError(("Current annotation status of %s is final. Updates " \
-                         "are not allowed." % original_graph_name))
+        raise Http400("Current annotation status of {} is final. Updates "
+                      "are not allowed.".format(original_graph_name))
     _format_submitted_annotation(tmp_g)
     final_g = generate_graph(store, SUBMITTED)
 
@@ -332,8 +359,8 @@ def _modify_rdf(request, mimetype):
     anno_uri = ''
     targets = []
     for res in tmp_g:
-        if (res[1] == URIRef(RDF + 'type')
-            and res[2] == URIRef(OA + 'Annotation')):
+        if (res[1] == URIRef(RDF + 'type') and
+                res[2] == URIRef(OA + 'Annotation')):
             anno_uri = res[0]
             prov = _get_prov(anno_uri, person_uri, request.client,
                              modification_time)
@@ -347,7 +374,7 @@ def _modify_rdf(request, mimetype):
         if res[1] == URIRef(OA + 'hasTarget'):
             targets.append(res[2])
         _add(final_g, res)
-        
+
     # retire original
     _change_annotation_state(original_uri, RETIRED, original_graph_name,
                              request, activity_uri, modification_time)
@@ -370,8 +397,8 @@ def _get_annotation_uri_from_graph(graph):
 
     """
     for res in graph:
-        if (res[1] == URIRef(RDF + 'type')
-            and res[2] == URIRef(OA + 'Annotation')):
+        if (res[1] == URIRef(RDF + 'type') and
+                res[2] == URIRef(OA + 'Annotation')):
             return res[0]
 
 
@@ -393,7 +420,7 @@ def _get_prov(annotation_uri, person_uri, client, timestamp):
                     timestamp))
     triples.append((annotation_uri, URIRef(OA + 'annotatedBy'), person_uri))
     organization = get_organization_for_client(client)
-    if organization != None:
+    if organization is not None:
         triples.append((annotation_uri, URIRef(OA + 'annotatedBy'),
                         URIRef(client.url)))
         triples.append((URIRef(client.url), URIRef(RDF + 'type'),
@@ -415,32 +442,32 @@ def _create_person(user):
         a list of triples
 
     """
-    person_uri = URIRef((getattr(settings, 'NODE_URI', LOCALHOST_URI)
-                  + '/%s/%s' % (RESOURCE, uuid.uuid4().hex)))
+    person_uri = URIRef((getattr(settings, 'NODE_URI', LOCALHOST_URI) +
+                         '/%s/%s' % (RESOURCE, uuid.uuid4().hex)))
     triples = []
     triples.append((person_uri, URIRef(RDF + 'type'),
                     URIRef(FOAF + 'Person')))
     triples.append((person_uri, URIRef(FOAF + 'accountName'),
                     Literal(user.username)))
-    if user.last_name != None and len(user.last_name) > 0:
+    if user.last_name is not None and len(user.last_name) > 0:
         triples.append((person_uri, URIRef(FOAF + 'familyName'),
                         Literal(user.last_name)))
-    if user.first_name != None and len(user.first_name) > 0:
+    if user.first_name is not None and len(user.first_name) > 0:
         triples.append((person_uri, URIRef(FOAF + 'givenName'),
                         Literal(user.first_name)))
     try:
         show_email = user.userprofile.show_email
     except ObjectDoesNotExist:
         show_email = False
-    if show_email and user.email != None and len(user.email) > 0:
-        triples.append((person_uri, URIRef(FOAF + 'mbox'), Literal(user.email)))
+    if show_email and user.email is not None and len(user.email) > 0:
+        triples.append(
+            (person_uri, URIRef(FOAF + 'mbox'), Literal(user.email)))
 
     return (person_uri, triples)
 
 
-
 def _get_modify_activity(annotation_uri, original_anno_uri, timestamp,
-                     activity_uri, person_uri):
+                         activity_uri, person_uri):
     """
     Get the triples for a modify activity.
 
@@ -517,20 +544,19 @@ def _format_node_uri_ref(uriref, generated_uris):
         * generated_uris:dict of generated URIs
     '''
     if isinstance(uriref, URIRef) and LOCALHOST_URI in uriref:
-        uriref = URIRef(uriref.replace(LOCALHOST_URI,
-                                       getattr(settings, 'NODE_URI', LOCALHOST_URI)
-                                       + '/'))
+        uriref = URIRef(uriref.replace(
+            LOCALHOST_URI, getattr(settings, 'NODE_URI', LOCALHOST_URI) + '/'))
 
     if isinstance(uriref, URIRef) and CH_NODE in uriref:
-        uriref = URIRef(uriref.replace(CH_NODE + ':',
-                                       getattr(settings, 'NODE_URI', LOCALHOST_URI)
-                                       + '/'))
+        uriref = URIRef(uriref.replace(
+            CH_NODE + ':', getattr(settings, 'NODE_URI', LOCALHOST_URI) + '/'))
 
     if isinstance(uriref, URIRef):
         for key in generated_uris.keys():
             if key in uriref:
-                uriref = URIRef(uriref.replace(key, "%s/%s" % 
-                                               (RESOURCE, generated_uris[key])))
+                uriref = URIRef(uriref.replace(key, "%s/%s" %
+                                               (RESOURCE,
+                                                generated_uris[key])))
     return uriref
 
 
@@ -549,10 +575,10 @@ def _format_submitted_annotation(graph):
         graph.remove((subject, pred, obj))
         # The use of TARGET_URI is only allowed for specific types
         if ((isinstance(subject, URIRef) and TARGET_URI in subject) or
-            (isinstance(obj, URIRef) and TARGET_URI in obj)):
+                (isinstance(obj, URIRef) and TARGET_URI in obj)):
             target_id_found = True
             if (pred == URIRef(RDF + 'type') and
-                (obj in ALLOWED_CREATE_TARGET_TYPE)):
+                    (obj in ALLOWED_CREATE_TARGET_TYPE)):
                 target_id_valid = True
         for value in REPLACEMENT_URIS_MULTIVALUED:
             if value in subject:
@@ -579,7 +605,7 @@ def _format_submitted_annotation(graph):
             if types != "":
                 types = types + ', '
             types = types + type_
-        raise UserError((TARGET_URI + ' may only be used for ' + types + 
+        raise UserError((TARGET_URI + ' may only be used for ' + types +
                          ' target types'))
 
 
@@ -596,9 +622,9 @@ def _validate_submitted_annotation(graph):
     local_resource = getattr(settings, 'NODE_URI', LOCALHOST_URI) + '/'
     for subject, _, _ in graph:
         if local_resource in subject:
-            LOGGING.info("UserError Found %s in the subject of submitted " \
+            LOGGING.info("UserError Found %s in the subject of submitted "
                          "annotation)", subject)
-            raise UserError(str(subject) + " is not allowed as the subject " \
+            raise UserError(str(subject) + " is not allowed as the subject "
                             "of a triple")
     return graph
 
@@ -622,14 +648,14 @@ def change_annotation_state(annotation_uri, new_graph_name, request):
                   annotation_uri, new_graph_name)
     validate_graph_name(new_graph_name)
     annotation_uri = format_resource_uri_ref(annotation_uri)
-    activity_uri = URIRef((getattr(settings, 'NODE_URI', LOCALHOST_URI)
-                           + '/%s/%s' % (RESOURCE, uuid.uuid4().hex)))
+    activity_uri = URIRef((getattr(settings, 'NODE_URI', LOCALHOST_URI) +
+                           '/%s/%s' % (RESOURCE, uuid.uuid4().hex)))
     timestamp = Literal(datetime.utcnow())
     old_graph_name = find_annotation_graph_name(annotation_uri)
     new_g = _change_annotation_state(annotation_uri, new_graph_name,
                                      old_graph_name, request, activity_uri,
                                      timestamp, True)
-    if new_g == None:
+    if new_g is None:
         return
 
     # add the person
@@ -652,16 +678,18 @@ def change_annotation_state(annotation_uri, new_graph_name, request):
     return new_g
 
 
-def _change_annotation_state(annotation_uri, new_graph_name, old_graph_name, request,
-                             activity_uri, timestamp,
+def _change_annotation_state(annotation_uri, new_graph_name, old_graph_name,
+                             request, activity_uri, timestamp,
                              delete_body_target=False):
     """
     Advance the status of an annotation.
 
     Args:
         annotation_uri (URIRef): The URI of the annotation.
-        new_graph_name (str): The name of the graph/state to move the annotation to.
-        old_graph_name (str): The name of the graph/state to move the annotation from.
+        new_graph_name (str): The name of the graph/state to move the
+            annotation to.
+        old_graph_name (str): The name of the graph/state to move the
+            annotation from.
         request (WSGIRequest): The incoming request.
         activity_uri (URIRef): The uri of the Activity
         timestamp (Literal): The time of the change
@@ -678,15 +706,15 @@ def _change_annotation_state(annotation_uri, new_graph_name, old_graph_name, req
     if old_graph_name == new_graph_name:
         return None
     if _is_graph_final_state(old_graph_name):
-        raise UserError(("Current annotation status of %s is final. Status " \
+        raise UserError(("Current annotation status of %s is final. Status "
                          "has not been updated." % old_graph_name))
     if _is_graph_final_state(new_graph_name):
         # we must do this before we move the annotation
         if delete_body_target:
             _delete_target(annotation_uri, old_graph_name, request)
             _delete_body(annotation_uri, old_graph_name, request)
-    new_g = _move_annotation(annotation_uri, new_graph_name, old_graph_name, request,
-                             timestamp)
+    new_g = _move_annotation(annotation_uri, new_graph_name, old_graph_name,
+                             request, timestamp)
     if _is_graph_final_state(new_graph_name):
         _add(new_g, (annotation_uri, URIRef(PROV + 'wasInvalidatedBy'),
                      activity_uri))
@@ -712,7 +740,7 @@ def validate_graph_name(graph_name):
         if names != '':
             names = names + ', '
         names = names + name
-    raise UserError(("The status of %s is not valid. It must be one of %s" % 
+    raise UserError(("The status of %s is not valid. It must be one of %s" %
                      (graph_name, names)))
 
 
@@ -735,8 +763,8 @@ def _move_annotation(annotation_uri, new_graph, old_graph, request, timestamp):
     # First check permissions
     old_g = generate_graph(CharmeMiddleware.get_store(), old_graph)
     if not is_update_allowed(old_g, annotation_uri, request):
-        raise SecurityError(("You do not have the required permission to " \
-                             "update the status of annotation %s" % 
+        raise SecurityError(("You do not have the required permission to "
+                             "update the status of annotation %s" %
                              annotation_uri))
 
     new_g = generate_graph(CharmeMiddleware.get_store(), new_graph)
@@ -762,7 +790,7 @@ def _move_annotation(annotation_uri, new_graph, old_graph, request, timestamp):
         _add(new_g, res)
     # Add new annotatedAt
     _add(new_g, ((annotation_uri, URIRef(OA + 'annotatedAt'), timestamp)))
-    
+
     if targets:
         if new_graph == RETIRED:
             message = "marked as deleted"
@@ -788,8 +816,8 @@ def _delete_body(annotation_uri, graph_name, request):
     # First check permissions
     graph = generate_graph(CharmeMiddleware.get_store(), graph_name)
     if not is_update_allowed(graph, annotation_uri, request):
-        raise SecurityError(("You do not have the required permission to " \
-                             "update the status of annotation %s" % 
+        raise SecurityError(("You do not have the required permission to "
+                             "update the status of annotation %s" %
                              annotation_uri))
 
     # Find all of the targets
@@ -801,7 +829,7 @@ def _delete_body(annotation_uri, graph_name, request):
         if count > 1:
             continue
         node_uri = getattr(settings, 'NODE_URI', LOCALHOST_URI)
-        for body in  graph.triples((res[2], None, None)):
+        for body in graph.triples((res[2], None, None)):
             if node_uri in body[0]:
                 continue
             LOGGING.debug("permanently deleting body %s", body)
@@ -822,8 +850,8 @@ def _delete_target(annotation_uri, graph_name, request):
     # First check permissions
     graph = generate_graph(CharmeMiddleware.get_store(), graph_name)
     if not is_update_allowed(graph, annotation_uri, request):
-        raise SecurityError(("You do not have the required permission to " \
-                             "update the status of annotation %s" % 
+        raise SecurityError(("You do not have the required permission to "
+                             "update the status of annotation %s" %
                              annotation_uri))
 
     # Find all of the targets
@@ -835,7 +863,7 @@ def _delete_target(annotation_uri, graph_name, request):
         if count > 1:
             continue
         node_uri = getattr(settings, 'NODE_URI', LOCALHOST_URI)
-        for target in  graph.triples((res[2], None, None)):
+        for target in graph.triples((res[2], None, None)):
             if node_uri in target[0]:
                 continue
             LOGGING.debug("permanently deleting target %s", target)
@@ -885,7 +913,8 @@ def _is_my_annotation(graph, annotation_uri, username):
     """
     for res in graph.triples((annotation_uri, URIRef(OA + 'annotatedBy'),
                               None)):
-        for res2 in graph.triples((res[2], URIRef(FOAF + 'accountName'), None)):
+        for res2 in graph.triples((res[2], URIRef(FOAF + 'accountName'),
+                                   None)):
             if str(res2[2]) == username:
                 LOGGING.debug("User %s is the owner of this annotation %s",
                               username, annotation_uri)
@@ -976,41 +1005,41 @@ def _mail_followers(annotation_uri, targets, message_part, original_uri=None):
 
     for follower in followers:
         # create message
-        message = ('You are receiving this email as you are registered as ' \
-                   'following %s by the CHARMe site %s\n\nThe annotation ' \
-                   '%s, which references %s, has been %s.\n' % 
+        message = ('You are receiving this email as you are registered as '
+                   'following %s by the CHARMe site %s\n\nThe annotation '
+                   '%s, which references %s, has been %s.\n' %
                    (follower.resource, getattr(settings, 'NODE_URI'),
                     annotation_uri, follower.resource, message_part))
         if original_uri:
-            message = ('%s This is a modification of the annotation %s' % 
+            message = ('%s This is a modification of the annotation %s' %
                        (message, original_uri))
-        message = ('%s\n\nYou can update your notification settings by ' \
-                   'logging on to %s\n\nRegards\nThe CHARMe site team\n' % 
-                   (message, getattr(settings, 'NODE_URI')))        
+        message = ('%s\n\nYou can update your notification settings by '
+                   'logging on to %s\n\nRegards\nThe CHARMe site team\n' %
+                   (message, getattr(settings, 'NODE_URI')))
         # send mails
         try:
             send_mail(subject, message, from_address, [follower.user.email])
         except Exception as ex:
-            LOGGING.error("An error occurred when emailing user %s, %s" % 
+            LOGGING.error("An error occurred when emailing user %s, %s" %
                           (follower.user, ex))
-    
+
     if message_part == CREATED:
         # The annotation is being created so there will be no followers
         return
     followers = get_followers([annotation_uri])
     for follower in followers:
         # create message
-        message = ('You are receiving this email as you are registered as ' \
-                   'following %s by the CHARMe site %s\n\nThis annotation ' \
-                   'has been %s. You can update your notification settings ' \
-                   'by logging on to %s\n\nRegards\nThe CHARMe site team\n' \
+        message = ('You are receiving this email as you are registered as '
+                   'following %s by the CHARMe site %s\n\nThis annotation '
+                   'has been %s. You can update your notification settings '
+                   'by logging on to %s\n\nRegards\nThe CHARMe site team\n'
                    % (follower.resource, getattr(settings, 'NODE_URI'),
                       message_part, getattr(settings, 'NODE_URI')))
         # send mails
         try:
             send_mail(subject, message, from_address, [follower.user.email])
         except Exception as ex:
-            LOGGING.error("An error occurred when emailing user %s, %s" % 
+            LOGGING.error("An error occurred when emailing user %s, %s" %
                           (follower.user, ex))
     return
 
@@ -1156,7 +1185,7 @@ def _add_strabon(spo, context=None):
 
     sparqlstore.headers["Content-type"] = "application/x-www-form-urlencoded"
     credentials = "%s:%s" % (getattr(settings, 'SPARQL_USERNAME'),
-                                     getattr(settings, 'SPARQL_PASSWORD'))
+                             getattr(settings, 'SPARQL_PASSWORD'))
     credentials64 = base64.b64encode(credentials.encode('utf-8'))
     sparqlstore.headers["Authorization"] = ("Basic %s" % credentials64)
 
@@ -1165,9 +1194,9 @@ def _add_strabon(spo, context=None):
 
     (subject, predicate, obj) = spo
     if (isinstance(subject, BNode) or
-        isinstance(predicate, BNode) or
-        isinstance(obj, BNode)):
-        raise Exception("SPARQLStore does not support Bnodes! See " \
+            isinstance(predicate, BNode) or
+            isinstance(obj, BNode)):
+        raise Exception("SPARQLStore does not support Bnodes! See "
                         "http://www.w3.org/TR/sparql11-query/#BGPsparqlBNodes")
 
     triple = "%s %s %s " % (subject.n3(), predicate.n3(), obj.n3())
@@ -1202,8 +1231,8 @@ def _remove_strabon(spo, context):
     """
     Remove a triple from the store.
 
-    This is an upated version of the remove method from sparqlstore for use with
-    strabon.
+    This is an upated version of the remove method from sparqlstore for use
+    with strabon.
 
     """
     from rdflib.plugins.stores.sparqlstore import SPARQLUpdateStore
@@ -1218,7 +1247,7 @@ def _remove_strabon(spo, context):
 
     sparqlstore.headers["Content-type"] = "application/x-www-form-urlencoded"
     credentials = "%s:%s" % (getattr(settings, 'SPARQL_USERNAME'),
-                                     getattr(settings, 'SPARQL_PASSWORD'))
+                             getattr(settings, 'SPARQL_PASSWORD'))
     credentials64 = base64.b64encode(credentials.encode('utf-8'))
     sparqlstore.headers["Authorization"] = ("Basic %s" % credentials64)
 
@@ -1247,4 +1276,3 @@ def _remove_strabon(spo, context):
         raise Exception("Could not update: %d %s\n%s" % (
             r.status, r.reason, content))
     sparqlstore.close()
-

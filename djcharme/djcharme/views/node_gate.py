@@ -3,8 +3,8 @@ BSD Licence
 Copyright (c) 2015, Science & Technology Facilities Council (STFC)
 All rights reserved.
 
-Redistribution and use in source and binary forms, with or without modification,
-are permitted provided that the following conditions are met:
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
 
     * Redistributions of source code must retain the above copyright notice,
         this list of conditions and the following disclaimer.
@@ -33,20 +33,21 @@ Created on 14 May 2013
 '''
 import json
 import logging
+import traceback
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.http.response import HttpResponseBadRequest, \
     HttpResponseRedirectBase, HttpResponse, HttpResponseNotFound, \
-    HttpResponseForbidden, HttpResponseNotAllowed, HttpResponseServerError
+    HttpResponseForbidden, HttpResponseServerError
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
 from django.views.generic.base import View
 
 from djcharme import mm_render_to_response_error, \
     __version__
+from djcharme.exception import Http400
 from djcharme.exception import NotFoundError
-from djcharme.exception import ParseError
 from djcharme.exception import SecurityError
 from djcharme.exception import StoreConnectionError
 from djcharme.exception import UserError
@@ -57,11 +58,10 @@ from djcharme.node.actions import collect_annotations, find_resource_by_id, \
     report_to_moderator, validate_graph_name
 from djcharme.node.actions import insert_rdf, modify_rdf
 from djcharme.node.constants import OA, FOAF, PROV, RDF, FORMAT_MAP, \
-    CONTENT_HTML, CONTENT_JSON, CONTENT_RDF, CONTENT_TEXT, DATA, FOLLOWING, \
-    PAGE, SUBMITTED, RETIRED
-from djcharme.views import isPOST, isOPTIONS, \
-    validate_mime_format, http_accept, get_depth, content_type, \
-    check_mime_format, get_format
+    CONTENT_JSON, CONTENT_RDF, CONTENT_TEXT, DATA, FOLLOWING, PAGE, \
+    SUBMITTED, RETIRED
+from djcharme.views import validate_mime_format, http_accept, get_depth, \
+    content_type, check_mime_format, get_format, accept_html
 from djcharme.views.resource import agent, annotation, annotation_index, \
     activity, composite, person, resource
 
@@ -90,18 +90,17 @@ class HttpResponseSeeOther(HttpResponseRedirectBase):
     status_code = 303
 
 
-
 class HttpResponseNotAcceptable(HttpResponse):
     """
     Implements a simple HTTP 406 response.
-    """        
+    """
     status_code = 406
 
 
 class HttpResponseUnsupportedMediaType(HttpResponse):
     """
     Implements a simple HTTP 415 response.
-    """        
+    """
     status_code = 415
 
 
@@ -130,17 +129,18 @@ def index(request, graph='submitted'):
     try:
         validate_graph_name(graph)
     except UserError as ex:
-        if CONTENT_HTML in http_accept(request):
+        if accept_html(request):
             messages.add_message(request, messages.ERROR, str(ex))
             return mm_render_to_response_error(request, '400.html', 400)
         else:
             return HttpResponseBadRequest(str(ex))
     tmp_g = None
+
     try:
         tmp_g = collect_annotations(graph)
     except StoreConnectionError as ex:
         LOGGING.error("index - unexpected error: %s", ex)
-        if CONTENT_HTML in http_accept(request):
+        if accept_html(request):
             messages.add_message(request, messages.ERROR, str(ex))
             return mm_render_to_response_error(request, '500.html', 500)
         else:
@@ -149,151 +149,129 @@ def index(request, graph='submitted'):
     req_format = validate_mime_format(request)
     if req_format is not None:
         return HttpResponse(__serialize(tmp_g, req_format=req_format))
-    elif CONTENT_HTML in http_accept(request):
+    elif accept_html(request):
         return annotation_index(request, tmp_g, graph)
 
     return HttpResponseNotAcceptable('Format not accepted')
 
 
-@csrf_exempt
-def insert(request):
+class Insert(View):
     """
-    Inserts in the triplestore a new annotation under the "SUBMITTED" graph
-
-    """
-    try:
-        return _insert(request)
-    except UserError as ex:
-        return HttpResponseBadRequest(str(ex))
-    except Exception as ex:
-        LOGGING.error("insert - unexpected error: %s", ex)
-        return HttpResponseServerError(str(ex))
-
-
-def _insert(request):
-    """
-    Inserts in the triplestore a new annotation under the "SUBMITTED" graph
+    This class enables a user to insert triples into the triple store.
 
     """
-    request_format = check_mime_format(content_type(request))
+    @method_decorator(csrf_exempt)
+    @method_decorator(login_required)
+    def dispatch(self, *args, **kwargs):
+        return super(Insert, self).dispatch(*args, **kwargs)
 
-    if request_format is None:
-        return HttpResponseUnsupportedMediaType("Cannot ingest the posted format")
+    def post(self, request, *args, **kwargs):
+        """
+        Insert triples into the triple store.
 
-    if isPOST(request) or isOPTIONS(request):
+        """
+        request_format = check_mime_format(content_type(request))
+        if request_format is None:
+            return HttpResponseUnsupportedMediaType(
+                "Cannot ingest the posted format")
+
         triples = request.body
         try:
             anno_uri = insert_rdf(triples, request_format, request.user,
                                   request.client, graph=SUBMITTED)
-        except ParseError as ex:
-            LOGGING.debug("insert parsing error: %s", str(ex))
-            return HttpResponseBadRequest(str(ex))
         except StoreConnectionError as ex:
-            LOGGING.error("insert - unexpected error: %s", ex)
-            return HttpResponseServerError(str(ex))
+            return HttpResponseServerError(ex)
+        except Http400 as ex:
+            return HttpResponseBadRequest(ex)
 
         response = HttpResponseCreated(anno_uri, content_type=CONTENT_TEXT)
         response['Location'] = anno_uri
         return response
-    
-    return HttpResponseNotAllowed(["POST", "OPTIONS"],
-                                  content='Only POST and OPTION methods are allowed')
 
 
-@csrf_exempt
-def modify(request):
+class Modify(View):
     """
-    Modify the annotation contained in the request.
-
-    Args:
-        request (WSGIRequest): The request from the user
+    This class enables a user to modify triples into the triple store.
 
     """
-    try:
-        return _modify(request)
-    except NotFoundError as ex:
-        return HttpResponseNotFound('Resource does not exist on this system')
-    except SecurityError as ex:
-        return HttpResponseForbidden(str(ex))
-    except UserError as ex:
-        return HttpResponseBadRequest(str(ex))
-    except Exception as ex:
-        LOGGING.error("modify - unexpected error: %s", str(ex))
-        return HttpResponseServerError(str(ex))
+    @method_decorator(csrf_exempt)
+    @method_decorator(login_required)
+    def dispatch(self, *args, **kwargs):
+        return super(Modify, self).dispatch(*args, **kwargs)
 
+    def post(self, request, *args, **kwargs):
+        """
+        Modify triples into the triple store.
 
-def _modify(request):
-    """
-    Modify the annotation contained in the request.
+        """
+        request_format = check_mime_format(content_type(request))
+        if request_format is None:
+            return HttpResponseUnsupportedMediaType(
+                "Cannot ingest the posted format")
 
-    Args:
-        request (WSGIRequest): The request from the user
-
-    """
-    request_format = check_mime_format(content_type(request))
-
-    if request_format is None:
-        return HttpResponseUnsupportedMediaType("Cannot ingest the posted format")
-
-    if isPOST(request) or isOPTIONS(request):
         try:
             anno_uri = modify_rdf(request, request_format)
-        except ParseError as ex:
-            LOGGING.debug("modify parsing error: %s", str(ex))
-            return HttpResponseBadRequest(str(ex))
         except StoreConnectionError as ex:
-            LOGGING.error("modify - unexpected error: %s", str(ex))
-            return HttpResponseServerError(str(ex))
+            return HttpResponseServerError(ex)
+        except Http400 as ex:
+            return HttpResponseBadRequest(ex)
+        except NotFoundError as ex:
+            return HttpResponseNotFound(
+                'Resource does not exist on this system')
+        except SecurityError as ex:
+            return HttpResponseForbidden(ex)
+        except UserError as ex:
+            return HttpResponseBadRequest(ex)
+
         response = HttpResponseCreated(anno_uri, content_type=CONTENT_TEXT)
         response['Location'] = anno_uri
         return response
 
-    return HttpResponseNotAllowed(["POST", "OPTIONS"],
-                                  content='Only POST and OPTION methods are allowed')
 
+class AdvanceStatus(View):
+    """
+    This class enables a user to update the status of an annotation.
 
-@csrf_exempt
-def advance_status(request):
-    '''
-        Advance the status of an annotation
-    '''
-    try:
-        return _advance_status(request)
-    except NotFoundError as ex:
-        return HttpResponseNotFound('Resource does not exist on this system')
-    except SecurityError as ex:
-        return HttpResponseForbidden(str(ex))
-    except UserError as ex:
-        return HttpResponseBadRequest(str(ex))
-    except Exception as ex:
-        LOGGING.error("advance_status - unexpected error: %s", str(ex))
-        return HttpResponseServerError(str(ex))
+    """
+    @method_decorator(csrf_exempt)
+    @method_decorator(login_required)
+    def dispatch(self, *args, **kwargs):
+        return super(AdvanceStatus, self).dispatch(*args, **kwargs)
 
+    def post(self, request, *args, **kwargs):
+        """
+        Update the status of an annotation.
 
-def _advance_status(request):
-    '''
-        Advance the status of an annotation
-    '''
-    if isPOST(request) and (CONTENT_JSON in content_type(request) or
-                            'application/json' in content_type(request)):
+        """
+        if not (CONTENT_JSON in content_type(request) or
+                'application/json' in content_type(request)):
+            return HttpResponseUnsupportedMediaType(
+                "Message must contain {}".format(CONTENT_JSON))
+
         try:
             params = json.loads(request.body)
         except ValueError as ex:
-            return HttpResponseBadRequest(str(ex))
-        if not params.has_key('annotation') or not params.has_key('toState'):
-            return HttpResponseBadRequest("Missing annotation/state parameters")
+            return HttpResponseBadRequest("Error parsing json. {}".format(ex))
+
+        if (('annotation' not in params.keys()) or
+                ('toState' not in params.keys())):
+            return HttpResponseBadRequest(
+                "Missing annotation/state parameters")
+
         LOGGING.info("advancing %s to state:%s", str(params.get('annotation')),
                      str(params.get('toState')))
-        change_annotation_state(params.get('annotation'),
-                                params.get('toState'), request)
+        try:
+            change_annotation_state(params.get('annotation'),
+                                    params.get('toState'), request)
+        except NotFoundError as ex:
+            return HttpResponseNotFound('Resource does not exist on this '
+                                        'system')
+        except SecurityError as ex:
+            return HttpResponseForbidden(str(ex))
+        except UserError as ex:
+            return HttpResponseBadRequest(str(ex))
+
         return HttpResponseNoContent()
-    elif not isPOST(request):
-        return HttpResponseNotAllowed(["POST"],
-                                      content='Only POST method is allowed')
-    else:
-        return HttpResponseUnsupportedMediaType("Message must contain %s" % 
-                                                CONTENT_JSON)
-    return HttpResponseNoContent()
 
 
 class Following(View):
@@ -305,16 +283,12 @@ class Following(View):
     @method_decorator(csrf_exempt)
     @method_decorator(login_required)
     def dispatch(self, *args, **kwargs):
-        try:
-            return super(Following, self).dispatch(*args, **kwargs)
-        except Exception as ex:
-            LOGGING.error("Following - unexpected error: %s", ex)
-            return HttpResponseServerError(str(ex))
+        return super(Following, self).dispatch(*args, **kwargs)
 
     def delete(self, request, *args, **kwargs):
         """
         Stop following the resource.
-    
+
         """
         resource_uri = kwargs["resource_uri"]
         FollowedResource.objects.filter(
@@ -324,14 +298,15 @@ class Following(View):
     def get(self, request, *args, **kwargs):
         """
         Get a list of resources that the user is following.
-        
+
         """
         # if text format redirect to GUI
-        if CONTENT_HTML in http_accept(request):
+        if accept_html(request):
             LOGGING.info("Redirecting to /following/")
             path = "/%s/" % FOLLOWING
             return HttpResponseSeeOther(path)
-        if CONTENT_JSON not in http_accept(request):
+        if (http_accept(request) is None or
+                CONTENT_JSON not in http_accept(request)):
             return HttpResponseNotAcceptable('Format not accepted')
         following = (FollowedResource.objects.filter(user=request.user)
                      .order_by('resource'))
@@ -345,21 +320,22 @@ class Following(View):
         Validate the resource. Check that the user is not already following the
         resource and that the resource exists in the triple store. Add a new
         record to the FollowedResource model.
-        
+
         """
         resource_uri = kwargs["resource_uri"]
         if is_following_resource(request.user, resource_uri):
             # You are already following this resource
             return HttpResponseNoContent()
         if not (resource_exists(resource_uri)):
-            return HttpResponseNotFound('Resource does not exist on this system')
-    
+            return HttpResponseNotFound(
+                'Resource does not exist on this system')
+
         followed_resource = FollowedResource.objects.create(
-                                user_id=request.user.id,
-                                resource=resource_uri)
+            user_id=request.user.id,
+            resource=resource_uri)
         followed_resource.save()
         return HttpResponseNoContent()
- 
+
 
 class ReportToModerator(View):
     """
@@ -369,18 +345,14 @@ class ReportToModerator(View):
     @method_decorator(csrf_exempt)
     @method_decorator(login_required)
     def dispatch(self, *args, **kwargs):
-        try:
-            return super(ReportToModerator, self).dispatch(*args, **kwargs)
-        except Exception as ex:
-            LOGGING.error("ReportToModerator - unexpected error: %s", ex)
-            return HttpResponseServerError(str(ex))
+        return super(ReportToModerator, self).dispatch(*args, **kwargs)
 
     def put(self, request, *args, **kwargs):
         resource_id = kwargs["resource_id"]
         LOGGING.info("reporting %s to moderator", resource_id)
         c_type = content_type(request)
         if c_type is not None and CONTENT_TEXT not in c_type:
-            return HttpResponseUnsupportedMediaType("Message must contain %s" % 
+            return HttpResponseUnsupportedMediaType("Message must contain %s" %
                                                     CONTENT_TEXT)
         try:
             report_to_moderator(request, resource_id)
@@ -389,8 +361,8 @@ class ReportToModerator(View):
         except SecurityError as ex:
             return HttpResponseForbidden(str(ex))
         return HttpResponseNoContent()
-    
-    
+
+
 class Resource(View):
     """
     Get a resources details or delete the resource.
@@ -398,11 +370,7 @@ class Resource(View):
     """
     @method_decorator(csrf_exempt)
     def dispatch(self, *args, **kwargs):
-        try:
-            return super(Resource, self).dispatch(*args, **kwargs)
-        except Exception as ex:
-            LOGGING.error("Resource - unexpected error: %s", ex)
-            return HttpResponseServerError(str(ex))
+        return super(Resource, self).dispatch(*args, **kwargs)
 
     def delete(self, request, *args, **kwargs):
         """
@@ -433,14 +401,13 @@ class Resource(View):
             return HttpResponseSeeOther(path)
 
         # if text format redirect to PAGE
-        if CONTENT_HTML in http_accept(request):
+        if accept_html(request):
             path = '/%s/%s' % (PAGE, resource_id)
             path = self.process_resource_parameters(request, path)
             LOGGING.info("Redirecting to %s", path)
             return HttpResponseSeeOther(path)
 
         return HttpResponseNotAcceptable('Format not accepted')
-
 
     def process_resource_parameters(self, request, path):
         """
@@ -457,7 +424,7 @@ class Resource(View):
             path = "%s/?depth=%s" % (path, depth)
         return path
 
-    
+
 class ResourceData(View):
     """
     Get the resources details.
@@ -465,11 +432,7 @@ class ResourceData(View):
     """
     @method_decorator(csrf_exempt)
     def dispatch(self, *args, **kwargs):
-        try:
-            return super(ResourceData, self).dispatch(*args, **kwargs)
-        except Exception as ex:
-            LOGGING.error("ResourceData - unexpected error: %s", ex)
-            return HttpResponseServerError(str(ex))
+        return super(ResourceData, self).dispatch(*args, **kwargs)
 
     def get(self, request, *args, **kwargs):
         """
@@ -482,13 +445,15 @@ class ResourceData(View):
             return HttpResponseNotAcceptable('Format not accepted')
 
         depth = get_depth(request)
-        if depth == None:
+        if depth is None:
             depth = 1
         tmp_g = find_resource_by_id(resource_id, depth)
         if len(tmp_g) < 1:
-            return HttpResponseNotFound('Resource does not exist on this system')
-        return HttpResponse(tmp_g.serialize(format=req_format),
-                            content_type=FORMAT_MAP.get(req_format))
+            return HttpResponseNotFound(
+                'Resource does not exist on this system')
+        return HttpResponse(
+            tmp_g.serialize(format=req_format, auto_compact=False),
+            content_type=FORMAT_MAP.get(req_format))
 
 
 class ResourcePage(View):
@@ -501,7 +466,7 @@ class ResourcePage(View):
         try:
             return super(ResourcePage, self).dispatch(*args, **kwargs)
         except Exception as ex:
-            LOGGING.error("ResourcePage - unexpected error: %s", ex)
+            LOGGING.error(traceback.format_exc())
             messages.add_message(self.request, messages.ERROR, str(ex))
             return mm_render_to_response_error(self.request, '500.html', 500)
 
@@ -511,7 +476,7 @@ class ResourcePage(View):
 
         """
         resource_id = kwargs["resource_id"]
-        if CONTENT_HTML not in http_accept(request):
+        if not accept_html(request):
             return HttpResponseNotAcceptable('Format not accepted')
 
         tmp_g = find_resource_by_id(resource_id, 1)
@@ -520,7 +485,7 @@ class ResourcePage(View):
                                  'Resource does not exist on this system')
             return mm_render_to_response_error(self.request, '404.html', 404)
         resource_uri = format_resource_uri_ref(resource_id)
-    
+
         # Check if the resource is an annotation
         triples = tmp_g.triples((resource_uri, RDF['type'], OA['Annotation']))
         for _ in triples:
@@ -531,17 +496,17 @@ class ResourcePage(View):
                                  PROV['SoftwareAgent']))
         for _ in triples:
             return agent(request, resource_uri, tmp_g)
-    
+
         # Check if the resource is an activity
         triples = tmp_g.triples((resource_uri, RDF['type'], PROV['Activity']))
         for _ in triples:
             return activity(request, resource_uri, tmp_g)
-    
+
         # Check if the resource is a person
         triples = tmp_g.triples((resource_uri, RDF['type'], FOAF['Person']))
         for _ in triples:
             return person(request, resource_uri, tmp_g)
-    
+
         # Check if the resource is a composite
         triples = tmp_g.triples((resource_uri, RDF['type'], OA['Composite']))
         for _ in triples:
@@ -576,8 +541,6 @@ def vocab(request):
         return HttpResponseServerError(str(ex))
 
     req_format = validate_mime_format(request)
-    if req_format is None or CONTENT_HTML in http_accept(request):
+    if req_format is None or accept_html(request):
         req_format = CONTENT_JSON
     return HttpResponse(__serialize(tmp_g, req_format=req_format))
-
-

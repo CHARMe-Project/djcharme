@@ -3,8 +3,8 @@ BSD Licence
 Copyright (c) 2015, Science & Technology Facilities Council (STFC)
 All rights reserved.
 
-Redistribution and use in source and binary forms, with or without modification,
-are permitted provided that the following conditions are met:
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
 
     * Redistributions of source code must retain the above copyright notice,
         this list of conditions and the following disclaimer.
@@ -33,11 +33,11 @@ This module contains helper functions for the views package.
 
 '''
 from django.http import HttpResponseRedirect
-
-from djcharme.node.constants import FORMAT_MAP
-from djcharme.settings import LOGIN_REDIRECT_URL, NODE_URI, REDIRECT_FIELD_NAME
-from django.utils.http import is_safe_url
 from django.shortcuts import resolve_url
+from django.utils.http import is_safe_url
+
+from djcharme.node.constants import FORMAT_MAP, CONTENT_HTML
+from djcharme.settings import LOGIN_REDIRECT_URL, NODE_URI, REDIRECT_FIELD_NAME
 
 
 FORMAT = 'format'
@@ -165,9 +165,28 @@ def validate_mime_format(request):
     if req_format[0] is None:
         req_format = http_accept(request)
 
+    if req_format is None:
+        return None
+
     for mimeformat in req_format:
         ret = check_mime_format(mimeformat)
         if ret is not None:
             return ret
     return None
 
+
+def accept_html(request):
+    """
+    Check if the requester will accept text/html.
+
+    Args:
+        request (WSGIRequest): The request from the user
+
+    Return True if the requester will accept text/html
+    """
+    accept_mime_type = http_accept(request)
+    if accept_mime_type is None:
+        return False
+    if CONTENT_HTML in http_accept(request):
+        return True
+    return False

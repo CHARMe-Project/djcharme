@@ -3,8 +3,8 @@ BSD Licence
 Copyright (c) 2014, Science & Technology Facilities Council (STFC)
 All rights reserved.
 
-Redistribution and use in source and binary forms, with or without modification,
-are permitted provided that the following conditions are met:
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
 
     * Redistributions of source code must retain the above copyright notice,
         this list of conditions and the following disclaimer.
@@ -43,7 +43,7 @@ class CharmeError(Exception):
         self.value = value
 
     def __str__(self):
-        return self.value
+        return str(self.value)
 
 
 class SerializeError(CharmeError):
@@ -55,7 +55,7 @@ class SerializeError(CharmeError):
         self.value = value
 
     def __str__(self):
-        return self.value
+        return str(self.value)
 
 
 class StoreConnectionError(CharmeError):
@@ -67,7 +67,7 @@ class StoreConnectionError(CharmeError):
         self.value = value
 
     def __str__(self):
-        return self.value
+        return str(self.value)
 
 
 class SecurityError(CharmeError):
@@ -79,7 +79,7 @@ class SecurityError(CharmeError):
         self.value = value
 
     def __str__(self):
-        return self.value
+        return str(self.value)
 
 
 class PasswordNotMachesError(CharmeError):
@@ -91,7 +91,7 @@ class PasswordNotMachesError(CharmeError):
         self.value = value
 
     def __str__(self):
-        return self.value
+        return str(self.value)
 
 
 class UserNotFoundError(CharmeError):
@@ -103,7 +103,7 @@ class UserNotFoundError(CharmeError):
         self.value = value
 
     def __str__(self):
-        return self.value
+        return str(self.value)
 
 
 class MissingCookieError(SecurityError):
@@ -115,7 +115,7 @@ class MissingCookieError(SecurityError):
         self.value = value
 
     def __str__(self):
-        return self.value
+        return str(self.value)
 
 
 class ParseError(SecurityError):
@@ -127,7 +127,7 @@ class ParseError(SecurityError):
         self.value = value
 
     def __str__(self):
-        return self.value
+        return str(self.value)
 
 
 class NotFoundError(CharmeError):
@@ -139,7 +139,7 @@ class NotFoundError(CharmeError):
         self.value = value
 
     def __str__(self):
-        return self.value
+        return str(self.value)
 
 
 class UserError(CharmeError):
@@ -151,6 +151,23 @@ class UserError(CharmeError):
         self.value = value
 
     def __str__(self):
-        return self.value
+        return str(self.value)
 
 
+class Http400(Exception):
+    """
+    A bad request.
+
+    """
+
+    def __init__(self, message=None):
+        """
+        Init the Http400.
+
+        @param message (str): a message about the error
+
+        """
+        self.message = message
+
+    def __str__(self):
+        return str(self.message)

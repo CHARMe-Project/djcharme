@@ -19,12 +19,12 @@ IFORMATS_RE = '(' + '|'.join(IFORMAT) + ')'
 
 urlpatterns = patterns('',
     # Must be use HTTPS
-    #-----------------------------------------------------------
+    # -----------------------------------------------------------
     (r'^admin/', include(admin.site.urls)),
     url(r'^oauth2/', include('provider.oauth2.urls', namespace='oauth2')),
 
     # ACCOUNTS
-    #-----------------------------------------------------------
+    # -----------------------------------------------------------
     # Registation
     url(r'^accounts/registration/$', registration.Registration.as_view(),
         name='registration'),
@@ -43,12 +43,12 @@ urlpatterns = patterns('',
         name='password_change_done'),
     # Password reset
     url(r'^accounts/password/reset/$', auth_views.password_reset,
-        {'post_reset_redirect' : '/accounts/password/reset/done/'},
+        {'post_reset_redirect': '/accounts/password/reset/done/'},
         name="password_reset"),
     url(r'^accounts/password/reset/done/$', auth_views.password_reset_done),
     url(r'^accounts/password/reset/confirm/(?P<uidb64>[0-9A-Za-z]+)-(?P<token>.+)/$',
         auth_views.password_reset_confirm,
-        {'post_reset_redirect' : '/accounts/password/reset/complete/'},
+        {'post_reset_redirect': '/accounts/password/reset/complete/'},
         name='password_reset_confirm'),
     url(r'^accounts/password/reset/complete/$',
         auth_views.password_reset_complete),
@@ -64,28 +64,30 @@ urlpatterns = patterns('',
         name='user_register'),
     # update for django_authopenid signin complete
     url(r'^accounts/signin/complete/$', oid_views.complete_signin,
-        {'auth_form':LoginForm, 'on_success':auth.signin_success,
-         'on_failure':auth.signin_failure},
+        {'auth_form': LoginForm, 'on_success': auth.signin_success,
+         'on_failure': auth.signin_failure},
         name='user_complete_signin'),
     # django_authopenid
     url(r'^accounts/', include('django_authopenid.urls')),
 
-    #-----------------------------------------------------------
+    # -----------------------------------------------------------
 
     # API - Add new annotation
-    url(r'^insert/annotation', node_gate.insert, name='node_gate.insert'),
+    url(r'^insert/annotation', node_gate.Insert.as_view(),
+        name='node_gate.insert'),
 
     # API - Modify an annotation
-    url(r'^modify/annotation', node_gate.modify, name='node_gate.modify'),
+    url(r'^modify/annotation', node_gate.Modify.as_view(),
+        name='node_gate.modify'),
 
     # API - Annotation status management
-    url(r'^advance_status/', node_gate.advance_status,
+    url(r'^advance_status', node_gate.AdvanceStatus.as_view(),
         name='advance_status'),
 
-    # API - Follow resources                     
+    # API - Follow resources
     url(r'^user/following/(?P<resource_uri>.*)', node_gate.Following.as_view(),
         name='follow_resource'),
-             
+
     # API - Report annotations
     url(r'^resource/(?P<resource_id>\w+)/reporttomoderator/$',
         node_gate.ReportToModerator.as_view(), name='report_resource'),
@@ -150,7 +152,7 @@ urlpatterns = patterns('',
         name='following-add'),
     url(r'^following/(?P<pk>[0-9]+)/delete/$',
         main_gui.FollowingDelete.as_view(), name='following-delete'),
-    
+
     # Anything else
     url(r'^', main_gui.welcome, name='charme.welcome'),
 
