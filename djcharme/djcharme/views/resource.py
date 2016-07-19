@@ -78,12 +78,14 @@ def annotation(request, resource_uri=None, graph=None):
             ann_at = ann_at.strftime("%H:%M %d %b %Y")
             context['annotated_at'] = ann_at
 
-        triples = graph.triples((resource_uri, OA['annotatedBy'], None))
+        triples = graph.triples((None, RDF['type'], FOAF['Organization']))
         for triple in triples:
-            prov_triples = graph.triples((triple[2], FOAF['name'], None))
-            for a_triple in prov_triples:
-                context['organization_name'] = a_triple[2]
-                context['organization_uri'] = a_triple[0]
+            organization_uri = triple[0]
+            context['organization_uri'] = organization_uri
+
+        triples = graph.triples((organization_uri, FOAF['name'], None))
+        for triple in triples:
+            context['organization_name'] = triple[2]
 
         triples = graph.triples((resource_uri, OA['serializedBy'], None))
         for triple in triples:
