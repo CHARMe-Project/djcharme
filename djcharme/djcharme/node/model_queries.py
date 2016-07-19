@@ -3,8 +3,8 @@ BSD Licence
 Copyright (c) 2015, Science & Technology Facilities Council (STFC)
 All rights reserved.
 
-Redistribution and use in source and binary forms, with or without modification,
-are permitted provided that the following conditions are met:
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
 
     * Redistributions of source code must retain the above copyright notice,
         this list of conditions and the following disclaimer.
@@ -35,7 +35,6 @@ This module contains pre-formatted queries of the models.
 import logging
 
 from django.contrib.auth.models import User
-from django.core.exceptions import ObjectDoesNotExist
 from provider.oauth2.models import Client
 
 from djcharme.models import FollowedResource, Organization, \
@@ -43,6 +42,7 @@ from djcharme.models import FollowedResource, Organization, \
 
 
 LOGGING = logging.getLogger(__name__)
+
 
 def get_admin_email_addresses(organization_name):
     """
@@ -57,7 +57,8 @@ def get_admin_email_addresses(organization_name):
     """
     organizations = (Organization.objects.filter(name=organization_name))
     if len(organizations) < 1:
-        LOGGING.warn("No data found for %s", organization_name)
+        LOGGING.error('Organization {} not found in the DB'.
+                      format(organization_name))
         return []
     organization_ids = []
     for organization in organizations:
@@ -109,10 +110,24 @@ def get_client(organization_name):
     """
     try:
         organization = Organization.objects.get(name=organization_name)
-        organization_client = OrganizationClient.objects.get(organization=organization)
+
+        organization_client = OrganizationClient.objects.get(
+            organization=organization)
+
         client = Client.objects.get(organizationclient=organization_client)
-    except ObjectDoesNotExist():
-            return None
+
+    except Organization.DoesNotExist:
+        LOGGING.error('Organization {} not found in the DB'.
+                      format(organization_name))
+        return None
+    except OrganizationClient.DoesNotExist:
+        LOGGING.warn('Organization client for {} not found in the DB'.
+                     format(organization_name))
+        return None
+    except Client.DoesNotExist:
+        LOGGING.warn('Client for {} not found in the DB'.
+                     format(organization_name))
+        return None
     return client
 
 
@@ -129,9 +144,8 @@ def get_user(user_name):
     """
     try:
         user = User.objects.get(username=user_name)
-    except ObjectDoesNotExist():
-        return None
-    except Exception:
+    except User.DoesNotExist:
+        LOGGING.warn('User {} not found in the DB'. format(user_name))
         return None
     return user
 
@@ -203,8 +217,8 @@ def is_following_resource(user, resource):
 
 def is_moderator(user):
     """
-    Check to see if this user is in the moderator group. This is the super group
-    with privileges to moderate ALL annotations.
+    Check to see if this user is in the moderator group. This is the super
+    group with privileges to moderate ALL annotations.
 
     Args:
         user(User): The user object
@@ -220,13 +234,13 @@ def is_moderator(user):
     return False
 
 
-def is_organization_admin(client, user, annotation_uri):
+def is_organization_admin(organization_name, user, annotation_uri):
     """
     Check to see if this user is an admin for the organization at which the
     annotation was created.
 
     Args:
-        client(Client): The client object
+        organization_name(str): The name of the organization
         user(User): The user object
         annotation_uri (URIRef): The URI of the annotation.
 
@@ -234,20 +248,15 @@ def is_organization_admin(client, user, annotation_uri):
         boolean True if the user is listed as a admin for the organization.
 
     """
-    user_id = user.id
-    organization_id = (client.organizationclient_set.
-                       values_list('organization', flat=True))
-    if len(organization_id) < 1:
-        LOGGING.warn("No organization found for client %s", client.url)
+    try:
+        org = Organization.objects.get(name=organization_name)
+    except Organization.DoesNotExist:
+        LOGGING.error('Organization {} not found in the DB'.
+                      format(organization_name))
         return False
-    # there should only be one
-    organization_id = organization_id[0]
-    organization_users = (OrganizationUser.objects.filter(user=user_id).
-                          filter(organization=organization_id))
-    for organization_user in organization_users:
-        if organization_user.role == 'admin':
-            LOGGING.debug("User %s is an admin for this annotation: %s",
-                          user.username, annotation_uri)
-            return True
+    organization_users = (org.organizationuser_set.
+                          filter(user=user).
+                          filter(role='admin'))
+    if len(organization_users) > 0:
+        return True
     return False
-

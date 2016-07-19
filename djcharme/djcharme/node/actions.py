@@ -61,6 +61,7 @@ from djcharme.node.model_queries import get_admin_email_addresses, \
     get_followers, get_organization_for_client, is_moderator, \
     is_organization_admin
 from djcharme.node.triple_queries import extract_subject
+from djcharme.node.triple_queries import get_anotations_organisation
 
 
 LOGGING = logging.getLogger(__name__)
@@ -885,12 +886,17 @@ def is_update_allowed(graph, annotation_uri, request):
     """
     if _is_my_annotation(graph, annotation_uri, request.user.username):
         return True
-    try:
-        if is_organization_admin(request.client, request.user, annotation_uri):
+
+    organisation_name = get_anotations_organisation(graph, annotation_uri)
+
+    if organisation_name is None:
+        LOGGING.error('There is no organization for annotation {} in the '
+                      'SPARQL store'.format(annotation_uri))
+    else:
+        if is_organization_admin(organisation_name, request.user,
+                                 annotation_uri):
             return True
-    except AttributeError:
-        # there is no request.client
-        pass
+
     if is_moderator(request.user):
         return True
 
@@ -1100,13 +1106,11 @@ def resource_exists(resource_id):
 def __query_annotations(graph, default_graph, pred=None, obj=None):
     query = ''
     if obj:
-        query = '''
-            SELECT ?subject ?pred ?obj WHERE { GRAPH <%s> {?subject ?pred <%s> }}
-        ''' % (default_graph, obj)
+        query = ('SELECT ?subject ?pred ?obj WHERE { GRAPH <%s> {?subject '
+                 '?pred <%s> }}' % (default_graph, obj))
     if pred:
-        query = '''
-            SELECT ?subject ?pred ?obj WHERE { GRAPH <%s> {?subject <%s> ?obj }}
-        ''' % (default_graph, pred)
+        query = ('SELECT ?subject ?pred ?obj WHERE { GRAPH <%s> {?subject '
+                 '<%s> ?obj }}' % (default_graph, pred))
     return graph.query(query)
 
 

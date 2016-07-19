@@ -3,8 +3,8 @@ BSD Licence
 Copyright (c) 2015, Science & Technology Facilities Council (STFC)
 All rights reserved.
 
-Redistribution and use in source and binary forms, with or without modification,
-are permitted provided that the following conditions are met:
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
 
     * Redistributions of source code must retain the above copyright notice,
         this list of conditions and the following disclaimer.
@@ -36,7 +36,7 @@ from rdflib.graph import Graph
 
 
 def _collect_all(graph, cache_graph, uri_ref, depth=1):
-    if depth == None:
+    if depth is None:
         depth = 1
     for res in graph.triples((uri_ref, None, None)):
         cache_graph.add(res)
@@ -66,3 +66,29 @@ def extract_subject(graph, subject, depth):
             _collect_all(graph, tmp_g, res[2], depth)
     return tmp_g
 
+
+def get_anotations_organisation(graph, annotation_uri):
+    """
+    Get the name of the organization via which an annotation was created.
+
+    Args:
+        graph (rdflib.graph.Graph): The graph containing the annotation.
+        annotation_uri (URIRef): The URI of the annotation.
+
+    Returns:
+        str containing the name of the organization
+
+    """
+    statement = (
+        'PREFIX oa: <http://www.w3.org/ns/oa#> '
+        'PREFIX foaf: <http://xmlns.com/foaf/0.1/> '
+        'SELECT Distinct ?organizationName WHERE {{'
+        '<{anno}> oa:annotatedBy ?organization . '
+        '?organization rdf:type foaf:Organization . '
+        '?organization foaf:name ?organizationName  }}'
+        .format(anno=annotation_uri))
+    triples = graph.query(statement)
+    for row in triples:
+        # there should only be one organization associated with an annotation
+        return (row['organizationName'])
+    return None
