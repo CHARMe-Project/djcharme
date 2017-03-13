@@ -140,8 +140,8 @@ urlpatterns = patterns('',
     url(r'^vocab', node_gate.vocab),
 
     # Index pages
-    url(r'^index/(\w+)', node_gate.index, name='charme.index.id'),
-    url(r'^index', node_gate.index, name='index'),
+    url(r'^index/(\w+)', node_gate.Index.as_view(), name='charme.index.id'),
+    url(r'^index', node_gate.Index.as_view(), name='index'),
 
     # GUI - Conditions of use
     url(r'^conditionsofuse/$', main_gui.conditions_of_use),

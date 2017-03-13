@@ -24,11 +24,6 @@ border-radius: .2em;
 {
 float: left;
 width: 1em;
-#text-align: center;
-#font-size: 1.7em;
-#margin: 0 0.5em 0 -1em;
-#padding: 0 .2em;
-#pointer-events: none;
 }
 
 .dojoxGridCell {
@@ -49,12 +44,10 @@ width: 1em;
 }
 
 .content table.dojoxGridRowTable {
-	#opacity:0.52;
 	background-color: transparent !important;
 }
 
 .content table td.dojoxGridCell {
-	#opacity:0.52;
 	background-color: transparent !important;
 }
 
@@ -87,3 +80,19 @@ width: 1em;
 		padding: 5px 5px 5px 5px;
 		text-align: right;
 }
+
+.pagination {
+	margin-left: 20px;
+}
+.current {
+	text-align:left;
+}
+.step-links a {
+	display:inline-block; 
+	vertical-align: middle;
+}
+.step-links img {
+		margin: 0 5px 0 5px;
+	
+	}
+

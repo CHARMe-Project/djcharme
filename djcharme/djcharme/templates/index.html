@@ -1,21 +1,43 @@
 {% extends "charme_base.html" %}
-
+{% load staticfiles %}
 {% load i18n %}
 
 {% block main %}
 
 <h2>Annotations - {{ graph_name }}</h2>
 
-<div class=contactform id="annotation">
-	<div class=accounts>
-		<table>
-			{% for annotation in annotations %}
-			<tr>
-				<td><a href={{annotation}}>{{ annotation }}</a></td>
-			</tr>
-			{% endfor %}
-		</table>
-	</div>
-</div>
+{% if annotations %}
+	<ul>
+	{% for annotation in annotations %}
+		<li><a href="{{ handler }}{{ annotation }}" target="_blank">{{ annotation }}</a></li>
+	{% endfor %}
+	</ul>
+    
+    <div class="pagination">
+        <span class="step-links">
+            {% if page_obj.has_previous %}
+				<a href="?page=1" title="First Page">
+				<img alt="First Page" src="{% static 'charme/images/first.png' %}"></a>
+            	<a href="?page={{ page_obj.previous_page_number }}" title="Previous Page">
+				<img alt="Previous Page" src="{% static 'charme/images/previous.png' %}"></a>    
+            {% endif %}
+
+            <span class="current">
+                Page {{ page_obj.number }} of {{ paginator.num_pages }}
+            </span>
+
+            {% if page_obj.has_next %}
+            	<a href="?page={{ page_obj.next_page_number }}" title="Next Page">
+				<img alt="Next Page" src="{% static 'charme/images/next.png' %}"></a>
+            	<a href="?page={{ paginator.num_pages }}" title="Last Page">
+				<img alt="Last Page" src="{% static 'charme/images/last.png' %}"></a>            
+            {% endif %}
+        </span>
+    </div>
+{% else %}
+
+	<p>No annotations found</p>
+
+{% endif %}
 
 {% endblock %}

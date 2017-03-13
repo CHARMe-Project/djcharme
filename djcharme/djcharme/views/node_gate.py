@@ -43,6 +43,7 @@ from django.http.response import HttpResponseBadRequest, \
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
 from django.views.generic.base import View
+from django.views.generic.list import ListView
 
 from djcharme import mm_render_to_response_error, \
     __version__
@@ -62,8 +63,8 @@ from djcharme.node.constants import OA, FOAF, PROV, RDF, FORMAT_MAP, \
     SUBMITTED, RETIRED
 from djcharme.views import validate_mime_format, http_accept, get_depth, \
     content_type, check_mime_format, get_format, accept_html
-from djcharme.views.resource import agent, annotation, annotation_index, \
-    activity, composite, person, resource
+from djcharme.views.resource import agent, annotation, activity, composite, \
+    person, resource
 
 
 LOGGING = logging.getLogger(__name__)
@@ -104,7 +105,7 @@ class HttpResponseUnsupportedMediaType(HttpResponse):
     status_code = 415
 
 
-def __serialize(graph, req_format=CONTENT_RDF):
+def _serialize(graph, req_format=CONTENT_RDF):
     '''
         Serializes a graph according to the required format
         - rdflib:Graph **graph** the graph to serialize
@@ -117,42 +118,86 @@ def __serialize(graph, req_format=CONTENT_RDF):
     return graph.serialize(format=req_format)
 
 
-def index(request, graph='submitted'):
+class Index(ListView):
     """
-    Returns a tabular view of the stored annotations.
-    - HTTPRequest **request** the client request
-    - string **graph**  the required named graph
-    TODO: In a future implementation this actions should be supported by an
-    OpenSearch implementation
+    This class will display all the annotations for this graph in the selected
+    format.
 
     """
-    try:
-        validate_graph_name(graph)
-    except UserError as ex:
-        if accept_html(request):
-            messages.add_message(request, messages.ERROR, str(ex))
-            return mm_render_to_response_error(request, '400.html', 400)
-        else:
-            return HttpResponseBadRequest(str(ex))
-    tmp_g = None
+    paginate_by = 25
+    template_name = 'index.html'
+    context_object_name = 'annotations'
 
-    try:
-        tmp_g = collect_annotations(graph)
-    except StoreConnectionError as ex:
-        LOGGING.error("index - unexpected error: %s", ex)
-        if accept_html(request):
-            messages.add_message(request, messages.ERROR, str(ex))
-            return mm_render_to_response_error(request, '500.html', 500)
-        else:
-            return HttpResponseServerError(str(ex))
+    @method_decorator(csrf_exempt)
+    def dispatch(self, *args, **kwargs):
+        return super(Index, self).dispatch(*args, **kwargs)
 
-    req_format = validate_mime_format(request)
-    if req_format is not None:
-        return HttpResponse(__serialize(tmp_g, req_format=req_format))
-    elif accept_html(request):
-        return annotation_index(request, tmp_g, graph)
+    def get(self, request, graph='submitted', *args, **kwargs):
+        """
+        Display all the annotations for this graph.
 
-    return HttpResponseNotAcceptable('Format not accepted')
+        """
+        self.graph = graph
+
+        # validate the graph name
+        try:
+            validate_graph_name(graph)
+        except UserError as ex:
+            if accept_html(request):
+                messages.add_message(request, messages.ERROR, str(ex))
+                return mm_render_to_response_error(request, '400.html', 400)
+            else:
+                return HttpResponseBadRequest(str(ex))
+
+        # check the required format
+        req_format = validate_mime_format(request)
+        if req_format is not None:
+            return HttpResponse(self.get_serialized_data(req_format),
+                                content_type=FORMAT_MAP.get(req_format))
+        elif not accept_html(request):
+            return HttpResponseNotAcceptable('Format not accepted')
+
+        # now deal with request for html
+        try:
+            return super(Index, self).get(request, *args, **kwargs)
+        except StoreConnectionError as ex:
+            LOGGING.error(ex)
+            if accept_html(request):
+                messages.add_message(request, messages.ERROR, str(ex))
+                return mm_render_to_response_error(request, '500.html', 500)
+            else:
+                return HttpResponseServerError(str(ex))
+
+    def get_queryset(self):
+        """
+        Get the list of annotations.
+
+        """
+        tmp_g = collect_annotations(self.graph)
+
+        annotations = []
+        for subject, _, _ in tmp_g.triples((None, None, OA['Annotation'])):
+            annotations.append(subject)
+        return annotations
+
+    def get_serialized_data(self, req_format):
+        """
+        Get the list of annotations in the requested format.
+
+        Args:
+            req_format (str): the format to serialize the data
+
+        Return the serialized data
+
+        """
+        tmp_g = collect_annotations(self.graph)
+        return tmp_g.serialize(format=req_format, auto_compact=False),
+
+    def get_context_data(self, **kwargs):
+        # Call the base implementation first to get a context
+        context = super(Index, self).get_context_data(**kwargs)
+        context['graph_name'] = self.graph
+        return context
 
 
 class Insert(View):
@@ -180,6 +225,7 @@ class Insert(View):
             anno_uri = insert_rdf(triples, request_format, request.user,
                                   request.client, graph=SUBMITTED)
         except StoreConnectionError as ex:
+            LOGGING.error(ex)
             return HttpResponseServerError(ex)
         except Http400 as ex:
             return HttpResponseBadRequest(ex)
@@ -212,6 +258,7 @@ class Modify(View):
         try:
             anno_uri = modify_rdf(request, request_format)
         except StoreConnectionError as ex:
+            LOGGING.error(ex)
             return HttpResponseServerError(ex)
         except Http400 as ex:
             return HttpResponseBadRequest(ex)
@@ -537,10 +584,10 @@ def vocab(request):
     try:
         tmp_g = get_vocab()
     except StoreConnectionError as ex:
-        LOGGING.error("vocab - unexpected error: %s", ex)
+        LOGGING.error(ex)
         return HttpResponseServerError(str(ex))
 
     req_format = validate_mime_format(request)
     if req_format is None or accept_html(request):
         req_format = CONTENT_JSON
-    return HttpResponse(__serialize(tmp_g, req_format=req_format))
+    return HttpResponse(_serialize(tmp_g, req_format=req_format))

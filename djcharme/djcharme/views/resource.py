@@ -198,18 +198,6 @@ def annotation(request, resource_uri=None, graph=None):
                                      'resources/annotation.html')
 
 
-def annotation_index(request, tmp_g, graph_name):
-    LOGGING.debug('Annotation index request received')
-    context = {}
-    context['graph_name'] = graph_name
-
-    annotations = []
-    for subject, _, _ in tmp_g.triples((None, None, OA['Annotation'])):
-        annotations.append(subject)
-    context['annotations'] = annotations
-    return mm_render_to_response(request, context, 'index.html')
-
-
 def activity(request, resource_uri, graph):
     LOGGING.debug('Activity request received')
     context = {}
