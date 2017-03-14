@@ -3,8 +3,8 @@ BSD Licence
 Copyright (c) 2015, Science & Technology Facilities Council (STFC)
 All rights reserved.
 
-Redistribution and use in source and binary forms, with or without modification,
-are permitted provided that the following conditions are met:
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
 
     * Redistributions of source code must retain the above copyright notice,
         this list of conditions and the following disclaimer.
@@ -34,10 +34,5 @@ This module exposes node functions to other packages.
 '''
 from rdflib.graph import Graph
 
-from djcharme.node.actions import resource_exists
 from djcharme.node.model_queries import get_users_admin_role_orgs
 from djcharme.node.model_queries import is_following_resource
-
-
-
-

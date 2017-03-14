@@ -37,6 +37,7 @@ import traceback
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.core.exceptions import ValidationError
 from django.http.response import HttpResponseBadRequest, \
     HttpResponseRedirectBase, HttpResponse, HttpResponseNotFound, \
     HttpResponseForbidden, HttpResponseServerError
@@ -53,7 +54,7 @@ from djcharme.exception import SecurityError
 from djcharme.exception import StoreConnectionError
 from djcharme.exception import UserError
 from djcharme.models import FollowedResource
-from djcharme.node import is_following_resource, resource_exists
+from djcharme.node import is_following_resource
 from djcharme.node.actions import collect_annotations, find_resource_by_id, \
     format_resource_uri_ref, change_annotation_state, get_vocab, \
     report_to_moderator, validate_graph_name
@@ -370,16 +371,19 @@ class Following(View):
 
         """
         resource_uri = kwargs["resource_uri"]
+        print resource_uri
         if is_following_resource(request.user, resource_uri):
             # You are already following this resource
             return HttpResponseNoContent()
-        if not (resource_exists(resource_uri)):
-            return HttpResponseNotFound(
-                'Resource does not exist on this system')
-
         followed_resource = FollowedResource.objects.create(
             user_id=request.user.id,
             resource=resource_uri)
+        try:
+            followed_resource.full_clean()
+        except ValidationError as ex:
+            # there is an issue with the validity of the url
+            followed_resource.delete()
+            return HttpResponseBadRequest('. '.join(ex.messages))
         followed_resource.save()
         return HttpResponseNoContent()
 

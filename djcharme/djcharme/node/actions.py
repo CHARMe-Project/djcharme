@@ -1084,23 +1084,6 @@ def find_resource_by_id(resource_id, depth=1):
     return extract_subject(graph, uri_ref, depth)
 
 
-def resource_exists(resource_id):
-    """
-    Check that the resource exists in the triple store.
-
-    Args:
-        resource_id(str): The id of the resource.
-
-    Returns:
-        True if the resource exists.
-
-    """
-    graph = find_resource_by_id(resource_id)
-    if len(graph) > 0:
-        return True
-    return False
-
-
 # This code is a workaround until FUSEKI fixes this bug
 # https://issues.apache.org/jira/browse/JENA-592
 def __query_annotations(graph, default_graph, pred=None, obj=None):

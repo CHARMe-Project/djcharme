@@ -3,8 +3,8 @@ BSD Licence
 Copyright (c) 2015, Science & Technology Facilities Council (STFC)
 All rights reserved.
 
-Redistribution and use in source and binary forms, with or without modification,
-are permitted provided that the following conditions are met:
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
 
     * Redistributions of source code must retain the above copyright notice,
         this list of conditions and the following disclaimer.
@@ -44,7 +44,7 @@ from django.views.generic.list import ListView
 
 from djcharme import mm_render_to_response
 from djcharme.models import FollowedResource
-from djcharme.node import is_following_resource, resource_exists
+from djcharme.node import is_following_resource
 
 
 def welcome(request):
@@ -75,11 +75,11 @@ class Following(ListView):
         following = self.get_queryset()
         if len(following) == 0:
             return redirect(reverse('following-add'))
-        context = {'followed_resource' : following}
+        context = {'followed_resource': following}
         return render(request,
                       'followed-resources/followed_resource.html',
                       context)
-    
+
     def get_queryset(self):
         """
         Return the resources followed by the user.
@@ -92,42 +92,38 @@ class Following(ListView):
 
 class FollowingCreate(CreateView):
     """
-    Add a resource to the list of resources that are being followed by the user.
+    Add a resource to the list of resources that are being followed by the
+    user.
 
     """
     model = FollowedResource
     fields = ['resource']
     template_name = 'followed-resources/followed_resource_form.html'
     success_url = reverse_lazy('following-list')
-        
+
     def form_valid(self, form):
         """
         Validate the form. Check that the user is not already following the
         resource and that the resource exists in the triple store.
-        
-        """
-        if is_following_resource(self.request.user, form.instance.resource.strip()):
-            form.full_clean()
-            form._errors[NON_FIELD_ERRORS] = form.error_class(['You are already following this resource'])
-            form.non_field_errors()
-            return super(FollowingCreate, self).form_invalid(form)            
 
-        if not (resource_exists(form.instance.resource.strip())):
+        """
+        if is_following_resource(self.request.user,
+                                 form.instance.resource.strip()):
             form.full_clean()
-            form._errors[NON_FIELD_ERRORS] = form.error_class(['Resource does not exist on this system'])
+            form._errors[NON_FIELD_ERRORS] = form.error_class(
+                ['You are already following this resource'])
             form.non_field_errors()
             return super(FollowingCreate, self).form_invalid(form)
 
         form.instance.user = self.request.user
         return super(FollowingCreate, self).form_valid(form)
 
-    
+
 class FollowingDelete(DeleteView):
     """
     Delete the resource that is being followed by the user.
 
     """
     model = FollowedResource
-    template_name = 'followed-resources/followed_resource_confirm_delete.html'   
+    template_name = 'followed-resources/followed_resource_confirm_delete.html'
     success_url = reverse_lazy('following-list')
-
