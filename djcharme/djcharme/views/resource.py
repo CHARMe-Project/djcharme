@@ -39,7 +39,7 @@ from djcharme import mm_render_to_response
 from djcharme.node.actions import change_annotation_state, is_update_allowed, \
     find_annotation_graph_name
 from djcharme.node.constants import CITO, CONTENT, DC, DCTERMS, FOAF, \
-    INVALID, OA, PROV, RDF, RETIRED, SKOS
+    OA, PROV, RDF, RETIRED, SKOS
 
 
 LOGGING = logging.getLogger(__name__)
@@ -185,8 +185,7 @@ def annotation(request, resource_uri=None, graph=None):
             # delete button
             graph_name = find_annotation_graph_name(resource_uri)
             update_allowed = is_update_allowed(graph, resource_uri, request)
-            if (graph_name != INVALID and graph_name != RETIRED and
-                    update_allowed):
+            if (graph_name != RETIRED and update_allowed):
                 context['delete'] = True
 
         orig_values = {}

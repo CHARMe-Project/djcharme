@@ -34,7 +34,6 @@ Created on 12 Apr 2013
 import base64
 from datetime import datetime
 import logging
-from urllib2 import URLError
 import uuid
 
 from SPARQLWrapper.SPARQLExceptions import EndPointNotFound
@@ -56,12 +55,13 @@ from djcharme.node.constants import ANNO_URI, LOCALHOST_URI, TARGET_URI, \
 from djcharme.node.constants import FOAF, RDF, PROV, OA, CH_NODE
 from djcharme.node.constants import FORMAT_MAP, ALLOWED_CREATE_TARGET_TYPE, \
     RESOURCE
-from djcharme.node.constants import GRAPH_NAMES, SUBMITTED, INVALID, RETIRED
+from djcharme.node.constants import GRAPH_NAMES, SUBMITTED, RETIRED
 from djcharme.node.model_queries import get_admin_email_addresses, \
     get_followers, get_organization_for_client, is_moderator, \
     is_organization_admin
 from djcharme.node.triple_queries import extract_subject
-from djcharme.node.triple_queries import get_anotations_organisation
+from djcharme.node.triple_queries import generate_graph
+from djcharme.node.triple_queries import get_organisation_for_anotation
 
 
 LOGGING = logging.getLogger(__name__)
@@ -82,32 +82,6 @@ def rdf_format_from_mime(mimetype):
     for key, value in FORMAT_MAP.iteritems():
         if mimetype == value:
             return key
-
-
-def format_graph_iri(graph, baseurl='http://dummyhost'):
-    '''
-        Builds a named graph URIRef using, if exists,
-        a settings.SPARQL_QUERY parameter.
-
-        - string **graph**
-            the graph name
-        * return String
-    '''
-    if ('http://' in graph) or ('https://' in graph):
-        return graph
-
-    return '%s/%s' % (getattr(settings, 'SPARQL_DATA', baseurl), graph)
-
-
-def generate_graph(store, graph):
-    '''
-        Generate a new Graph
-        - string **graph**
-            the graph name
-        * return:rdflib.Graph - Returns an RDFlib graph containing the given
-                                data
-    '''
-    return Graph(store=store, identifier=format_graph_iri(graph))
 
 
 def get_vocab():
@@ -735,14 +709,8 @@ def validate_graph_name(graph_name):
     """
     if graph_name in GRAPH_NAMES:
         return
-    names = ''
-    # prepare error message
-    for name in GRAPH_NAMES:
-        if names != '':
-            names = names + ', '
-        names = names + name
     raise UserError(("The status of %s is not valid. It must be one of %s" %
-                     (graph_name, names)))
+                     (graph_name, ", ".join(GRAPH_NAMES))))
 
 
 def _move_annotation(annotation_uri, new_graph, old_graph, request, timestamp):
@@ -887,7 +855,7 @@ def is_update_allowed(graph, annotation_uri, request):
     if _is_my_annotation(graph, annotation_uri, request.user.username):
         return True
 
-    organisation_name = get_anotations_organisation(graph, annotation_uri)
+    organisation_name = get_organisation_for_anotation(graph, annotation_uri)
 
     if organisation_name is None:
         LOGGING.error('There is no organization for annotation {} in the '
@@ -1097,35 +1065,6 @@ def __query_annotations(graph, default_graph, pred=None, obj=None):
     return graph.query(query)
 
 
-def collect_annotations(graph_name):
-    '''
-        Returns a graph containing all the node annotations
-        - string **graph_name**
-            the graph name
-    '''
-    graph = generate_graph(CharmeMiddleware.get_store(), graph_name)
-    tmp_g = Graph()
-
-    anno = graph.triples((None, None, OA['Annotation']))
-    target = graph.triples((None, OA['hasTarget'], None))
-    body = graph.triples((None, OA['hasBody'], None))
-
-    try:
-        for res in anno:
-            tmp_g.add(res)
-        for res in target:
-            tmp_g.add(res)
-        for res in body:
-            tmp_g.add(res)
-    except URLError as ex:
-        raise StoreConnectionError("Cannot open a connection with triple store"
-                                   "\n" + str(ex))
-    except EndPointNotFound as ex:
-        raise StoreConnectionError("Cannot open a connection with triple store"
-                                   "\n" + str(ex))
-    return tmp_g
-
-
 def _is_graph_final_state(graph_name):
     """
     Check if the graph permits modifications to annotations.
@@ -1137,7 +1076,7 @@ def _is_graph_final_state(graph_name):
         True if the graph permits modifications to annotations.
 
     """
-    if graph_name == INVALID or graph_name == RETIRED:
+    if graph_name == RETIRED:
         return True
     return False
 

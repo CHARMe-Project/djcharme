@@ -35,10 +35,9 @@ This module contains pre-formatted queries of the models.
 import logging
 
 from django.contrib.auth.models import User
-from provider.oauth2.models import Client
 
 from djcharme.models import FollowedResource, Organization, \
-    OrganizationClient, OrganizationUser
+    OrganizationUser, OrganizationClient
 
 
 LOGGING = logging.getLogger(__name__)
@@ -97,59 +96,6 @@ def get_users_admin_role_orgs(user_id):
     return organizations
 
 
-def get_client(organization_name):
-    """
-    Get the client with the given organization name. Return None if not found.
-
-    Args:
-        organization_name (str): The name of the organization.
-
-    Returns:
-        client The client object or None if not found.
-
-    """
-    try:
-        organization = Organization.objects.get(name=organization_name)
-
-        organization_client = OrganizationClient.objects.get(
-            organization=organization)
-
-        client = Client.objects.get(organizationclient=organization_client)
-
-    except Organization.DoesNotExist:
-        LOGGING.error('Organization {} not found in the DB'.
-                      format(organization_name))
-        return None
-    except OrganizationClient.DoesNotExist:
-        LOGGING.warn('Organization client for {} not found in the DB'.
-                     format(organization_name))
-        return None
-    except Client.DoesNotExist:
-        LOGGING.warn('Client for {} not found in the DB'.
-                     format(organization_name))
-        return None
-    return client
-
-
-def get_user(user_name):
-    """
-    Get the user with the given user name. Return None if not found.
-
-    Args:
-        user_name (str): The user name of the user.
-
-    Returns:
-        User The User object or None if not found.
-
-    """
-    try:
-        user = User.objects.get(username=user_name)
-    except User.DoesNotExist:
-        LOGGING.warn('User {} not found in the DB'. format(user_name))
-        return None
-    return user
-
-
 def get_organization_for_client(client):
     """
     Get the name of the organization associated with the client.
@@ -161,16 +107,10 @@ def get_organization_for_client(client):
         str The name of the organization or None.
 
     """
-    organization_id = (client.organizationclient_set.
-                       values_list('organization', flat=True))
-    if len(organization_id) < 1:
-        LOGGING.warn("No organization found for client %s", client.url)
-        return None
-    # there should only be one
-    organization_id = organization_id[0]
-    organizations = (Organization.objects.filter(id=organization_id))
-    for organization in organizations:
-        return organization.name
+    try:
+        return client.organizationclient.organization.name
+    except (OrganizationClient.DoesNotExist, Organization.DoesNotExist):
+        pass
     return None
 
 

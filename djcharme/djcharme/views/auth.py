@@ -3,8 +3,8 @@ BSD Licence
 Copyright (c) 2015, Science & Technology Facilities Council (STFC)
 All rights reserved.
 
-Redistribution and use in source and binary forms, with or without modification,
-are permitted provided that the following conditions are met:
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
 
     * Redistributions of source code must retain the above copyright notice,
         this list of conditions and the following disclaimer.
@@ -40,7 +40,7 @@ from django.contrib.auth.models import User
 from django.contrib.auth.views import login
 from django.core.urlresolvers import reverse
 from django.db.utils import IntegrityError
-from django.forms.util import ErrorList
+from django.forms.utils import ErrorList
 from django.http import HttpResponseRedirect
 from django.http.response import HttpResponseServerError
 from django.shortcuts import render
@@ -54,8 +54,8 @@ from django_authopenid.views import ask_openid
 from djcharme.charme_security_model import LoginForm, UserForm
 from djcharme.models import UserProfile
 from djcharme.settings import REDIRECT_FIELD_NAME, SEND_MAIL
-from djcharme.views import get_extra_context, get_safe_redirect, \
-    not_authenticated
+from djcharme.views import get_extra_context, get_safe_redirect_get, \
+    get_safe_redirect_post, not_authenticated
 
 
 LOGGING = logging.getLogger(__name__)
@@ -78,10 +78,10 @@ class Login(View):
             return HttpResponseServerError(str(ex))
 
     def get(self, request, *args, **kwargs):
-        redirect_to = get_safe_redirect(request)
+        redirect_to = get_safe_redirect_get(request)
         return login(request, template_name=LOGIN_TEMPLATE,
                      authentication_form=LoginForm,
-                     extra_context={REDIRECT_FIELD_NAME:redirect_to})
+                     extra_context={REDIRECT_FIELD_NAME: redirect_to})
 
     def post(self, request, *args, **kwargs):
         auth_form = LoginForm
@@ -94,7 +94,7 @@ class Login(View):
                          extra_context=extra_context)
 
         # open id sign in
-        redirect_to = get_safe_redirect(request)
+        redirect_to = get_safe_redirect_post(request)
         openid_form = OpenidSigninForm(data=request.POST)
         context = {
             'openid_form': openid_form,
@@ -105,7 +105,7 @@ class Login(View):
             context.update(extra_context)
 
         if openid_form.is_valid():
-            redirect_url = ("%s%s?%s" % 
+            redirect_url = ("%s%s?%s" %
                             (get_url_host(request),
                              reverse('user_complete_signin'),
                              urllib.urlencode
@@ -135,11 +135,11 @@ class Register(View):
 
     def get(self, request, *args, **kwargs):
         extra_context = get_extra_context(kwargs)
-        redirect_to = get_safe_redirect(request)
+        redirect_to = get_safe_redirect_get(request)
         openid_ = request.session.get('openid', None)
         if openid_ is None or not openid_:
             # no open id credentials so back to login page
-            return HttpResponseRedirect("%s?%s" % 
+            return HttpResponseRedirect("%s?%s" %
                                         (reverse('login'),
                                          urllib.urlencode
                                          ({REDIRECT_FIELD_NAME: redirect_to})))
@@ -159,11 +159,11 @@ class Register(View):
 
     def post(self, request, *args, **kwargs):
         extra_context = get_extra_context(kwargs)
-        redirect_to = get_safe_redirect(request)
+        redirect_to = get_safe_redirect_post(request)
         openid_ = request.session.get('openid', None)
         if openid_ is None or not openid_:
             # no open id credentials so back to login page
-            return HttpResponseRedirect("%s?%s" % 
+            return HttpResponseRedirect("%s?%s" %
                                         (reverse('user_signin'),
                                          urllib.urlencode
                                          ({REDIRECT_FIELD_NAME: redirect_to})))
@@ -219,19 +219,19 @@ class Register(View):
 
 
 def signin_success(request, identity_url, openid_response,
-        redirect_field_name=REDIRECT_FIELD_NAME, **kwargs):
+                   redirect_field_name=REDIRECT_FIELD_NAME, **kwargs):
     """
     openid signin success.
 
-    If the openid is already registered, the user is redirected to 
+    If the openid is already registered, the user is redirected to
     url set par next or in settings with OPENID_REDIRECT_NEXT variable.
     If none of these urls are set user is redirectd to /.
 
     if openid isn't registered user is redirected to register page.
     """
-    redirect_to = get_safe_redirect(request)
+    redirect_to = get_safe_redirect_get(request)
     openid_ = from_openid_response(openid_response)
-    
+
     openids = request.session.get('openids', [])
     openids.append(openid_)
     request.session['openids'] = openids
@@ -242,7 +242,7 @@ def signin_success(request, identity_url, openid_response,
         # try to register this new user
         return HttpResponseRedirect(
             "%s?%s" % (reverse('user_register'),
-            urllib.urlencode({ redirect_field_name: redirect_to }))
+                       urllib.urlencode({redirect_field_name: redirect_to}))
         )
     user_ = rel.user
     if user_.is_active:
@@ -261,7 +261,7 @@ def signin_failure(request, message, extra_context=None, **kwargs):
     context. Any callable object in this dictionary will be called to produce
     the end result which appears in the context.
     """
-    redirect_to = get_safe_redirect(request)
+    redirect_to = get_safe_redirect_get(request)
     extra_context = get_extra_context(kwargs)
     openid_form = OpenidSigninForm()
     if message is not None and message is not "":
@@ -274,4 +274,3 @@ def signin_failure(request, message, extra_context=None, **kwargs):
     if extra_context is not None:
         context.update(extra_context)
     return render(request, LOGIN_TEMPLATE, context)
-

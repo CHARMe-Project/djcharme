@@ -31,7 +31,7 @@ setup(
     zip_safe=False,
 
     classifiers=[
-        'Framework :: Django :: 1.7',
+        'Framework :: Django :: 1.8',
         'License :: OSI Approved :: BSD License',
         'Natural Language :: English',
         'Programming Language :: Python :: 2.7',
@@ -44,12 +44,12 @@ setup(
     install_requires=[
         'ceda-markup==0.1.0',
         'cedatheme_mf54==1.0.0',
-        'Django==1.7',
+        'Django==1.8',
         'django-authopenid==1.0.2',
         'django-classy-tags==0.6.2',
         'django-cookie-law==1.0.6',
         'django-oauth2-provider==0.2.7.dev0',
-        'django-registration==0.8',
+        'django-registration==2.2',
         'html5lib==0.9999999',
         'isodate==0.5.4',
         'ordereddict==1.1',

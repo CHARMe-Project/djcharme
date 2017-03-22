@@ -3,8 +3,8 @@ BSD Licence
 Copyright (c) 2015, Science & Technology Facilities Council (STFC)
 All rights reserved.
 
-Redistribution and use in source and binary forms, with or without modification,
-are permitted provided that the following conditions are met:
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
 
     * Redistributions of source code must retain the above copyright notice,
         this list of conditions and the following disclaimer.
@@ -36,15 +36,17 @@ from datetime import datetime
 import logging
 
 from django.conf import settings
+from django.contrib.auth.models import User
 from django.utils.http import urlquote
+from provider.oauth2.models import Client
 from rdflib import Literal
 from rdflib.plugins.parsers.notation3 import BadSyntax
 
 from djcharme import get_resource
 from djcharme.exception import ParseError
+from djcharme.models import Organization, OrganizationClient
 from djcharme.node.actions import insert_rdf
 from djcharme.node.constants import SUBMITTED
-from djcharme.node.model_queries import get_client, get_user
 
 
 LOGGING = logging.getLogger(__name__)
@@ -87,9 +89,9 @@ def __load_datasets():
     datasets = {}
     for row in dataset_reader:
         if type(row) != list \
-            or len(row[0]) == 0 \
-            or (len(row[1]) + len(row[2])) == 0 \
-            or row[0] == 'Dataset':
+                or len(row[0]) == 0 \
+                or (len(row[1]) + len(row[2])) == 0 \
+                or row[0] == 'Dataset':
             continue
         try:
             datasets[row[0]] = row[1:3]
@@ -110,9 +112,9 @@ def __load_citations():
     dataset_name = None
     for row in citations_reader:
         if type(row) != list \
-            or len(row[0]) == 0 \
-            or (len(row[1]) + len(row[2])) == 0 \
-            or row[0] == 'Dataset':
+                or len(row[0]) == 0 \
+                or (len(row[1]) + len(row[2])) == 0 \
+                or row[0] == 'Dataset':
             continue
         try:
             if dataset_name == row[0]:
@@ -125,6 +127,59 @@ def __load_citations():
     return citations
 
 
+def __get_client(organization_name):
+    """
+    Get the client with the given organization name. Return None if not found.
+
+    Args:
+        organization_name (str): The name of the organization.
+
+    Returns:
+        client The client object or None if not found.
+
+    """
+    try:
+        organization = Organization.objects.get(name=organization_name)
+
+        organization_client = OrganizationClient.objects.get(
+            organization=organization)
+
+        client = Client.objects.get(organizationclient=organization_client)
+
+    except Organization.DoesNotExist:
+        LOGGING.error('Organization {} not found in the DB'.
+                      format(organization_name))
+        return None
+    except OrganizationClient.DoesNotExist:
+        LOGGING.warn('Organization client for {} not found in the DB'.
+                     format(organization_name))
+        return None
+    except Client.DoesNotExist:
+        LOGGING.warn('Client for {} not found in the DB'.
+                     format(organization_name))
+        return None
+    return client
+
+
+def __get_clients(organization_name):
+    """
+    Get a list of clients with the given organization name.
+
+    """
+    clients = []
+    try:
+        organization = Organization.objects.get(name=organization_name)
+
+        organization_clients = OrganizationClient.objects.filter(
+            organization=organization)
+        for o_c in organization_clients:
+            clients.append(Client.objects.get(organizationclient=o_c))
+    except (Organization.DoesNotExist, OrganizationClient.DoesNotExist,
+            Client.DoesNotExist):
+        pass
+    return clients
+
+
 def load_sample():
     """
     Load sample data.
@@ -135,28 +190,42 @@ def load_sample():
     datasets = __load_datasets()
     citations = __load_citations()
     user_name = getattr(settings, 'SAMPLE_USER_NAME', 'stfc')
-    user = get_user(user_name)
-    client_name = getattr(settings, 'SAMPLE_CLIENT_NAME', 'STFC')
-    client = get_client(client_name)
-    serialized_at = timestamp
-    if user == None or client == None:
-        LOGGING.warn(('Samples not loaded as use %s not found and/or client for %s not found' % (user, client)))
+    try:
+        user = User.objects.get(username=user_name)
+    except User.DoesNotExist:
+        LOGGING.warn(
+            'Samples not loaded as user "{}" not found'.format(user_name))
         return
+
+    organization_name = getattr(settings, 'SAMPLE_CLIENT_NAME', 'STFC')
+    try:
+        client = __get_clients(organization_name)[0]
+    except IndexError:
+        LOGGING.warn('Samples not loaded as client not found for organization '
+                     '"{}"'.format(organization_name))
+        return
+
+    serialized_at = timestamp
+
     for ds_key in datasets.keys():
         data_set = datasets.get(ds_key)
         cts = citations.get(ds_key, None)
-        if cts == None:  # remove
+        if cts is None:  # remove
             continue  # remove
         for cit in cts:
-            annotation = CITATION_TEMPLATE.replace("load_target",
-                                                   urlquote(data_set[1].strip()))
+            annotation = CITATION_TEMPLATE.replace(
+                "load_target", urlquote(data_set[1].strip()))
             # in press causes a
-            # Exception: "file:///home/wilsona/workspace-space/in press" does not look like a valid URI, I cannot serialize this as N3/Turtle. Perhaps you wanted to urlencode it?
+            # Exception: "file:///home/wilsona/workspace-space/in press" does
+            # not look like a valid URI, I cannot serialize this as N3/Turtle.
+            # Perhaps you wanted to urlencode it?
             if cit[8] and cit[8] != 'in press':
-                annotation = annotation.replace("load_body", urlquote(cit[8].strip()))
+                annotation = annotation.replace(
+                    "load_body", urlquote(cit[8].strip()))
             else:
                 continue
-            annotation = annotation.replace("load_serialized_at", serialized_at)
+            annotation = annotation.replace(
+                "load_serialized_at", serialized_at)
             if cit[0] == 'article':
                 annotation = annotation.replace("load_classes", "Article")
             elif cit[0] == 'inbook':
@@ -170,12 +239,13 @@ def load_sample():
             elif cit[0] == 'misc':
                 continue
             else:
-                LOGGING.debug('Samples - found type %, ignoring record' % cit[0])
+                LOGGING.debug(
+                    'Samples - found type %, ignoring record' % cit[0])
                 continue
 
             try:
                 insert_rdf(annotation, 'turtle', user, client,
-                                   graph=SUBMITTED)
+                           graph=SUBMITTED)
             except BadSyntax as ex:
                 LOGGING.warn(ex)
                 continue
@@ -184,4 +254,3 @@ def load_sample():
                 continue
             except Exception as ex:
                 LOGGING.error(ex)
-

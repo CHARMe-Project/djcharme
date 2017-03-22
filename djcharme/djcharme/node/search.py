@@ -43,7 +43,7 @@ from rdflib.term import URIRef
 
 from djcharme.charme_middleware import CharmeMiddleware
 from djcharme.node.triple_queries import extract_subject
-from djcharme.node.actions import generate_graph
+from djcharme.node.triple_queries import generate_graph
 from djcharme.node.constants import STABLE
 
 

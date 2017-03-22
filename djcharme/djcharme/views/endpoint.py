@@ -3,8 +3,8 @@ BSD Licence
 Copyright (c) 2015, Science & Technology Facilities Council (STFC)
 All rights reserved.
 
-Redistribution and use in source and binary forms, with or without modification,
-are permitted provided that the following conditions are met:
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
 
     * Redistributions of source code must retain the above copyright notice,
         this list of conditions and the following disclaimer.
@@ -38,7 +38,8 @@ from rdflib.graph import ConjunctiveGraph
 from rdflib.term import URIRef
 
 from djcharme.charme_middleware import CharmeMiddleware
-from djcharme.node.actions import  insert_rdf, generate_graph, rdf_format_from_mime
+from djcharme.node import generate_graph
+from djcharme.node.actions import insert_rdf, rdf_format_from_mime
 from djcharme.views import isGET, isPOST, isPUT, isDELETE, isHEAD, isPATCH, \
     content_type
 
@@ -87,13 +88,15 @@ def processPUT(request):
     conjunctive_graph = None
     query_object = None
     if graph is None:
-        conjunctive_graph = ConjunctiveGraph(store=CharmeMiddleware.get_store())
+        conjunctive_graph = ConjunctiveGraph(
+            store=CharmeMiddleware.get_store())
         query_object = '''
             DROP SILENT DEFAULT;
             '''
         query_object = ''
     else:
-        conjunctive_graph = ConjunctiveGraph(store=CharmeMiddleware.get_store())
+        conjunctive_graph = ConjunctiveGraph(
+            store=CharmeMiddleware.get_store())
         query_object = '''
             DROP SILENT GRAPH <%s>;
             '''
@@ -114,13 +117,15 @@ def processDELETE(request):
     conjunctive_graph = None
     query_object = None
     if graph is None:
-        conjunctive_graph = ConjunctiveGraph(store=CharmeMiddleware.get_store())
+        conjunctive_graph = ConjunctiveGraph(
+            store=CharmeMiddleware.get_store())
         query_object = '''
             DROP DEFAULT;
             '''
         query_object = ''
     else:
-        conjunctive_graph = ConjunctiveGraph(store=CharmeMiddleware.get_store())
+        conjunctive_graph = ConjunctiveGraph(
+            store=CharmeMiddleware.get_store())
         query_object = '''
             DROP GRAPH <%s>;
             '''
@@ -149,12 +154,13 @@ def processHEAD(request, return_content=False):
     graph = get_graph_from_request(request)
     accept = _validate_mime_format(request, 'application/rdf+xml')
 
-    if accept == None:
+    if accept is None:
         return HttpResponse(status=406)
 
     conjunctive_graph = None
     if graph is None:
-        conjunctive_graph = ConjunctiveGraph(store=CharmeMiddleware.get_store())
+        conjunctive_graph = ConjunctiveGraph(
+            store=CharmeMiddleware.get_store())
     else:
         conjunctive_graph = generate_graph(CharmeMiddleware.get_store(),
                                            URIRef(graph))
@@ -180,6 +186,6 @@ def _validate_mime_format(request, default=None):
         if rdf_format_from_mime(req_format) != None:
             return req_format
     if ((len(req_formats) == 0) or
-        (len(req_formats) == 1 and req_formats[0] == '*/*')):
+            (len(req_formats) == 1 and req_formats[0] == '*/*')):
         return default
     return None

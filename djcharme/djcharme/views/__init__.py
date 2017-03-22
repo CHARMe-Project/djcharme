@@ -133,10 +133,23 @@ def get_extra_context(kwargs):
     return extra_context
 
 
-def get_safe_redirect(request):
+def get_safe_redirect_get(request):
     """ Check that the URL is safe, i.e. it points back to whence it came.
     """
-    redirect_to = request.REQUEST.get(REDIRECT_FIELD_NAME, '')
+    redirect_to = request.GET.get(REDIRECT_FIELD_NAME, '')
+    return _get_safe_redirect(request, redirect_to)
+
+
+def get_safe_redirect_post(request):
+    """ Check that the URL is safe, i.e. it points back to whence it came.
+    """
+    redirect_to = request.POST.get(REDIRECT_FIELD_NAME, '')
+    return _get_safe_redirect(request, redirect_to)
+
+
+def _get_safe_redirect(request, redirect_to):
+    """ Check that the URL is safe, i.e. it points back to whence it came.
+    """
     # Ensure the user-originating redirection url is safe.
     if not is_safe_url(url=redirect_to, host=request.get_host()):
         if 'HTTP_REFERER' in request.META.keys():

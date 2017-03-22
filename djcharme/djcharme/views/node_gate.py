@@ -54,8 +54,8 @@ from djcharme.exception import SecurityError
 from djcharme.exception import StoreConnectionError
 from djcharme.exception import UserError
 from djcharme.models import FollowedResource
-from djcharme.node import is_following_resource
-from djcharme.node.actions import collect_annotations, find_resource_by_id, \
+from djcharme.node import is_following_resource, get_all_annotations
+from djcharme.node.actions import find_resource_by_id, \
     format_resource_uri_ref, change_annotation_state, get_vocab, \
     report_to_moderator, validate_graph_name
 from djcharme.node.actions import insert_rdf, modify_rdf
@@ -145,9 +145,11 @@ class Index(ListView):
             validate_graph_name(graph)
         except UserError as ex:
             if accept_html(request):
+                # html, return web page
                 messages.add_message(request, messages.ERROR, str(ex))
                 return mm_render_to_response_error(request, '400.html', 400)
             else:
+                # other format
                 return HttpResponseBadRequest(str(ex))
 
         # check the required format
@@ -174,7 +176,7 @@ class Index(ListView):
         Get the list of annotations.
 
         """
-        tmp_g = collect_annotations(self.graph)
+        tmp_g = get_all_annotations(self.graph)
 
         annotations = []
         for subject, _, _ in tmp_g.triples((None, None, OA['Annotation'])):
@@ -191,7 +193,7 @@ class Index(ListView):
         Return the serialized data
 
         """
-        tmp_g = collect_annotations(self.graph)
+        tmp_g = get_all_annotations(self.graph)
         return tmp_g.serialize(format=req_format, auto_compact=False),
 
     def get_context_data(self, **kwargs):
@@ -371,7 +373,6 @@ class Following(View):
 
         """
         resource_uri = kwargs["resource_uri"]
-        print resource_uri
         if is_following_resource(request.user, resource_uri):
             # You are already following this resource
             return HttpResponseNoContent()

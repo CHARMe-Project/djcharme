@@ -1,11 +1,10 @@
 from django.conf.urls import patterns, include, url
 from django.contrib import admin
 from django.contrib.auth import views as auth_views
-from django_authopenid import views as oid_views
 
 from djcharme.charme_security_model import LoginForm
-from djcharme.views import node_gate, compose, endpoint, main_gui, search, \
-    registration, resource, facets, auth
+from djcharme.views import node_gate, endpoint, main_gui, search, \
+    registration, resource, facets, auth, staff
 
 
 admin.autodiscover()
@@ -62,13 +61,27 @@ urlpatterns = patterns('',
     # replacement for django_authopenid register
     url(r'^accounts/register/$', auth.Register.as_view(),
         name='user_register'),
+
     # update for django_authopenid signin complete
-    url(r'^accounts/signin/complete/$', oid_views.complete_signin,
+    url(r'^accounts/signin/complete/$',
+        'django_authopenid.views.complete_signin',
         {'auth_form': LoginForm, 'on_success': auth.signin_success,
          'on_failure': auth.signin_failure},
         name='user_complete_signin'),
-    # django_authopenid
-    url(r'^accounts/', include('django_authopenid.urls')),
+
+    # django_authopenid, we have to explicitly include only the urls we need as
+    # some are broken with django > 1.7
+    url(r'^/accounts/signin/$', 'django_authopenid.views.signin',
+        name='user_signin'),
+    url(r'^accounts/signout/$', 'django_authopenid.views.signout',
+        name='user_signout'),
+    url(r'^accounts/associate/complete/$',
+        'django_authopenid.views.complete_associate',
+        name='user_complete_associate'),
+    url(r'^accounts/associate/$', 'django_authopenid.views.associate',
+        name='user_associate'),
+    url(r'^accounts/dissociate/$', 'django_authopenid.views.dissociate',
+        name='user_dissociate'),
 
     # -----------------------------------------------------------
 
@@ -104,10 +117,6 @@ urlpatterns = patterns('',
         name='process_page'),
     url(r'^annotation/$', resource.annotation, name='annotation'),
     url(r'^activity/$', resource.activity, name='activity'),
-
-    # Annotation composition
-    url(r'^compose/annotation', compose.compose_annotation,
-        name='compose_annotation'),
 
     # HTTP SPARQL implementation
     url(r'^endpoint', endpoint.endpoint, name='endpoint'),
@@ -152,6 +161,9 @@ urlpatterns = patterns('',
         name='following-add'),
     url(r'^following/(?P<pk>[0-9]+)/delete/$',
         main_gui.FollowingDelete.as_view(), name='following-delete'),
+
+    # GUI - Staff pages
+    url(r'^staff/status/$', staff.Status.as_view(), name='status'),
 
     # Anything else
     url(r'^', main_gui.welcome, name='charme.welcome'),

@@ -1,0 +1,82 @@
+{% extends "charme_base.html" %} 
+{% load i18n %}
+
+{% block main %}
+<h2>CHARMe Status Page</h2>
+
+<h3>Users</h3>
+
+<dl>
+<dt>Users</dt>
+<dd>Number of users: {{ user_count }}</dd>
+<dd>Number of users who logged on in the last 30 days: {{ user_count_last_30 }}</dd>
+<dd>Number of users who logged on in the last 90 days: {{ user_count_last_90 }}</dd>
+<dd>Number of users who logged on in the last 365 days: {{ user_count_last_365 }}</dd>
+<dd>New users in the last 30 days: {{ user_count_new_30 }}</dd>
+<dd>New users in the last 90 days: {{ user_count_new_90 }}</dd>
+<dd>New users in the last 365 days: {{ user_count_new_365 }}</dd>
+</dl>
+
+<h3>Annotations</h3>
+
+<dl>
+<dt>Annotation Totals</dt>
+{% for graph, count in graphs.items %}
+	<dd>Number of {{ graph }} annotations: {{ count }}</dd>
+{% endfor %}
+</dl>
+
+<dl>
+{% for graph, organizations in organization_counts.items %}
+	{% if organizations %}
+	<dt>Annotations per Organization - {{ graph }}:</dt>
+		{% for organization, count in organizations %}
+		<dd>{{ organization }}: {{ count }}</dd>
+		{% endfor %}
+	{% endif %}
+{% endfor %}
+</dl>
+
+
+<dl>
+{% for graph, users in user_counts.items %}
+	{% if users %}
+	<dt>Annotations per User (top 10) - {{ graph }}:</dt>
+		{% for user, count in users %}
+		<dd>{{ user }}: {{ count }}</dd>
+		{% endfor %}
+	{% endif %}
+{% endfor %}
+</dl>
+
+<h3>Targets</h3>
+
+<dl>
+{% for graph, targets in target_counts.items %}
+	{% if targets %}
+	<dt>Targets (top 10) - {{ graph }}:</dt>
+		{% for target, count in targets %}
+		<dd>{{ target }}: {{ count }}</dd>
+		{% endfor %}
+	{% endif %}
+{% endfor %}
+</dl>
+
+{% for graph, types in type_counts.items %}
+	{% if types %}
+	<dl>
+	<dt>Target Data Types for the {{ graph }} Graph</dt>
+		{% for type, count in types %}
+		<dd>Number of {{ type }}: {{ count }}</dd>
+		{% endfor %}
+	</dl>
+	{% endif %}
+{% endfor %}
+
+<dl>
+<dt>Other</dt>
+<dd>Organizations: {{ organizations }}</dd>
+<dd>djcharme version: {{ version }}</dd>
+</dl>
+
+{% endblock %}

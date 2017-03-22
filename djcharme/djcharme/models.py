@@ -37,11 +37,33 @@ class UserProfile(models.Model):
         'any new annotations you create.')
 
 
+class OrganizationManager(models.Manager):
+    """
+    The Organization model manager.
+
+    """
+
+    def get_names(self):
+        """
+        Get a list of organization names.
+
+        Returns:
+            [str] List of organization names
+        """
+        orgs = self.all()
+        organizations = []
+        for org in orgs:
+            organizations.append(org.name)
+        return organizations
+
+
 class Organization(models.Model):
     """
     Information about an organization.
 
     """
+    objects = OrganizationManager()
+
     name = models.CharField(
         max_length=100, blank=False, unique=True,
         help_text='The name of the organization.')
@@ -60,7 +82,7 @@ class OrganizationClient(models.Model):
     """
     organization = models.ForeignKey(Organization,
                                      help_text='The name of the organization.')
-    client = models.ForeignKey(
+    client = models.OneToOneField(
         Client, unique=True,
         help_text='The client to associate with this organization.')
 

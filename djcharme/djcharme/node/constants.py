@@ -3,8 +3,8 @@ BSD Licence
 Copyright (c) 2015, Science & Technology Facilities Council (STFC)
 All rights reserved.
 
-Redistribution and use in source and binary forms, with or without modification,
-are permitted provided that the following conditions are met:
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
 
     * Redistributions of source code must retain the above copyright notice,
         this list of conditions and the following disclaimer.
@@ -59,10 +59,9 @@ SKOS = Namespace("http://www.w3.org/2004/02/skos/core#")
 CH = Namespace(CH_NS)
 
 SUBMITTED = 'submitted'
-INVALID = 'invalid'
 STABLE = 'stable'
 RETIRED = 'retired'
-GRAPH_NAMES = [SUBMITTED, STABLE, RETIRED, INVALID]
+GRAPH_NAMES = [SUBMITTED, STABLE, RETIRED]
 
 LOCALHOST_URI = 'http://localhost/'
 TARGET_URI = 'targetID'
@@ -82,13 +81,3 @@ PAGE = 'page'
 ALLOWED_CREATE_TARGET_TYPE = [URIRef(OA + 'Composite'),
                               URIRef(CH_NS + 'DatasetSubset'),
                               URIRef(OA + 'SpecificResource')]
-
-
-
-
-
-
-
-
-
-

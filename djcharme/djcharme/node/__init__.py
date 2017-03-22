@@ -32,7 +32,15 @@ Contents:
 This module exposes node functions to other packages.
 
 '''
+
 from rdflib.graph import Graph
 
 from djcharme.node.model_queries import get_users_admin_role_orgs
 from djcharme.node.model_queries import is_following_resource
+from djcharme.node.triple_queries import generate_graph
+from djcharme.node.triple_queries import get_all_annotations
+from djcharme.node.triple_queries import get_annotation_count
+from djcharme.node.triple_queries import get_annotation_count_per_organization
+from djcharme.node.triple_queries import get_annotation_count_per_target
+from djcharme.node.triple_queries import get_annotation_count_per_user
+from djcharme.node.triple_queries import get_target_types

@@ -3,8 +3,8 @@ BSD Licence
 Copyright (c) 2015, Science & Technology Facilities Council (STFC)
 All rights reserved.
 
-Redistribution and use in source and binary forms, with or without modification,
-are permitted provided that the following conditions are met:
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
 
     * Redistributions of source code must retain the above copyright notice,
         this list of conditions and the following disclaimer.
@@ -43,7 +43,7 @@ from django.contrib.auth.views import login
 from django.core.urlresolvers import reverse
 from django.db.models import ObjectDoesNotExist
 from django.db.utils import IntegrityError
-from django.forms.util import ErrorList
+from django.forms.utils import ErrorList
 from django.http.response import HttpResponseRedirect, HttpResponse, \
     HttpResponseNotFound
 from django.http.response import HttpResponseServerError
@@ -59,7 +59,8 @@ from djcharme.models import UserProfile
 from djcharme.node import get_users_admin_role_orgs
 from djcharme.security_middleware import is_valid_token
 from djcharme.settings import REDIRECT_FIELD_NAME
-from djcharme.views import get_extra_context, get_safe_redirect
+from djcharme.views import get_extra_context, get_safe_redirect_get, \
+    get_safe_redirect_post
 from djcharme.views import not_authenticated
 
 
@@ -84,7 +85,7 @@ class Registration(View):
             return HttpResponseServerError(str(ex))
 
     def get(self, request, *args, **kwargs):
-        redirect_to = get_safe_redirect(request)
+        redirect_to = get_safe_redirect_get(request)
         context = {
             'user_form': UserForm(),
             'openid': False,
@@ -94,7 +95,7 @@ class Registration(View):
 
     def post(self, request, *args, **kwargs):
         LOGGING.debug('Registration request received')
-        redirect_to = get_safe_redirect(request)
+        redirect_to = get_safe_redirect_post(request)
         user_form = UserForm(request.POST)
         if user_form.is_valid():
             try:
@@ -268,4 +269,3 @@ def token_response(request):
 
 def test_token(request):
     return mm_render_to_response(request, {}, 'oauth_test2.html')
-
