@@ -6,17 +6,4 @@
 
 <p>Welcome to this CHARMe node</p>
 
-{% if user.is_authenticated %}
-
-<h3>Actions</h3>
-<ul>
-  	<li><a href="{% url 'index' %}">List annotations</a></li>
-  	<li><a href="{% url 'following-list' %}">Follow resources</a></li>
-	{% if user.is_staff %}
-  	<li><a href="{% url 'status' %}">Status</a></li>
-	{% endif %}
-</ul>
-
-{% endif %}
-
 {% endblock %}

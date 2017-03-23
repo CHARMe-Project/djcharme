@@ -3,8 +3,8 @@ BSD Licence
 Copyright (c) 2014, Science & Technology Facilities Council (STFC)
 All rights reserved.
 
-Redistribution and use in source and binary forms, with or without modification,
-are permitted provided that the following conditions are met:
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
 
     * Redistributions of source code must retain the above copyright notice,
         this list of conditions and the following disclaimer.
@@ -44,7 +44,7 @@ from ceda_markup.opensearch.osquery import OSQuery
 from ceda_markup.opensearch.template.atom import OSAtomResponse
 from ceda_markup.opensearch.template.osresponse import OSEngineResponse, Result
 
-from djcharme.node.constants import OA, CH_NODE, FOAF, RDF, RDFS, STABLE
+from djcharme.node.constants import OA, CH_NODE, FOAF, RDF, RDFS, SUBMITTED
 from djcharme.node.search import annotation_resource, get_suggestions, \
     get_search_results
 from djcharme.views import check_mime_format
@@ -101,9 +101,9 @@ class COSAtomResponse(OSAtomResponse):
         """
         super(COSAtomResponse, self).__init__()
 
-    def generate_entries(self, atomroot, subresults, path, \
+    def generate_entries(self, atomroot, subresults, path,
                          params_model, context):
-        LOGGING.debug("COSAtomResponse:generate_entries(atomroot, subresults, "\
+        LOGGING.debug("COSAtomResponse:generate_entries(atomroot, subresults, "
                       "path, params_model, context)")
         if subresults is None:
             return
@@ -142,7 +142,8 @@ class COSAtomResponse(OSAtomResponse):
         return _generate_url_id(osHostURL, context)
 
     def digest_search_results(self, results, context):
-        LOGGING.debug("COSAtomResponse:digest_search_results(results, context)")
+        LOGGING.debug(
+            "COSAtomResponse:digest_search_results(results, context)")
         title = "CHARMe results"
         count, start_index, start_page = _import_count_and_page(context)
 
@@ -153,7 +154,7 @@ class COSAtomResponse(OSAtomResponse):
 
         iformat = context.get('format', 'json-ld')
         iformat = check_mime_format(iformat)
-        if iformat == None:
+        if iformat is None:
             iformat = 'json-ld'
         if iformat == 'rdf':
             iformat = 'xml'
@@ -226,12 +227,12 @@ class COSRDFResponse(OSEngineResponse):
         title = "CHARMe results"
         count, start_index, start_page = _import_count_and_page(context)
         subresults = filter_results(results, count, start_index, start_page)
-        return Result(count, start_index, start_page, len(results), \
+        return Result(count, start_index, start_page, len(results),
                       subresult=subresults, title=title)
         # return results.serialize(format='xml')
 
     def generate_response(self, results, query, ospath, params_model, context):
-        LOGGING.debug("COSRDFResponse:generate_response(results, query, " \
+        LOGGING.debug("COSRDFResponse:generate_response(results, query, "
                       "ospath, params_model, context)")
         return results
 
@@ -250,12 +251,12 @@ class COSJsonLDResponse(OSEngineResponse):
         super(COSJsonLDResponse, self).__init__('json-ld')
 
     def digest_search_results(self, results, context):
-        LOGGING.debug("COSJsonLDResponse:digest_search_results(results, " \
+        LOGGING.debug("COSJsonLDResponse:digest_search_results(results, "
                       "context)")
         return results.serialize(format='json-ld')
 
     def generate_response(self, results, query, ospath, params_model, context):
-        LOGGING.debug("COSJsonLDResponse:generate_response(results, query, " \
+        LOGGING.debug("COSJsonLDResponse:generate_response(results, query, "
                       "ospath, params_model, context)")
         return results
 
@@ -274,12 +275,12 @@ class COSTurtleResponse(OSEngineResponse):
         super(COSTurtleResponse, self).__init__('ttl')
 
     def digest_search_results(self, results, context):
-        LOGGING.debug("COSTurtleResponse:digest_search_results(results, " \
+        LOGGING.debug("COSTurtleResponse:digest_search_results(results, "
                       "context)")
         return results.serialize(format='turtle')
 
     def generate_response(self, results, query, ospath, params_model, context):
-        LOGGING.debug("COSTurtleResponse:generate_response(results, query, " \
+        LOGGING.debug("COSTurtleResponse:generate_response(results, query, "
                       "ospath, params_model, context)")
         return results
 
@@ -298,7 +299,7 @@ class COSHTMLResponse(OSAtomResponse):
         super(COSHTMLResponse, self).__init__()
 
     def generateResponse(self, result, queries, ospath, **kwargs):
-        LOGGING.debug("COSHTMLResponse:generateResponse(result, queries, " \
+        LOGGING.debug("COSHTMLResponse:generateResponse(result, queries, "
                       "ospath, **kwargs)")
         return result + " HTML!"
 
@@ -346,7 +347,7 @@ class COSQuery(OSQuery):
         params.append(OSParam("organization", "name",
                               namespace=FOAF, default=''))
         params.append(OSParam("status", "status",
-                              namespace=CH_NODE, default=STABLE))
+                              namespace=CH_NODE, default=SUBMITTED))
         params.append(OSParam("target", "Resource",
                               namespace=RDFS, default=''))
         params.append(OSParam("title", "title",
@@ -378,26 +379,30 @@ class COSQuery(OSQuery):
 # TODO Hack until ceda_marckup supports suggest
         try:
             context.keys().index('suggest')
-            if (query.attrib.get('q', None) != None
-                and len(query.attrib.get('q')) > 0):
+            if (query.attrib.get('q', None) != None and
+                    len(query.attrib.get('q')) > 0):
                 results, total_results = get_suggestions(query.attrib['q'],
                                                          query.attrib)
             search_type = SEARCH_TERMS
         except ValueError:
             results, total_results = get_search_results(query.attrib)
             search_type = ANNOTATIONS
-        return {'results':results, 'count':total_results, 'type':search_type}
+        return {'results': results,
+                'count': total_results,
+                'type': search_type}
 
     def do_suggest(self, query, context):
         LOGGING.debug("do_suggest(query, context)")
         results = None
         total_results = 0
-        if query.attrib.get('q', None) != None \
-                and len(query.attrib.get('q')) > 0:
+        if (query.attrib.get('q', None) != None and
+                len(query.attrib.get('q')) > 0):
             results, total_results = get_suggestions(query.attrib['q'],
-                                                  query.attrib)
+                                                     query.attrib)
         # else: TODO error?
-        return {'results':results, 'count':total_results, 'type':SEARCH_TERMS}
+        return {'results': results,
+                'count': total_results,
+                'type': SEARCH_TERMS}
 
     def _querySignature(self, params_model):
         _params = []
@@ -405,4 +410,3 @@ class COSQuery(OSQuery):
             if params.par_name not in ['count', 'startPage', 'startIndex']:
                 _params.append(params.par_name)
         return _params
-

@@ -11,6 +11,9 @@
 		<form method="post" action="{% url 'annotation' %}">
 			{% csrf_token %}
 			{{ resource_form.resource_uri.as_hidden }}
+			{% if deleted %}
+            <span class="charme_danger"><p>THIS ANNOTATION IS NO LONGER CURRENT</p></span>
+			{% endif %}
 			<table>
 				{% if wasInvalidatedBy %}
 				<tr>				

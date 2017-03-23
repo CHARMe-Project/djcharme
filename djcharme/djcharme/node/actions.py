@@ -649,7 +649,6 @@ def change_annotation_state(annotation_uri, new_graph_name, request):
             _add(new_g, triple)
 
     # TODO add extra prov for change to submitted
-    # TODO add extra prov for change to stable
     return new_g
 
 

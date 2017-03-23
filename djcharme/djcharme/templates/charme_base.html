@@ -6,23 +6,52 @@
 {% endblock %}
 {% endblock %}
 
-{% block title %}
+{% block header_menu %}
+<div class="charme_user">
+<ul>
+{% if user.is_authenticated %}
+	<span class="charme_user_extra"><li>Welcome, {{ user.first_name }}</li>
+	<li>|</li></span>
+	<li><a href="{% url 'profile' %}">Account</a></li>
+	<span class="charme_user_extra"><li>|</li></span>
+	<li><a href="{% url 'user_signout' %}">Logout</a></li>
 
-This is a BETA service
+{% else %}
+	<li><a href="{% url 'login' %}">Login</a></li>
+	<span class="charme_user_extra"><li>|</li></span>
+	<li><a href="{% url 'registration' %}">Register</a></li>
+{% endif %}
 
+</ul>
+</div>
 {% endblock %}
 
 {% block navbar %}
 
-<div class=links>
-	{% if user.is_authenticated %}
-		Hello {{ user.first_name }}
-		[<a href="{% url 'profile' %}">Profile</a>] 
-		[<a href="{% url 'user_signout' %}">Logout</a>]
-	{% else %}
-		[<a href="{% url 'login' %}">Login</a> or 
-		<a href="{% url 'registration' %}">Register</a>]
+{% if user.is_authenticated %}
+<ul class="nav pull-right">
+	<li class="dropdown">
+		<a href="{% url 'index' %}"> List Annotations </a>
+	</li>
+	<li class="divider-vertical"></li>
+	<li class="dropdown">
+		<a href="{% url 'following-list' %}"> Follow Resources </a>
+	</li>
+
+	{% if user.is_staff %}
+	<li class="divider-vertical"></li>
+	<li class="dropdown">
+		<a title="big time" href="{% url 'status' %}"> Service Status </a>
+	</li>
 	{% endif %}
-</div>
+
+</ul>
+{% endif %}
+
+{% endblock %}
+
+{% block title %}
+
+CHARMe service
 
 {% endblock %}

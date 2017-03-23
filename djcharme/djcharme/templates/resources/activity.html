@@ -33,10 +33,12 @@
 				<td><label>{% trans "Author's last name:" noop %}</label></td>
 				<td><label>{{ last_name }}</label></td>
 			</tr>
+			{% if email %}
 			<tr>
 				<td><label>{% trans "Author's email:" noop %}</label></td>
 				<td>{{ email }}</td>
 			</tr>
+			{% endif %}
 		</table>
 	</div>
 </div>

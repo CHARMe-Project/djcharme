@@ -44,7 +44,7 @@ from rdflib.term import URIRef
 from djcharme.charme_middleware import CharmeMiddleware
 from djcharme.node.triple_queries import extract_subject
 from djcharme.node.triple_queries import generate_graph
-from djcharme.node.constants import STABLE
+from djcharme.node.constants import SUBMITTED
 
 
 LOGGING = logging.getLogger(__name__)
@@ -276,12 +276,12 @@ def _get_graph(query_attr):
     """
     Get the graph based on the value of the attribute 'status'.
 
-    If the users has not set a value for 'status' the use the STABLE graph
+    If the users has not set a value for 'status' the use the SUBMITTED graph
 
     Args:
         query_attr (dict): The query parameters from the users request.
     """
-    graph_name = str(query_attr.get('status', STABLE))
+    graph_name = str(query_attr.get('status', SUBMITTED))
     return generate_graph(CharmeMiddleware.get_store(), graph_name)
 
 

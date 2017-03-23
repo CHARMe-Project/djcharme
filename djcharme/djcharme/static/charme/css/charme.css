@@ -80,11 +80,6 @@
 	color: #FF0000;
 }
 
-.links {
-	padding: 5px 5px 5px 5px;
-	text-align: right;
-}
-
 .pagination {
 	margin-left: 20px;
 }
@@ -102,17 +97,36 @@
 	margin: 0 5px 0 5px;
 }
 
-dl {
+.charme_status dl {
 	margin: 10px 20px 10px 20px;
 }
 
-dt {
+.charme_status dt {
 	margin: 15px 0 5px 0;
 	font-size: 150%;
 	font-weight: bold;
 }
 
-dd {
+.charme_status dd {
 	margin: 0 5px 5px 5px;
 	font-size: 130%;
+}
+
+.charme_user ul {
+	padding-top: 8px;
+}
+
+.charme_user li {
+	color: grey;
+	float: left;
+}
+
+.charme_user_extra li {
+	padding: 2px 1px 2px 1px;
+	font-size: 130%;
+}
+
+.charme_danger p {
+	color: red;
+	font-weight: bold;
 }

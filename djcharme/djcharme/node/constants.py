@@ -59,9 +59,8 @@ SKOS = Namespace("http://www.w3.org/2004/02/skos/core#")
 CH = Namespace(CH_NS)
 
 SUBMITTED = 'submitted'
-STABLE = 'stable'
 RETIRED = 'retired'
-GRAPH_NAMES = [SUBMITTED, STABLE, RETIRED]
+GRAPH_NAMES = [SUBMITTED, RETIRED]
 
 LOCALHOST_URI = 'http://localhost/'
 TARGET_URI = 'targetID'

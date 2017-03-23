@@ -53,6 +53,12 @@ def annotation(request, resource_uri=None, graph=None):
         LOGGING.debug('method is POST')
         return _delete(request)
     else:  # GET
+        graph_name = find_annotation_graph_name(resource_uri)
+        if graph_name == RETIRED:
+            context['deleted'] = True
+        else:
+            context['deleted'] = False
+
         context['uri'] = resource_uri
 
         triples = graph.triples((resource_uri, PROV['wasInvalidatedBy'], None))
@@ -97,10 +103,24 @@ def annotation(request, resource_uri=None, graph=None):
         triples = graph.triples((resource_uri, OA['serializedAt'], None))
         for triple in triples:
             date = triple[2].split('+')[0]
-            ann_at = datetime.datetime.strptime(date,
-                                                "%Y-%m-%dT%H:%M:%S.%f")
-            ann_at = ann_at.strftime("%H:%M %d %b %Y")
-            context['serialized_at'] = ann_at
+            try:
+                ann_at = datetime.datetime.strptime(date,
+                                                    "%Y-%m-%dT%H:%M:%S.%f")
+                ann_at = ann_at.strftime("%H:%M %d %b %Y")
+                context['serialized_at'] = ann_at
+            except ValueError as ex:
+                LOGGING.warn(
+                    'Invalid serialized_at value for {anno}. {ex}'.
+                    format(anno=resource_uri, ex=ex))
+                try:
+                    ann_at = datetime.datetime.strptime(date,
+                                                        "%Y-%m-%d %H:%M:%S.%f")
+                    ann_at = ann_at.strftime("%H:%M %d %b %Y")
+                    context['serialized_at'] = ann_at
+                except ValueError as ex:
+                    LOGGING.error(
+                        'Invalid serialized_at value for {anno}. {ex}'.
+                        format(anno=resource_uri, ex=ex))
 
         triples = graph.triples((resource_uri, OA['motivatedBy'], None))
         motivations = []
@@ -183,7 +203,6 @@ def annotation(request, resource_uri=None, graph=None):
                 'logging in' % context['organization_name']
         else:
             # delete button
-            graph_name = find_annotation_graph_name(resource_uri)
             update_allowed = is_update_allowed(graph, resource_uri, request)
             if (graph_name != RETIRED and update_allowed):
                 context['delete'] = True
