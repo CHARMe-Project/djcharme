@@ -1,19 +1,24 @@
 --extra-index-url http://dist.ceda.ac.uk/pip/
-
+--trusted-host dist.ceda.ac.uk
+appdirs==1.4.3
 ceda-markup==0.1.0
-cedatheme_mf54==1.0.0
 Django==1.8
-django-authopenid==1.0.2
-django-classy-tags==0.6.2
-django-cookie-law==1.0.6
-django-oauth2-provider==0.2.7-dev
+django-classy-tags==0.8.0
+django-cookie-law==1.0.13
+django-oauth2-provider==0.2.7.dev0
 django-registration==2.2
-html5lib==0.9999999
+html5lib==0.999999999
 isodate==0.5.4
 ordereddict==1.1
+packaging==16.8
 py-bcrypt==0.4
-pyparsing==2.0.3
+pyparsing==2.2.0
+python-openid==2.2.5
 rdflib==4.1.2
 rdflib-jsonld==0.2
-shortuuid==0.4.2
+shortuuid==0.5.0
+six==1.10.0
 SPARQLWrapper==1.6.4
+webencodings==0.5
+http://dist.ceda.ac.uk/pip/cedatheme_mf54/cedatheme_mf54-1.0.0.tar.gz
+https://bitbucket.org/benoitc/django-authopenid/get/tip.zip

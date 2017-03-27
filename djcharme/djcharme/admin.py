@@ -20,6 +20,7 @@ class FollowedResourceAdmin(admin.ModelAdmin):
     list_display = ('user', 'resource')
     list_filter = ['user']
 
+
 class UserProfileInline(admin.StackedInline):
     """
     The in-line display of the User Profile.
@@ -54,7 +55,6 @@ class OrganizationClientInline(admin.StackedInline):
     verbose_name = 'Organization'
     verbose_name_plural = 'Organization'
     extra = 1
-    fk_name = "client"
 
 
 class OrganizationAdmin(admin.ModelAdmin):
@@ -98,7 +98,7 @@ class ClientAdmin_(ClientAdmin):
         Get the name of the organization, there should only be one.
 
         """
-        return obj.organizationclient_set.first()
+        return obj.organizationclient
 
     get_organization.short_description = 'organization'
 
